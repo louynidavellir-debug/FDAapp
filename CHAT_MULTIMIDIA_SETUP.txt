@@ -1,0 +1,11 @@
+CHAT MULTIMIDIA - CONFIGURACAO
+
+1. No Firebase Console, abra Storage e ative o Cloud Storage para o projeto.
+2. Abra Storage > Regras.
+3. Copie todo o conteudo do arquivo storage.rules desta pasta.
+4. Cole nas regras do Storage e clique em Publicar.
+5. Publique estes arquivos no GitHub (branch main).
+
+Recursos: emojis, fotos (ate 8 MB), videos (ate 50 MB), audio gravado (ate 2 minutos / 12 MB).
+As midias ficam no Firebase Storage; a mensagem no Firestore guarda apenas a URL.
+O navegador pedira permissao de microfone na primeira gravacao.
