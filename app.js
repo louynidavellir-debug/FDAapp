@@ -488,15 +488,20 @@
         btnLogin.disabled = true;
         try {
             const authUser = await window.AsgardCloud.signIn(callsign, pin);
-            await window.AsgardCloud.connectSession();
+            const sessionProfile = await window.AsgardCloud.connectSession();
             const users = getStore(DB_USERS) || [];
-            const user = users.find(u => u.id === authUser.uid);
+            const user = sessionProfile || users.find(u => u.id === authUser.uid);
             if (!user) throw new Error('Perfil não encontrado no Firestore.');
-            user.online = true;
-            user.lastSeen = new Date().toISOString();
-            setStore(DB_USERS, users);
-            currentUser = user;
-            addActivity(`${user.callsign} entrou online`);
+            // Enter first. Presence/activity writes are best-effort and must never
+            // turn a valid authentication into a blocked login.
+            currentUser = { ...user, online:true, lastSeen:new Date().toISOString() };
+            try {
+                const nextUsers = users.some(u => u.id === currentUser.id)
+                    ? users.map(u => u.id === currentUser.id ? { ...u, online:true, lastSeen:currentUser.lastSeen } : u)
+                    : [currentUser, ...users];
+                setStore(DB_USERS, nextUsers);
+            } catch (presenceErr) { console.warn('Presence update skipped', presenceErr); }
+            try { addActivity(`${currentUser.callsign} entrou online`); } catch (activityErr) { console.warn('Activity skipped', activityErr); }
             showToast(`Bem-vindo, ${user.callsign}!`, 'success');
             enterApp();
         } catch (err) {

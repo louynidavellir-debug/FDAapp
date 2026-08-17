@@ -89,6 +89,19 @@ async function currentRole() {
   const snap = await getDoc(doc(db, 'profiles', me.uid));
   return snap.exists() ? snap.data()?.role || null : null;
 }
+async function readMyProfile() {
+  const me = auth?.currentUser;
+  if (!me) throw new Error('Usuário não autenticado.');
+  const snap = await getDoc(doc(db, 'profiles', me.uid));
+  if (!snap.exists()) throw new Error('Perfil não encontrado no Firestore.');
+  const profile = { id: snap.id, ...snap.data() };
+  const current = cache.get('asgard_users') || [];
+  const next = [profile, ...current.filter(u => u && u.id !== profile.id)];
+  cache.set('asgard_users', next);
+  try { localStorage.setItem('asgard_users', JSON.stringify(next)); } catch (_) {}
+  emit('asgard_users');
+  return profile;
+}
 function collectionSource(colName, role) {
   if (colName === 'orders' && role !== 'admin') {
     return query(collection(db, 'orders'), where('compradorId', '==', auth.currentUser.uid));
@@ -118,18 +131,20 @@ async function readContributions(role = null) {
   mirror('asgard_contributions', value);
 }
 async function hydrate() {
-  // The profile is the only critical Firestore read required to enter the app.
-  // Optional modules are hydrated independently: a permission/index problem in
-  // Loja, Contribuições, Conquistas, etc. must never block a valid login.
-  await readUsers();
-  const role = await currentRole();
+  // Only the signed-in user's own profile is critical for login.
+  // Every shared/optional collection is loaded independently so one Firestore
+  // rule/index problem can never lock every operator out of the app.
+  const mine = await readMyProfile();
+  const role = mine?.role || null;
   const jobs = [
+    readUsers().catch(err => { reportError(err); return null; }),
     ...Object.entries(ARRAY_COLLECTIONS).map(([k,c]) =>
       readCollection(k,c,role).catch(err => { reportError(err); return null; })
     ),
     readContributions(role).catch(err => { reportError(err); return null; })
   ];
   await Promise.all(jobs);
+  return mine;
 }
 
 function watchCollection(key, colName, role = null) {
@@ -297,8 +312,10 @@ async function init() {
 }
 async function connectSession() {
   if (!auth?.currentUser) throw new Error('Usuário não autenticado.');
-  await hydrate();
-  await setupRealtime();
+  const profile = await hydrate();
+  // Realtime listeners are not allowed to make login fail.
+  setupRealtime().catch(reportError);
+  return profile;
 }
 async function signIn(callsign, password) {
   const cred = await signInWithEmailAndPassword(auth, callsignEmail(callsign), password);
@@ -515,7 +532,7 @@ function set(key, value) {
 }
 
 window.AsgardCloud = {
-  init, connectSession, get, set, hasConfig, removeSession,
+  init, connectSession, readMyProfile, get, set, hasConfig, removeSession,
   signIn, register, getCurrentUser, waitForAuth, addMessage, updateChatLastRead, updateContribution,
   createProduct, updateProduct, removeProduct,
   createAchievement, updateAchievement, setAchievementRecipients, markAchievementNotificationRead, removeAchievement,

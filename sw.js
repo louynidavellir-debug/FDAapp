@@ -1,4 +1,4 @@
-const CACHE_NAME = 'filhos-asgard-v20260817-loginfix';
+const CACHE_NAME = 'filhos-asgard-v20260817-loginfix-all-users';
 const ASSETS = [
     './', './index.html', './style.css', './app.js', './cloud.js', './firebase-config.js',
     './manifest.json', './icons/icon-192-v17.png', './icons/icon-512-v17.png', './icons/logo-asgard.png'
