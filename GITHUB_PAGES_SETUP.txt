@@ -1,0 +1,41 @@
+FILHOS DE ASGARD — PUBLICAÇÃO NO GITHUB PAGES
+
+Esta versão foi preparada para funcionar tanto em um site de usuário
+https://USUARIO.github.io/ quanto em um site de projeto
+https://USUARIO.github.io/NOME-DO-REPOSITORIO/.
+
+1) CRIAR O REPOSITÓRIO
+- Crie um repositório no GitHub, por exemplo: filhos-de-asgard.
+- Envie TODOS os arquivos desta pasta para a RAIZ do repositório.
+- O arquivo index.html precisa ficar na raiz do repositório.
+
+2) ATIVAR O GITHUB PAGES
+- No GitHub, abra o repositório.
+- Settings > Pages.
+- Em Build and deployment, selecione Deploy from a branch.
+- Branch: main.
+- Folder: /(root).
+- Salve.
+
+3) FIREBASE AUTHENTICATION
+- No Firebase Console, abra Authentication > Settings/Configurações > Authorized domains/Domínios autorizados.
+- Se necessário, adicione: SEUUSUARIO.github.io
+- Não altere firebase-config.js: ele já aponta para o projeto Firebase usado pelo aplicativo.
+
+4) FIRESTORE
+- Continue usando as regras do arquivo firestore.rules desta versão.
+- O GitHub hospeda apenas o frontend; usuários, jogos, mensagens, contribuições,
+  conquistas e demais dados continuam no Firebase.
+
+5) PWA
+- manifest.json foi ajustado para caminhos relativos (start_url './' e scope './').
+- Isso permite instalar o PWA mesmo quando o app está em /NOME-DO-REPOSITORIO/.
+- O Service Worker também usa caminhos relativos.
+
+6) ENDEREÇO
+Normalmente será:
+https://SEUUSUARIO.github.io/NOME-DO-REPOSITORIO/
+
+IMPORTANTE
+- Não coloque chaves administrativas/service account no repositório.
+- A configuração Web do Firebase (apiKey etc.) fica no frontend por design; a segurança dos dados depende do Firebase Authentication e das regras do Firestore.

@@ -1,0 +1,116 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() { return request.auth != null; }
+    function profile() { return get(/databases/$(database)/documents/profiles/$(request.auth.uid)); }
+    function isAdmin() { return signedIn() && profile().data.role == 'admin'; }
+    function isOwner(uid) { return signedIn() && request.auth.uid == uid; }
+
+    match /system/bootstrap {
+      allow read: if signedIn();
+      allow create: if signedIn()
+                    && !exists(/databases/$(database)/documents/system/bootstrap)
+                    && request.resource.data.ownerUid == request.auth.uid;
+      allow update, delete: if false;
+    }
+
+    match /profiles/{uid} {
+      allow read: if signedIn();
+      allow create: if isOwner(uid)
+                    && request.resource.data.id == uid
+                    && request.resource.data.callsign is string
+                    && (
+                      (request.resource.data.role == 'operador') ||
+                      (request.resource.data.role == 'admin'
+                       && getAfter(/databases/$(database)/documents/system/bootstrap).data.ownerUid == uid)
+                    );
+      allow update: if isAdmin() ||
+                    (isOwner(uid)
+                     && request.resource.data.id == resource.data.id
+                     && request.resource.data.callsign == resource.data.callsign
+                     && request.resource.data.role == resource.data.role);
+      allow delete: if isAdmin();
+    }
+
+    match /messages/{id} {
+      allow read: if signedIn();
+      allow create: if signedIn() && request.resource.data.userId == request.auth.uid;
+      allow update, delete: if isAdmin() || (signedIn() && resource.data.userId == request.auth.uid);
+    }
+
+    match /games/{id} {
+      allow read: if signedIn();
+      allow create, delete: if isAdmin();
+      // ADMIN may edit the game and perform check-in. Operators can only add/remove
+      // their own UID from the confirmation list; they can never change checkedIn.
+      allow update: if isAdmin() ||
+        (signedIn()
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['confirmed'])
+          && request.resource.data.checkedIn == resource.data.checkedIn
+          && (
+            (
+              request.resource.data.confirmed.size() == resource.data.confirmed.size() + 1
+              && request.resource.data.confirmed.hasAll(resource.data.confirmed)
+              && request.resource.data.confirmed.hasAny([request.auth.uid])
+              && !resource.data.confirmed.hasAny([request.auth.uid])
+            ) ||
+            (
+              request.resource.data.confirmed.size() + 1 == resource.data.confirmed.size()
+              && resource.data.confirmed.hasAll(request.resource.data.confirmed)
+              && resource.data.confirmed.hasAny([request.auth.uid])
+              && !request.resource.data.confirmed.hasAny([request.auth.uid])
+              && !resource.data.checkedIn.hasAny([request.auth.uid])
+            )
+          )
+        );
+    }
+
+    match /achievements/{id} {
+      // Everyone signed in can view the achievement gallery and awarded badges.
+      // Only ADMIN can create/edit/delete achievements or select who completed them.
+      allow read: if signedIn();
+      allow write: if isAdmin();
+    }
+
+    match /announcements/{id} {
+      allow read: if signedIn();
+      allow write: if isAdmin();
+    }
+
+    match /products/{id} {
+      allow read: if signedIn();
+      allow write: if isAdmin();
+    }
+
+    match /orders/{id} {
+      allow read: if isAdmin() || (signedIn() && resource.data.compradorId == request.auth.uid);
+      allow create: if signedIn() && request.resource.data.compradorId == request.auth.uid;
+      allow update, delete: if isAdmin();
+    }
+
+    match /activities/{id} {
+      allow read: if signedIn();
+      allow create: if signedIn();
+      allow update, delete: if isAdmin();
+    }
+
+    match /settings/contributions {
+      allow read: if signedIn();
+      allow write: if isAdmin();
+    }
+
+    match /contributions/{id} {
+      // Contribution/payment status is private: ADMIN can read all records;
+      // operators can read only their own record. Client queries are scoped
+      // by userId to match this rule.
+      allow read: if isAdmin() ||
+                  (signedIn() && resource.data.userId == request.auth.uid);
+      allow create, update: if isAdmin() ||
+                            (signedIn()
+                             && request.resource.data.userId == request.auth.uid
+                             && id == request.resource.data.monthKey + '_' + request.auth.uid);
+      allow delete: if isAdmin() ||
+                    (signedIn() && resource.data.userId == request.auth.uid);
+    }
+  }
+}

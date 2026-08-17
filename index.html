@@ -1,0 +1,898 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#0a0a0a">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Filhos de Asgard">
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+    <link rel="apple-touch-icon" href="icons/icon-192.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Orbitron:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <title>Filhos de Asgard Airsoft Team</title>
+</head>
+<body>
+    <!-- ==================== SPLASH SCREEN ==================== -->
+    <div id="splash-screen">
+        <div class="splash-content">
+            <div class="splash-shield">
+                <img src="icons/logo-asgard.png" alt="Filhos de Asgard Airsoft Team" class="brand-logo splash-brand-logo">
+            </div>
+            <h1 class="splash-title">FILHOS DE ASGARD</h1>
+            <p class="splash-subtitle">AIRSOFT TEAM</p>
+            <div class="splash-loader">
+                <div class="loader-bar"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== AUTH SCREEN ==================== -->
+    <div id="auth-screen" class="screen hidden">
+        <div class="auth-container">
+            <div class="auth-logo">
+                <img src="icons/logo-asgard.png" alt="Filhos de Asgard Airsoft Team" class="brand-logo small-shield">
+                <h1 class="auth-title">FILHOS DE ASGARD</h1>
+                <p class="auth-subtitle">AIRSOFT TEAM</p>
+            </div>
+
+            <!-- LOGIN FORM -->
+            <div id="login-form" class="auth-form">
+                <h2>LOGIN</h2>
+                <div class="input-group">
+                    <label for="login-callsign">CALLSIGN</label>
+                    <input type="text" id="login-callsign" placeholder="Seu callsign..." autocomplete="username">
+                </div>
+                <div class="input-group">
+                    <label for="login-pin">SENHA</label>
+                    <div class="pin-input-wrapper">
+                        <input type="password" id="login-pin" maxlength="72" autocomplete="current-password">
+                        <div class="pin-dots" id="login-pin-dots">
+                            <span></span><span></span><span></span><span></span><span></span><span></span>
+                        </div>
+                    </div>
+                </div>
+                <button class="btn-primary" id="btn-login">ENTRAR</button>
+                <p class="auth-switch">Não tem conta? <a href="#" id="show-register">Registre-se</a></p>
+            </div>
+
+            <!-- REGISTER FORM -->
+            <div id="register-form" class="auth-form hidden">
+                <h2>REGISTRO</h2>
+                <div class="input-group">
+                    <label for="reg-callsign">CALLSIGN</label>
+                    <input type="text" id="reg-callsign" placeholder="Escolha seu callsign..." autocomplete="username">
+                </div>
+                <div class="input-group">
+                    <label for="reg-name">NOME COMPLETO</label>
+                    <input type="text" id="reg-name" placeholder="Seu nome real...">
+                </div>
+                <div class="input-group">
+                    <label for="reg-pin">SENHA (mínimo 6 caracteres)</label>
+                    <div class="pin-input-wrapper">
+                        <input type="password" id="reg-pin" maxlength="72" autocomplete="new-password">
+                        <div class="pin-dots" id="reg-pin-dots">
+                            <span></span><span></span><span></span><span></span><span></span><span></span>
+                        </div>
+                    </div>
+                </div>
+                <div class="input-group">
+                    <label for="reg-pin-confirm">CONFIRMAR SENHA</label>
+                    <div class="pin-input-wrapper">
+                        <input type="password" id="reg-pin-confirm" maxlength="72" autocomplete="new-password">
+                        <div class="pin-dots" id="reg-pin-confirm-dots">
+                            <span></span><span></span><span></span><span></span><span></span><span></span>
+                        </div>
+                    </div>
+                </div>
+                <button class="btn-primary" id="btn-register">REGISTRAR</button>
+                <p class="auth-switch">Já tem conta? <a href="#" id="show-login">Faça login</a></p>
+            </div>
+
+            <div id="auth-message" class="message hidden"></div>
+        </div>
+        <div class="auth-bg-particles" id="auth-particles"></div>
+    </div>
+
+    <!-- ==================== MAIN APP ==================== -->
+    <div id="app-screen" class="screen hidden">
+        <!-- SIDEBAR -->
+        <aside id="sidebar" class="sidebar">
+            <div class="sidebar-header">
+                <img src="icons/logo-asgard.png" alt="Filhos de Asgard Airsoft Team" class="brand-logo mini-shield">
+                <h2>ASGARD</h2>
+            </div>
+            <nav class="sidebar-nav">
+                <a href="#" class="nav-item active" data-page="dashboard">
+                    <span class="nav-icon">⚡</span>
+                    <span class="nav-label">Dashboard</span>
+                </a>
+                <a href="#" class="nav-item" data-page="profile">
+                    <span class="nav-icon">👤</span>
+                    <span class="nav-label">Meu Perfil</span>
+                </a>
+                <a href="#" class="nav-item" data-page="members">
+                    <span class="nav-icon">🛡️</span>
+                    <span class="nav-label">Membros</span>
+                </a>
+                <a href="#" class="nav-item" data-page="arsenal">
+                    <span class="nav-icon">🔫</span>
+                    <span class="nav-label">Arsenal</span>
+                </a>
+                <a href="#" class="nav-item" data-page="achievements">
+                    <span class="nav-icon">🏅</span>
+                    <span class="nav-label">Conquistas</span>
+                </a>
+                <a href="#" class="nav-item" data-page="chat">
+                    <span class="nav-icon">💬</span>
+                    <span class="nav-label">Chat</span>
+                    <span class="nav-badge hidden" id="chat-badge">0</span>
+                </a>
+                <a href="#" class="nav-item" data-page="games">
+                    <span class="nav-icon">🎯</span>
+                    <span class="nav-label">Jogos</span>
+                </a>
+                <a href="#" class="nav-item" data-page="contribuicao">
+                    <span class="nav-icon">🛡️</span>
+                    <span class="nav-label">Contribuição</span>
+                </a>
+                <a href="#" class="nav-item" data-page="configuracoes">
+                    <span class="nav-icon">⚙️</span>
+                    <span class="nav-label">Configurações</span>
+                </a>
+                <a href="#" class="nav-item" data-page="loja">
+                    <span class="nav-icon">🛒</span>
+                    <span class="nav-label">Loja</span>
+                    <span class="nav-badge hidden" id="cart-badge">0</span>
+                </a>
+                <a href="#" class="nav-item admin-only hidden" data-page="vendas">
+                    <span class="nav-icon">💰</span>
+                    <span class="nav-label">Vendas</span>
+                </a>
+            </nav>
+            <div class="sidebar-footer">
+                <button id="btn-logout" class="btn-logout">
+                    <span class="nav-icon">🚪</span>
+                    <span class="nav-label">Logout</span>
+                </button>
+            </div>
+        </aside>
+
+        <!-- SIDEBAR OVERLAY (MOBILE) -->
+        <div id="sidebar-overlay" class="sidebar-overlay hidden"></div>
+
+        <!-- MAIN CONTENT -->
+        <main id="main-content">
+            <!-- TOP BAR -->
+            <header class="topbar">
+                <button id="btn-menu" class="btn-menu">☰</button>
+                <h1 id="page-title" class="topbar-title">Dashboard</h1>
+                <div class="topbar-user">
+                    <span id="topbar-callsign" class="topbar-callsign"></span>
+                    <span id="topbar-role" class="role-badge"></span>
+                </div>
+            </header>
+
+            <!-- PAGES -->
+            <!-- DASHBOARD -->
+            <section id="page-dashboard" class="page active">
+                <div class="dashboard-grid">
+                    <div class="dash-card card-wide">
+                        <div class="dash-card-header">
+                            <span class="dash-icon">⚡</span>
+                            <h3>Status da Equipe</h3>
+                        </div>
+                        <div class="dash-card-body">
+                            <div class="stat-row">
+                                <div class="stat">
+                                    <span class="stat-number" id="stat-members">0</span>
+                                    <span class="stat-label">Membros</span>
+                                </div>
+                                <div class="stat">
+                                    <span class="stat-number" id="stat-online">0</span>
+                                    <span class="stat-label">Online</span>
+                                </div>
+                                <div class="stat">
+                                    <span class="stat-number" id="stat-games">0</span>
+                                    <span class="stat-label">Jogos</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="dash-card">
+                        <div class="dash-card-header">
+                            <span class="dash-icon">🎯</span>
+                            <h3>Próximo Jogo</h3>
+                        </div>
+                        <div class="dash-card-body" id="next-game-info">
+                            <p class="empty-state">Nenhum jogo agendado</p>
+                        </div>
+                    </div>
+
+                    <div class="dash-card">
+                        <div class="dash-card-header">
+                            <span class="dash-icon">📢</span>
+                            <h3>Avisos</h3>
+                        </div>
+                        <div class="dash-card-body" id="announcements">
+                            <p class="empty-state">Sem avisos</p>
+                        </div>
+                    </div>
+
+                    <div class="dash-card">
+                        <div class="dash-card-header">
+                            <span class="dash-icon">📊</span>
+                            <h3>Atividade Recente</h3>
+                        </div>
+                        <div class="dash-card-body" id="recent-activity">
+                            <p class="empty-state">Sem atividade</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- MY PROFILE -->
+            <section id="page-profile" class="page hidden">
+                <div class="profile-container">
+                    <div class="profile-card">
+                        <div class="profile-avatar-wrapper" id="profile-avatar-wrapper">
+                            <div class="profile-avatar" id="profile-avatar">
+                                <svg viewBox="0 0 80 80" id="avatar-svg">
+                                    <circle cx="40" cy="40" r="38" fill="none" stroke="#00e5ff" stroke-width="2"/>
+                                    <text x="40" y="48" text-anchor="middle" fill="#00e5ff" font-size="28" font-family="Orbitron" id="avatar-text">?</text>
+                                </svg>
+                                <img id="avatar-img" class="hidden" alt="Foto de perfil"/>
+                            </div>
+                            <div class="avatar-upload-overlay" id="avatar-upload-overlay">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="#00e5ff" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+                            </div>
+                            <input type="file" id="avatar-file-input" accept="image/*" class="hidden"/>
+                        </div>
+                        <h2 id="profile-callsign" class="profile-callsign"></h2>
+                        <span id="profile-role" class="role-badge large"></span>
+                        <div class="profile-details">
+                            <div class="profile-row">
+                                <label>Nome:</label>
+                                <span id="profile-name"></span>
+                            </div>
+                            <div class="profile-row">
+                                <label>Callsign:</label>
+                                <span id="profile-callsign-text"></span>
+                            </div>
+                            <div class="profile-row">
+                                <label>Função:</label>
+                                <span id="profile-funcao">Operador</span>
+                            </div>
+                            <div class="profile-row">
+                                <label>Membro desde:</label>
+                                <span id="profile-since"></span>
+                            </div>
+                        </div>
+                        <div class="profile-equipment">
+                            <h3 class="equipment-title">Equipamentos</h3>
+                            <div class="equipment-item">
+                                <div class="equipment-photo-box" id="eq-photo-primaria-box">
+                                    <div class="equipment-photo-placeholder" id="eq-photo-primaria-placeholder">
+                                        <svg viewBox="0 0 40 40"><circle cx="20" cy="20" r="18" fill="none" stroke="rgba(0,229,255,0.3)" stroke-width="1.5"/><line x1="10" y1="20" x2="30" y2="20" stroke="rgba(0,229,255,0.3)" stroke-width="1.5"/><line x1="20" y1="10" x2="20" y2="30" stroke="rgba(0,229,255,0.3)" stroke-width="1.5"/></svg>
+                                    </div>
+                                    <img id="eq-photo-primaria-img" class="hidden" alt="Primária"/>
+                                </div>
+                                <div class="equipment-info">
+                                    <label>Primária</label>
+                                    <span id="profile-primaria">—</span>
+                                </div>
+                            </div>
+                            <div class="equipment-item">
+                                <div class="equipment-photo-box" id="eq-photo-secundaria-box">
+                                    <div class="equipment-photo-placeholder" id="eq-photo-secundaria-placeholder">
+                                        <svg viewBox="0 0 40 40"><circle cx="20" cy="20" r="18" fill="none" stroke="rgba(0,229,255,0.3)" stroke-width="1.5"/><line x1="10" y1="20" x2="30" y2="20" stroke="rgba(0,229,255,0.3)" stroke-width="1.5"/><line x1="20" y1="10" x2="20" y2="30" stroke="rgba(0,229,255,0.3)" stroke-width="1.5"/></svg>
+                                    </div>
+                                    <img id="eq-photo-secundaria-img" class="hidden" alt="Secundária"/>
+                                </div>
+                                <div class="equipment-info">
+                                    <label>Secundária</label>
+                                    <span id="profile-secundaria">—</span>
+                                </div>
+                            </div>
+                            <div class="equipment-item">
+                                <div class="equipment-photo-box" id="eq-photo-loadout-box">
+                                    <div class="equipment-photo-placeholder" id="eq-photo-loadout-placeholder">
+                                        <svg viewBox="0 0 40 40"><circle cx="20" cy="20" r="18" fill="none" stroke="rgba(0,229,255,0.3)" stroke-width="1.5"/><line x1="10" y1="20" x2="30" y2="20" stroke="rgba(0,229,255,0.3)" stroke-width="1.5"/><line x1="20" y1="10" x2="20" y2="30" stroke="rgba(0,229,255,0.3)" stroke-width="1.5"/></svg>
+                                    </div>
+                                    <img id="eq-photo-loadout-img" class="hidden" alt="Loadout"/>
+                                </div>
+                                <div class="equipment-info">
+                                    <label>Loadout</label>
+                                    <span id="profile-loadout">—</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="profile-achievements-panel">
+                            <div class="profile-achievements-title">🏅 Insígnias conquistadas</div>
+                            <div id="profile-achievements" class="profile-achievements-list">
+                                <span class="empty-state">Nenhuma insígnia conquistada.</span>
+                            </div>
+                        </div>
+                        <div class="profile-actions">
+                            <button class="btn-secondary hidden" id="btn-back-members">← Voltar para Membros</button>
+                            <button class="btn-secondary" id="btn-edit-profile">Editar Perfil</button>
+                        </div>
+                    </div>
+
+                    <!-- Edit Profile Modal -->
+                    <div id="edit-profile-modal" class="modal hidden">
+                        <div class="modal-content">
+                            <h2>Editar Perfil</h2>
+                            <div class="input-group">
+                                <label>Nome</label>
+                                <input type="text" id="edit-name">
+                            </div>
+                            <div class="input-group">
+                                <label>Função</label>
+                                <input type="text" id="edit-funcao" placeholder="Ex: Sniper, Assalto, Suporte...">
+                            </div>
+                            <div class="equipment-fields">
+                                <h3 class="equipment-title">Equipamentos</h3>
+                                <div class="edit-equipment-row">
+                                    <div class="input-group" style="flex:1">
+                                        <label>Primária</label>
+                                        <input type="text" id="edit-primaria" placeholder="Ex: M4 AEG, AK-47...">
+                                    </div>
+                                    <div class="edit-photo-upload">
+                                        <img id="edit-photo-primaria-preview" class="hidden" alt="Primária"/>
+                                        <label for="edit-photo-primaria-input" class="btn-upload-photo" title="Foto da primária">
+                                            <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="16" height="16" rx="2"/><circle cx="10" cy="10" r="3"/><path d="M6 18v-2a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
+                                        </label>
+                                        <input type="file" id="edit-photo-primaria-input" accept="image/*" class="hidden"/>
+                                    </div>
+                                </div>
+                                <div class="edit-equipment-row">
+                                    <div class="input-group" style="flex:1">
+                                        <label>Secundária</label>
+                                        <input type="text" id="edit-secundaria" placeholder="Ex: Glock 19, 1911...">
+                                    </div>
+                                    <div class="edit-photo-upload">
+                                        <img id="edit-photo-secundaria-preview" class="hidden" alt="Secundária"/>
+                                        <label for="edit-photo-secundaria-input" class="btn-upload-photo" title="Foto da secundária">
+                                            <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="16" height="16" rx="2"/><circle cx="10" cy="10" r="3"/><path d="M6 18v-2a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
+                                        </label>
+                                        <input type="file" id="edit-photo-secundaria-input" accept="image/*" class="hidden"/>
+                                    </div>
+                                </div>
+                                <div class="edit-equipment-row">
+                                    <div class="input-group" style="flex:1">
+                                        <label>Loadout</label>
+                                        <input type="text" id="edit-loadout" placeholder="Ex: Militar, Tático, CQB...">
+                                    </div>
+                                    <div class="edit-photo-upload">
+                                        <img id="edit-photo-loadout-preview" class="hidden" alt="Loadout"/>
+                                        <label for="edit-photo-loadout-input" class="btn-upload-photo" title="Foto do loadout">
+                                            <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="16" height="16" rx="2"/><circle cx="10" cy="10" r="3"/><path d="M6 18v-2a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
+                                        </label>
+                                        <input type="file" id="edit-photo-loadout-input" accept="image/*" class="hidden"/>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="modal-actions">
+                                <button class="btn-primary" id="btn-save-profile">Salvar</button>
+                                <button class="btn-secondary" id="btn-cancel-profile">Cancelar</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- MEMBERS -->
+            <section id="page-members" class="page hidden">
+                <div class="members-header">
+                    <h2>Membros da Equipe</h2>
+                    <div class="members-search">
+                        <input type="text" id="member-search" placeholder="Buscar membro...">
+                    </div>
+                </div>
+                <div class="members-list" id="members-list">
+                    <p class="empty-state">Carregando membros...</p>
+                </div>
+
+                <!-- Admin: manage members -->
+                <div id="admin-members-actions" class="admin-actions hidden">
+                    <button class="btn-primary" id="btn-promote-member">Promover a Admin</button>
+                    <button class="btn-danger" id="btn-remove-member">Remover Membro</button>
+                </div>
+            </section>
+
+            <!-- ARSENAL -->
+            <section id="page-arsenal" class="page hidden">
+                <div class="arsenal-header">
+                    <div>
+                        <h2>Arsenal da Equipe</h2>
+                        <p class="arsenal-subtitle">Galeria das armas primárias e secundárias cadastradas pelos membros.</p>
+                    </div>
+                    <div class="arsenal-tools">
+                        <input type="text" id="arsenal-search" placeholder="Buscar membro ou arma..." autocomplete="off">
+                        <select id="arsenal-filter" aria-label="Filtrar arsenal">
+                            <option value="all">Todas</option>
+                            <option value="primaria">Primárias</option>
+                            <option value="secundaria">Secundárias</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="arsenal-summary" id="arsenal-summary"></div>
+                <div class="arsenal-gallery" id="arsenal-gallery">
+                    <p class="empty-state">Carregando arsenal...</p>
+                </div>
+            </section>
+
+            <!-- ACHIEVEMENTS -->
+            <section id="page-achievements" class="page hidden">
+                <div class="achievements-header">
+                    <div>
+                        <h2>Conquistas</h2>
+                        <p class="achievements-subtitle">Desafios e insígnias disponíveis para todos os operadores da equipe.</p>
+                    </div>
+                    <button class="btn-primary admin-only hidden" id="btn-create-achievement">+ Nova Conquista</button>
+                </div>
+                <div id="achievements-summary" class="achievements-summary"></div>
+                <div id="achievements-grid" class="achievements-grid">
+                    <p class="empty-state">Nenhuma conquista criada.</p>
+                </div>
+
+                <div id="achievement-modal" class="modal hidden">
+                    <div class="modal-content achievement-modal-content">
+                        <h2 id="achievement-modal-title">Nova Conquista</h2>
+                        <div class="input-group">
+                            <label>Título</label>
+                            <input type="text" id="achievement-title" maxlength="80" placeholder="Ex: Veterano de 10 Operações">
+                        </div>
+                        <div class="input-group">
+                            <label>Descrição</label>
+                            <textarea id="achievement-description" rows="4" maxlength="500" placeholder="Descreva o que é necessário para obter esta conquista..."></textarea>
+                        </div>
+                        <div class="input-group">
+                            <label>Imagem da insígnia</label>
+                            <div class="achievement-badge-upload">
+                                <div id="achievement-badge-preview" class="achievement-badge-preview"><span>🏅</span></div>
+                                <label for="achievement-badge-input" class="btn-secondary achievement-upload-btn">Selecionar imagem</label>
+                                <input type="file" id="achievement-badge-input" accept="image/*" class="hidden">
+                            </div>
+                            <small class="achievement-hint">A imagem será reduzida automaticamente para sincronizar com o Firebase.</small>
+                        </div>
+                        <div class="modal-actions">
+                            <button class="btn-primary" id="btn-save-achievement">Salvar</button>
+                            <button class="btn-secondary" id="btn-cancel-achievement">Cancelar</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="achievement-members-modal" class="modal hidden">
+                    <div class="modal-content achievement-members-modal-content">
+                        <h2 id="achievement-members-title">Concluintes</h2>
+                        <p class="achievement-members-help">Marque os operadores que concluíram esta conquista e receberam a insígnia.</p>
+                        <div id="achievement-members-list" class="achievement-members-list"></div>
+                        <div class="modal-actions">
+                            <button class="btn-primary" id="btn-save-achievement-members">Salvar concluintes</button>
+                            <button class="btn-secondary" id="btn-cancel-achievement-members">Cancelar</button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- CHAT -->
+            <section id="page-chat" class="page hidden">
+                <div class="chat-container">
+                    <div class="chat-embers" id="chat-embers"></div>
+                    <div class="chat-messages" id="chat-messages">
+                        <div class="chat-system-msg">
+                            <span>Bem-vindo ao chat da equipe!</span>
+                        </div>
+                    </div>
+                    <div class="chat-input-area">
+                        <input type="text" id="chat-input" placeholder="Digite sua mensagem..." autocomplete="off">
+                        <button class="btn-send" id="btn-send-msg">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="#00e5ff" stroke-width="2">
+                                <path d="M22 2L11 13M22 2L15 22L11 13M22 2L2 9L11 13"/>
+                            </svg>
+                        </button>
+                    </div>
+                    <div class="chat-online-bar">
+                        <span class="online-label">Online:</span>
+                        <div id="chat-online-users"></div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- GAMES -->
+            <section id="page-games" class="page hidden">
+                <div class="games-header">
+                    <h2>Jogos</h2>
+                    <div class="games-filter">
+                        <button class="filter-btn active" data-filter="all">Todos</button>
+                        <button class="filter-btn" data-filter="partida">Partidas</button>
+                        <button class="filter-btn" data-filter="treinamento">Treinamentos</button>
+                        <button class="filter-btn" data-filter="operacao">Operações</button>
+                    </div>
+                    <button class="btn-primary admin-only hidden" id="btn-create-game">+ Criar Jogo</button>
+                </div>
+                <div class="games-list" id="games-list">
+                    <p class="empty-state">Nenhum jogo criado</p>
+                </div>
+
+                <!-- Create Game Modal -->
+                <div id="create-game-modal" class="modal hidden">
+                    <div class="modal-content">
+                        <h2 id="game-modal-title">Criar Novo Jogo</h2>
+                        <div class="input-group">
+                            <label>Tipo</label>
+                            <select id="game-type">
+                                <option value="partida">Partida</option>
+                                <option value="treinamento">Treinamento</option>
+                                <option value="operacao">Operação</option>
+                            </select>
+                        </div>
+                        <div class="input-group">
+                            <label>Nome / Título</label>
+                            <input type="text" id="game-title" placeholder="Ex: Operação Valkíria...">
+                        </div>
+                        <div class="input-group">
+                            <label>Data</label>
+                            <input type="date" id="game-date">
+                        </div>
+                        <div class="input-group">
+                            <label>Hora</label>
+                            <input type="time" id="game-time">
+                        </div>
+                        <div class="input-group">
+                            <label>Local</label>
+                            <input type="text" id="game-location" placeholder="Ex: Campo Alpha...">
+                        </div>
+                        <div class="input-group">
+                            <label>Descrição</label>
+                            <textarea id="game-description" rows="3" placeholder="Detalhes do jogo..."></textarea>
+                        </div>
+                        <div class="modal-actions">
+                            <button class="btn-primary" id="btn-save-game">Criar</button>
+                            <button class="btn-secondary" id="btn-cancel-game">Cancelar</button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- CONTRIBUIÇÃO -->
+            <section id="page-contribuicao" class="page hidden">
+                <div class="contribuicao-header">
+                    <h2>Contribuição Mensal</h2>
+                    <div class="contribuicao-month" id="contribuicao-month"></div>
+                </div>
+
+                <div class="contribuicao-info">
+                    <div class="contribuicao-valor-card">
+                        <div class="contribuicao-valor-icon">💰</div>
+                        <div class="contribuicao-valor-info">
+                            <div class="contribuicao-valor-label">Valor da Mensalidade</div>
+                            <div class="contribuicao-valor-amount" id="contribuicao-valor">R$ 0,00</div>
+                        </div>
+                        <button class="btn-primary admin-only hidden" id="btn-edit-valor">Editar</button>
+                    </div>
+                    <div class="contribuicao-pix-card">
+                        <div class="contribuicao-pix-label">Pagamento via PIX</div>
+                        <div class="contribuicao-pix-qr" id="contribuicao-pix-qr">
+                            <div class="contribuicao-pix-key" id="contribuicao-pix-key">—</div>
+                            <div class="contribuicao-pix-qr-wrapper">
+                                <canvas id="contribuicao-qr-canvas"></canvas>
+                            </div>
+                            <button class="btn-copy-pix" id="btn-copy-pix" title="Copiar chave PIX">📋 Copiar Chave</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="contribuicao-stats" id="contribuicao-stats">
+                    <div class="contribuicao-stat-card">
+                        <div class="contribuicao-stat-icon">👥</div>
+                        <div class="contribuicao-stat-number" id="contrib-total">0</div>
+                        <div class="contribuicao-stat-label">Operadores</div>
+                    </div>
+                    <div class="contribuicao-stat-card">
+                        <div class="contribuicao-stat-icon">✅</div>
+                        <div class="contribuicao-stat-number" id="contrib-pagos">0</div>
+                        <div class="contribuicao-stat-label">Pagos</div>
+                    </div>
+                    <div class="contribuicao-stat-card">
+                        <div class="contribuicao-stat-icon">⏳</div>
+                        <div class="contribuicao-stat-number" id="contrib-pendentes">0</div>
+                        <div class="contribuicao-stat-label">Pendentes</div>
+                    </div>
+                    <div class="contribuicao-stat-card">
+                        <div class="contribuicao-stat-icon">⚠️</div>
+                        <div class="contribuicao-stat-number" id="contrib-atrasados">0</div>
+                        <div class="contribuicao-stat-label">Em Atraso</div>
+                    </div>
+                </div>
+
+                <div class="contribuicao-members" id="contribuicao-members">
+                    <!-- Member cards rendered by JS -->
+                </div>
+
+                <!-- Edit Valor Modal -->
+                <div id="edit-valor-modal" class="modal hidden">
+                    <div class="modal-content">
+                        <h2>Editar Valor da Mensalidade</h2>
+                        <div class="input-group">
+                            <label>Novo Valor (R$)</label>
+                            <input type="number" id="edit-valor-input" placeholder="Ex: 50.00" step="0.01" min="0">
+                        </div>
+                        <div class="input-group">
+                            <label>Chave PIX</label>
+                            <input type="text" id="edit-pix-input" placeholder="Ex: CPF, e-mail, telefone...">
+                        </div>
+                        <div class="modal-actions">
+                            <button class="btn-primary" id="btn-save-valor">Salvar</button>
+                            <button class="btn-secondary" id="btn-cancel-valor">Cancelar</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Comprovante View Modal -->
+                <div id="comprovante-view-modal" class="modal hidden">
+                    <div class="modal-content modal-comprovante-view">
+                        <h2>Comprovante</h2>
+                        <div class="comprovante-view-body" id="comprovante-view-body">
+                            <img id="comprovante-view-img" src="" alt="Comprovante">
+                        </div>
+                        <div class="modal-actions">
+                            <button class="btn-secondary" id="btn-close-comprovante-view">Fechar</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Hidden file input for comprovante -->
+                <input type="file" id="comprovante-file-input" accept="image/*" style="display:none">
+            </section>
+
+            <!-- CONFIGURAÇÕES -->
+            <section id="page-configuracoes" class="page hidden">
+                <div class="settings-page-header">
+                    <div>
+                        <div class="settings-kicker">SISTEMA</div>
+                        <h2>Configurações</h2>
+                        <p>Central de preferências e ajustes do Filhos de Asgard.</p>
+                    </div>
+                    <div class="settings-emblem" aria-hidden="true">⚙️</div>
+                </div>
+
+                <div class="settings-grid">
+                    <article class="settings-card">
+                        <div class="settings-card-icon">👤</div>
+                        <div>
+                            <h3>Conta</h3>
+                            <p>As configurações da conta e do perfil serão reunidas aqui.</p>
+                        </div>
+                    </article>
+                    <article class="settings-card">
+                        <div class="settings-card-icon">🔔</div>
+                        <div>
+                            <h3>Notificações</h3>
+                            <p>Área preparada para preferências de alertas e avisos.</p>
+                        </div>
+                    </article>
+                    <article class="settings-card">
+                        <div class="settings-card-icon">🎨</div>
+                        <div>
+                            <h3>Interface</h3>
+                            <p>Área preparada para opções visuais e de experiência do aplicativo.</p>
+                        </div>
+                    </article>
+                    <article class="settings-card">
+                        <div class="settings-card-icon">🔒</div>
+                        <div>
+                            <h3>Privacidade e segurança</h3>
+                            <p>Área preparada para controles de segurança da conta.</p>
+                        </div>
+                    </article>
+                    <article class="settings-card settings-install-card">
+                        <div class="settings-card-icon">📲</div>
+                        <div class="settings-card-content">
+                            <h3>Instalar app</h3>
+                            <p>Instale o Filhos de Asgard como aplicativo no seu celular ou computador para acesso rápido em tela cheia.</p>
+                            <button type="button" class="btn-primary settings-install-btn" id="btn-install-pwa">Instalar app</button>
+                            <small class="settings-install-status" id="install-pwa-status">A instalação estará disponível quando o navegador reconhecer o PWA.</small>
+                        </div>
+                    </article>
+                </div>
+            </section>
+
+            <!-- LOJA -->
+            <section id="page-loja" class="page hidden">
+                <div class="loja-header">
+                    <h2>Loja</h2>
+                    <div class="loja-search">
+                        <input type="text" id="product-search" placeholder="Buscar produto..." class="search-input">
+                    </div>
+                    <div class="loja-filters">
+                        <button class="product-filter-btn active" data-category="all">Todos</button>
+                        <button class="product-filter-btn" data-category="Equipamento">Equipamento</button>
+                        <button class="product-filter-btn" data-category="Acessório">Acessório</button>
+                        <button class="product-filter-btn" data-category="Munição">Munição</button>
+                        <button class="product-filter-btn" data-category="Uniforme">Uniforme</button>
+                        <button class="product-filter-btn" data-category="Outro">Outro</button>
+                    </div>
+                    <button class="btn-primary admin-only" id="btn-create-product">+ Novo Produto</button>
+                    <button class="btn-cart-open" id="btn-open-cart" title="Abrir Carrinho">🛒 <span class="nav-badge hidden" id="cart-badge-loja">0</span></button>
+                </div>
+                <div id="products-list" class="product-grid"></div>
+                <p id="products-empty" class="empty-state hidden">Nenhum produto encontrado</p>
+
+                <!-- CREATE PRODUCT MODAL -->
+                <div id="create-product-modal" class="modal hidden">
+                    <div class="modal-content">
+                        <h2>Novo Produto</h2>
+                        <div class="input-group">
+                            <label>Nome</label>
+                            <input type="text" id="create-product-nome" placeholder="Nome do produto...">
+                        </div>
+                        <div class="input-group">
+                            <label>Descrição</label>
+                            <textarea id="create-product-descricao" rows="3" placeholder="Descrição do produto..."></textarea>
+                        </div>
+                        <div class="input-group">
+                            <label>Preço (R$)</label>
+                            <input type="number" id="create-product-preco" step="0.01" min="0" placeholder="0.00">
+                        </div>
+                        <div class="input-group">
+                            <label>Categoria</label>
+                            <select id="create-product-categoria">
+                                <option value="Equipamento">Equipamento</option>
+                                <option value="Acessório">Acessório</option>
+                                <option value="Munição">Munição</option>
+                                <option value="Uniforme">Uniforme</option>
+                                <option value="Outro">Outro</option>
+                            </select>
+                        </div>
+                        <div class="input-group">
+                            <label>Foto</label>
+                            <input type="file" id="create-product-foto-input" accept="image/*">
+                            <div id="create-product-foto-preview" class="product-foto-preview hidden"></div>
+                        </div>
+                        <div class="modal-actions">
+                            <button class="btn-primary" id="btn-save-product">Criar</button>
+                            <button class="btn-secondary" id="btn-cancel-product">Cancelar</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- EDIT PRODUCT MODAL -->
+                <div id="edit-product-modal" class="modal hidden">
+                    <div class="modal-content">
+                        <h2>Editar Produto</h2>
+                        <div class="input-group">
+                            <label>Nome</label>
+                            <input type="text" id="edit-product-nome" placeholder="Nome do produto...">
+                        </div>
+                        <div class="input-group">
+                            <label>Descrição</label>
+                            <textarea id="edit-product-descricao" rows="3" placeholder="Descrição do produto..."></textarea>
+                        </div>
+                        <div class="input-group">
+                            <label>Preço (R$)</label>
+                            <input type="number" id="edit-product-preco" step="0.01" min="0" placeholder="0.00">
+                        </div>
+                        <div class="input-group">
+                            <label>Categoria</label>
+                            <select id="edit-product-categoria">
+                                <option value="Equipamento">Equipamento</option>
+                                <option value="Acessório">Acessório</option>
+                                <option value="Munição">Munição</option>
+                                <option value="Uniforme">Uniforme</option>
+                                <option value="Outro">Outro</option>
+                            </select>
+                        </div>
+                        <div class="input-group">
+                            <label>Foto</label>
+                            <input type="file" id="edit-product-foto-input" accept="image/*">
+                            <div id="edit-product-foto-preview" class="product-foto-preview hidden"></div>
+                        </div>
+                        <div class="modal-actions">
+                            <button class="btn-primary" id="btn-save-edit-product">Salvar</button>
+                            <button class="btn-secondary" id="btn-cancel-edit-product">Cancelar</button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- VENDAS (ADMIN) -->
+            <section id="page-vendas" class="page hidden">
+                <div class="vendas-header">
+                    <h2>Dashboard de Vendas</h2>
+                </div>
+                <div class="vendas-stats" id="vendas-stats">
+                    <div class="vendas-stat-card">
+                        <div class="vendas-stat-icon">📦</div>
+                        <div class="vendas-stat-number" id="vendas-total-pedidos">0</div>
+                        <div class="vendas-stat-label">Total Pedidos</div>
+                    </div>
+                    <div class="vendas-stat-card">
+                        <div class="vendas-stat-icon">💰</div>
+                        <div class="vendas-stat-number" id="vendas-receita">R$ 0</div>
+                        <div class="vendas-stat-label">Receita Total</div>
+                    </div>
+                    <div class="vendas-stat-card">
+                        <div class="vendas-stat-icon">⏳</div>
+                        <div class="vendas-stat-number" id="vendas-pendentes">0</div>
+                        <div class="vendas-stat-label">Pendentes</div>
+                    </div>
+                    <div class="vendas-stat-card">
+                        <div class="vendas-stat-icon">✅</div>
+                        <div class="vendas-stat-number" id="vendas-entregues">0</div>
+                        <div class="vendas-stat-label">Entregues</div>
+                    </div>
+                </div>
+                <div class="vendas-filters">
+                    <label>Filtrar por status:</label>
+                    <select id="vendas-filter-status">
+                        <option value="todos">Todos</option>
+                        <option value="Pendente">Pendente</option>
+                        <option value="Confirmado">Confirmado</option>
+                        <option value="Enviado">Enviado</option>
+                        <option value="Entregue">Entregue</option>
+                        <option value="Cancelado">Cancelado</option>
+                    </select>
+                </div>
+                <div class="vendas-orders-list" id="vendas-orders-list">
+                    <p class="empty-state">Nenhum pedido registrado.</p>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- CART MODAL -->
+    <div id="cart-modal" class="modal hidden">
+        <div class="modal-content cart-modal-content">
+            <h2>🛒 Carrinho</h2>
+            <div id="cart-items-list" class="cart-items-list">
+                <p class="empty-state">Seu carrinho está vazio.</p>
+            </div>
+            <div class="cart-summary">
+                <div class="cart-total-row">
+                    <span>Total:</span>
+                    <span id="cart-total">R$ 0,00</span>
+                </div>
+            </div>
+            <div class="cart-checkout-section">
+                <h3>Dados para Envio</h3>
+                <div class="input-group">
+                    <label>Nome Completo</label>
+                    <input type="text" id="checkout-nome" placeholder="Seu nome completo...">
+                </div>
+                <div class="input-group">
+                    <label>Endereço</label>
+                    <input type="text" id="checkout-endereco" placeholder="Rua, número, bairro, cidade...">
+                </div>
+                <div class="input-group">
+                    <label>Telefone</label>
+                    <input type="text" id="checkout-telefone" placeholder="(XX) XXXXX-XXXX">
+                </div>
+                <div class="input-group">
+                    <label>Observação</label>
+                    <textarea id="checkout-observacao" rows="2" placeholder="Alguma observação? (opcional)"></textarea>
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button class="btn-primary" id="btn-whatsapp-checkout">Enviar via WhatsApp</button>
+                <button class="btn-secondary" id="btn-cancel-cart">Cancelar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast notification -->
+    <div id="toast" class="toast hidden"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+    <script src="firebase-config.js"></script>
+    <script type="module" src="cloud.js"></script>
+    <script type="module" src="app.js"></script>
+</body>
+</html>

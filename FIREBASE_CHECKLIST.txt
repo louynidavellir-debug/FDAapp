@@ -1,0 +1,12 @@
+FILHOS DE ASGARD - CHECKLIST FIREBASE
+
+[ ] 1. Criar/abrir projeto no Firebase Console
+[ ] 2. Adicionar um App da Web (</>)
+[ ] 3. Copiar firebaseConfig para firebase-config.js
+[ ] 4. Authentication > Sign-in method > ativar E-mail/senha
+[ ] 5. Firestore Database > Criar banco de dados
+[ ] 6. Firestore > Regras > colar firestore.rules > Publicar
+[ ] 7. Publicar esta pasta no Netlify
+[ ] 8. Abrir o site e criar PRIMEIRO a conta do administrador
+[ ] 9. Abrir em outro celular/PC e criar um operador
+[ ] 10. Testar chat, jogos, presença, loja, pedidos e contribuições em dois dispositivos
