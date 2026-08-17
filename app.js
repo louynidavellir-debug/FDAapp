@@ -280,6 +280,7 @@
     const contribAtrasados = $('contrib-atrasados');
     const contribuicaoMembers = $('contribuicao-members');
     const contribuicaoQrCanvas = $('contribuicao-qr-canvas');
+    const contribuicaoQrFallback = $('contribuicao-qr-fallback');
     const btnCopyPix = $('btn-copy-pix');
     const btnEditValor = $('btn-edit-valor');
     const comprovanteFileInput = $('comprovante-file-input');
@@ -2513,6 +2514,85 @@
         return data.months[monthKey];
     }
 
+    function pixField(id, value) {
+        const text = String(value ?? '');
+        return id + String(text.length).padStart(2, '0') + text;
+    }
+
+    function crc16Pix(payload) {
+        let crc = 0xFFFF;
+        for (let i = 0; i < payload.length; i++) {
+            crc ^= payload.charCodeAt(i) << 8;
+            for (let bit = 0; bit < 8; bit++) {
+                crc = (crc & 0x8000) ? ((crc << 1) ^ 0x1021) : (crc << 1);
+                crc &= 0xFFFF;
+            }
+        }
+        return crc.toString(16).toUpperCase().padStart(4, '0');
+    }
+
+    function normalizePixText(value, maxLen) {
+        return String(value || '')
+            .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+            .replace(/[^A-Za-z0-9 .-]/g, ' ')
+            .replace(/\s+/g, ' ')
+            .trim().toUpperCase().slice(0, maxLen);
+    }
+
+    function buildPixPayload(key, amount) {
+        const pixKey = String(key || '').trim();
+        if (!pixKey) return '';
+        const merchantAccount = pixField('00', 'BR.GOV.BCB.PIX') + pixField('01', pixKey);
+        let payload = '';
+        payload += pixField('00', '01');
+        payload += pixField('26', merchantAccount);
+        payload += pixField('52', '0000');
+        payload += pixField('53', '986');
+        const numericAmount = Number(amount);
+        if (Number.isFinite(numericAmount) && numericAmount > 0) payload += pixField('54', numericAmount.toFixed(2));
+        payload += pixField('58', 'BR');
+        payload += pixField('59', normalizePixText('FILHOS DE ASGARD', 25) || 'FILHOS DE ASGARD');
+        payload += pixField('60', normalizePixText('ARACAJU', 15) || 'ARACAJU');
+        payload += pixField('62', pixField('05', '***'));
+        payload += '6304';
+        return payload + crc16Pix(payload);
+    }
+
+    function renderContribuicaoQr(key, amount) {
+        if (!contribuicaoQrCanvas && !contribuicaoQrFallback) return;
+        const pixPayload = buildPixPayload(key, amount);
+        if (!pixPayload) {
+            if (contribuicaoQrCanvas) contribuicaoQrCanvas.classList.add('hidden');
+            if (contribuicaoQrFallback) contribuicaoQrFallback.classList.add('hidden');
+            return;
+        }
+
+        const showFallback = () => {
+            if (!contribuicaoQrFallback) return;
+            if (contribuicaoQrCanvas) contribuicaoQrCanvas.classList.add('hidden');
+            contribuicaoQrFallback.src = 'https://api.qrserver.com/v1/create-qr-code/?size=220x220&margin=8&data=' + encodeURIComponent(pixPayload);
+            contribuicaoQrFallback.classList.remove('hidden');
+        };
+
+        if (window.QRCode && typeof window.QRCode.toCanvas === 'function' && contribuicaoQrCanvas) {
+            try {
+                contribuicaoQrCanvas.classList.remove('hidden');
+                if (contribuicaoQrFallback) contribuicaoQrFallback.classList.add('hidden');
+                window.QRCode.toCanvas(contribuicaoQrCanvas, pixPayload, {
+                    width: 180,
+                    margin: 2,
+                    color: { dark: '#0a0a0a', light: '#ffffff' }
+                }, function(error) {
+                    if (error) { console.warn('QR Code generation error:', error); showFallback(); }
+                });
+                return;
+            } catch (e) {
+                console.warn('QR Code generation failed:', e);
+            }
+        }
+        showFallback();
+    }
+
     function refreshContribuicao() {
         const users = getStore(DB_USERS) || [];
         const operadores = users.filter(u => u.role !== 'admin');
@@ -2529,21 +2609,9 @@
         // PIX key
         if (contribuicaoPixKey) contribuicaoPixKey.textContent = data.pixKey || 'Não configurada';
 
-        // QR Code
-        if (contribuicaoQrCanvas) {
-            try {
-                const pixPayload = data.pixKey || '';
-                QRCode.toCanvas(contribuicaoQrCanvas, pixPayload, {
-                    width: 160,
-                    margin: 2,
-                    color: { dark: '#0a0a0a', light: '#ffffff' }
-                }, function(error) {
-                    if (error) console.warn('QR Code generation error:', error);
-                });
-            } catch (e) {
-                console.warn('QR Code generation failed:', e);
-            }
-        }
+        // QR Code PIX. Prefer the local/browser QR library when available and
+        // fall back to a remote image generator if the CDN script was blocked.
+        renderContribuicaoQr(data.pixKey || '', data.valor);
 
         // Copy PIX button
         if (btnCopyPix) {
@@ -2699,19 +2767,39 @@
         }
     }
 
-    function updateContribStatus(userId, newStatus) {
-        const data = getContribData();
+    async function updateContribStatus(userId, newStatus) {
+        const allowed = ['Pendente', 'Pago', 'Em Atraso'];
+        if (!currentUser || currentUser.role !== 'admin' || !allowed.includes(newStatus)) return;
         const monthKey = getContribMonthKey();
-        if (!data.months[monthKey]) data.months[monthKey] = {};
-        if (!data.months[monthKey][userId]) data.months[monthKey][userId] = { status: 'Pendente', confirmedAt: null, comprovante: null };
-        data.months[monthKey][userId].status = newStatus;
-        saveContribData(data);
-
         const users = getStore(DB_USERS) || [];
         const user = users.find(u => u.id === userId);
         const callsign = user ? user.callsign : 'Desconhecido';
+
+        // Update the visible cache immediately, then perform a dedicated Firestore
+        // write and wait for confirmation. This avoids stale full-month snapshots
+        // overwriting the status back to "Pendente" when navigating between pages.
+        const data = getContribData();
+        if (!data.months[monthKey]) data.months[monthKey] = {};
+        if (!data.months[monthKey][userId]) data.months[monthKey][userId] = { status: 'Pendente', confirmedAt: null, comprovante: null };
+        const previousStatus = data.months[monthKey][userId].status || 'Pendente';
+        data.months[monthKey][userId].status = newStatus;
+        if (window.AsgardCloud && typeof window.AsgardCloud.updateContribution === 'function') {
+            try {
+                await window.AsgardCloud.updateContribution(userId, monthKey, { status: newStatus });
+            } catch (err) {
+                data.months[monthKey][userId].status = previousStatus;
+                saveContribData(data);
+                console.error(err);
+                showToast('Não foi possível salvar o status no Firebase.', 'error');
+                refreshContribuicao();
+                return;
+            }
+        } else {
+            saveContribData(data);
+        }
+
         addActivity(`Contribuição de ${callsign} atualizada para ${newStatus}`);
-        showToast(`Status de ${callsign} atualizado para ${newStatus}`, 'success');
+        showToast(`Status de ${callsign} salvo como ${newStatus}`, 'success');
         refreshContribuicao();
     }
 

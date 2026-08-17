@@ -2752,10 +2752,21 @@ body {
 }
 
 #contribuicao-qr-canvas {
-    width: 160px;
-    height: 160px;
+    width: 180px;
+    height: 180px;
     image-rendering: pixelated;
 }
+
+#contribuicao-qr-fallback {
+    display: block;
+    width: 180px;
+    height: 180px;
+    object-fit: contain;
+    background: #fff;
+}
+
+#contribuicao-qr-fallback.hidden,
+#contribuicao-qr-canvas.hidden { display: none !important; }
 
 .btn-copy-pix {
     font-family: 'Rajdhani', sans-serif;

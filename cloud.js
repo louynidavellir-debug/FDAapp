@@ -237,6 +237,21 @@ async function persistContributions(data) {
 }
 
 
+
+async function updateContribution(userId, monthKey, patch) {
+  const me = auth?.currentUser;
+  if (!me) throw new Error('Sessão expirada.');
+  const role = await currentRole();
+  if (role !== 'admin' && userId !== me.uid) throw new Error('Sem permissão para alterar esta contribuição.');
+  const ref = doc(db, 'contributions', `${monthKey}_${userId}`);
+  const existing = await getDoc(ref);
+  const base = existing.exists() ? existing.data() : { monthKey, userId, status:'Pendente', confirmedAt:null, comprovante:null };
+  const payload = cleanFirestoreObject({ ...base, ...patch, monthKey, userId });
+  await setDoc(ref, payload, { merge:true });
+  await readContributions(role);
+  return payload;
+}
+
 async function addMessage(message) {
   const me = auth?.currentUser;
   if (!me) throw new Error('Usuário não autenticado.');
@@ -322,6 +337,6 @@ function set(key, value) {
 
 window.AsgardCloud = {
   init, connectSession, get, set, hasConfig, removeSession,
-  signIn, register, getCurrentUser, waitForAuth, addMessage,
+  signIn, register, getCurrentUser, waitForAuth, addMessage, updateContribution,
   isOnline: () => initialized
 };

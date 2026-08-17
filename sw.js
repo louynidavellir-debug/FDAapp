@@ -1,4 +1,4 @@
-const CACHE_NAME = 'asgard-pwa-firebase-v13-github-pages';
+const CACHE_NAME = 'asgard-pwa-firebase-v14-contribuicao-fix';
 const ASSETS = [
     './', './index.html', './style.css', './app.js', './cloud.js', './firebase-config.js',
     './manifest.json', './icons/icon-192.png', './icons/icon-512.png', './icons/logo-asgard.png'
