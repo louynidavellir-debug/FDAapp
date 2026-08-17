@@ -1,7 +1,7 @@
-const CACHE_NAME = 'asgard-v16-store-persistence';
+const CACHE_NAME = 'asgard-v17-app-icon';
 const ASSETS = [
     './', './index.html', './style.css', './app.js', './cloud.js', './firebase-config.js',
-    './manifest.json', './icons/icon-192.png', './icons/icon-512.png', './icons/logo-asgard.png'
+    './manifest.json', './icons/icon-192-v17.png', './icons/icon-512-v17.png', './icons/logo-asgard.png'
 ];
 
 self.addEventListener('install', event => {

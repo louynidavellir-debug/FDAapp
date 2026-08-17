@@ -1,0 +1,4 @@
+Ícone principal do PWA atualizado com a imagem enviada pelo usuário.
+Arquivos ativos: icons/icon-192-v17.png e icons/icon-512-v17.png.
+O manifest.json, favicon/apple-touch-icon e cache do service worker foram atualizados.
+Após publicar no GitHub Pages, use Ctrl+F5; se o PWA instalado mantiver o ícone antigo, reinstale-o.
