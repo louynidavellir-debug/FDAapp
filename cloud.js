@@ -317,6 +317,43 @@ function waitForAuth() {
     const unsub = onAuthStateChanged(auth, user => { unsub(); resolve(user); });
   });
 }
+
+async function createProduct(product) {
+  const me = auth?.currentUser;
+  if (!me) throw new Error('Sessão expirada.');
+  const role = await currentRole();
+  if (role !== 'admin') throw new Error('Somente o ADMIN pode criar produtos.');
+  const id = String(product?.id || `${Date.now()}_${me.uid}`);
+  const payload = cleanFirestoreObject({ ...stripInternal(product || {}), id, createdBy: product?.createdBy || me.uid, createdAt: product?.createdAt || new Date().toISOString() });
+  await setDoc(doc(db, 'products', id), payload, { merge:false });
+  await readCollection('asgard_products', 'products', role);
+  return payload;
+}
+
+async function updateProduct(productId, patch) {
+  const me = auth?.currentUser;
+  if (!me) throw new Error('Sessão expirada.');
+  const role = await currentRole();
+  if (role !== 'admin') throw new Error('Somente o ADMIN pode editar produtos.');
+  const id = String(productId || '');
+  if (!id) throw new Error('Produto inválido.');
+  await setDoc(doc(db, 'products', id), cleanFirestoreObject({ ...patch, id, updatedAt:new Date().toISOString() }), { merge:true });
+  await readCollection('asgard_products', 'products', role);
+  return true;
+}
+
+async function removeProduct(productId) {
+  const me = auth?.currentUser;
+  if (!me) throw new Error('Sessão expirada.');
+  const role = await currentRole();
+  if (role !== 'admin') throw new Error('Somente o ADMIN pode excluir produtos.');
+  const id = String(productId || '');
+  if (!id) throw new Error('Produto inválido.');
+  await deleteDoc(doc(db, 'products', id));
+  await readCollection('asgard_products', 'products', role);
+  return true;
+}
+
 async function removeSession() {
   if (auth) await signOut(auth);
   localStorage.removeItem('asgard_session');
@@ -342,5 +379,6 @@ function set(key, value) {
 window.AsgardCloud = {
   init, connectSession, get, set, hasConfig, removeSession,
   signIn, register, getCurrentUser, waitForAuth, addMessage, updateContribution,
+  createProduct, updateProduct, removeProduct,
   isOnline: () => initialized
 };

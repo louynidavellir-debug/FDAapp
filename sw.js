@@ -1,4 +1,4 @@
-const CACHE_NAME = 'asgard-pwa-firebase-v19-emoji-overlay';
+const CACHE_NAME = 'asgard-v16-store-persistence';
 const ASSETS = [
     './', './index.html', './style.css', './app.js', './cloud.js', './firebase-config.js',
     './manifest.json', './icons/icon-192.png', './icons/icon-512.png', './icons/logo-asgard.png'

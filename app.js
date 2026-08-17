@@ -2001,7 +2001,7 @@
         });
     }
 
-    function createProduct() {
+    async function createProduct() {
         const nome = createProductNome.value.trim();
         const descricao = createProductDescricao.value.trim();
         const preco = createProductPreco.value;
@@ -2010,8 +2010,8 @@
         if (!nome) { showToast('Informe o nome do produto', 'error'); return; }
         if (!preco || preco < 0) { showToast('Informe um preço válido', 'error'); return; }
 
-        const products = getStore(DB_PRODUCTS) || [];
-        products.push({
+        if (currentUser.role !== 'admin') { showToast('Somente o ADMIN pode criar produtos.', 'error'); return; }
+        const product = {
             id: generateId(),
             nome: nome,
             descricao: descricao,
@@ -2020,11 +2020,18 @@
             foto: pendingProductPhoto || '',
             createdBy: currentUser.id,
             createdAt: new Date().toISOString()
-        });
-        setStore(DB_PRODUCTS, products);
+        };
+        try {
+            if (window.AsgardCloud?.createProduct) await window.AsgardCloud.createProduct(product);
+            else { const products = getStore(DB_PRODUCTS) || []; products.push(product); setStore(DB_PRODUCTS, products); }
+        } catch (err) {
+            console.error(err);
+            showToast('Não foi possível salvar o produto no Firebase.', 'error');
+            return;
+        }
 
         addActivity(`${currentUser.callsign} adicionou produto: ${nome}`);
-        showToast('Produto criado com sucesso!', 'success');
+        showToast('Produto salvo e disponível na loja!', 'success');
 
         // Reset form
         createProductNome.value = '';
@@ -2065,7 +2072,7 @@
         editProductModal.classList.remove('hidden');
     }
 
-    function saveEditProduct() {
+    async function saveEditProduct() {
         const nome = editProductNome.value.trim();
         const descricao = editProductDescricao.value.trim();
         const preco = editProductPreco.value;
@@ -2074,19 +2081,20 @@
         if (!nome) { showToast('Informe o nome do produto', 'error'); return; }
         if (!preco || preco < 0) { showToast('Informe um preço válido', 'error'); return; }
 
+        if (currentUser.role !== 'admin') { showToast('Somente o ADMIN pode editar produtos.', 'error'); return; }
         const products = getStore(DB_PRODUCTS) || [];
         const idx = products.findIndex(p => p.id === editingProductId);
         if (idx < 0) return;
-
-        products[idx].nome = nome;
-        products[idx].descricao = descricao;
-        products[idx].preco = parseFloat(preco);
-        products[idx].categoria = categoria;
-        if (pendingProductPhoto !== null) {
-            products[idx].foto = pendingProductPhoto;
+        const patch = { nome, descricao, preco:parseFloat(preco), categoria };
+        if (pendingProductPhoto !== null) patch.foto = pendingProductPhoto;
+        try {
+            if (window.AsgardCloud?.updateProduct) await window.AsgardCloud.updateProduct(editingProductId, patch);
+            else { Object.assign(products[idx], patch); setStore(DB_PRODUCTS, products); }
+        } catch (err) {
+            console.error(err);
+            showToast('Não foi possível atualizar o produto.', 'error');
+            return;
         }
-
-        setStore(DB_PRODUCTS, products);
 
         addActivity(`${currentUser.callsign} editou produto: ${nome}`);
         showToast('Produto atualizado!', 'success');
@@ -2097,7 +2105,7 @@
         refreshProducts();
     }
 
-    function deleteProduct(productId) {
+    async function deleteProduct(productId) {
         if (currentUser.role !== 'admin') return;
         if (!confirm('Excluir este produto?')) return;
 
@@ -2105,8 +2113,14 @@
         const idx = products.findIndex(p => p.id === productId);
         if (idx >= 0) {
             const name = products[idx].nome;
-            products.splice(idx, 1);
-            setStore(DB_PRODUCTS, products);
+            try {
+                if (window.AsgardCloud?.removeProduct) await window.AsgardCloud.removeProduct(productId);
+                else { products.splice(idx, 1); setStore(DB_PRODUCTS, products); }
+            } catch (err) {
+                console.error(err);
+                showToast('Não foi possível excluir o produto.', 'error');
+                return;
+            }
             addActivity(`${currentUser.callsign} excluiu produto: ${name}`);
             showToast('Produto excluído', 'info');
             refreshProducts();
