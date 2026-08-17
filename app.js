@@ -776,11 +776,19 @@
     }
 
     // ===== PHOTO LIGHTBOX =====
-    function openPhotoLightbox(src) {
+    function openPhotoLightbox(src, options = {}) {
         const lb = document.createElement('div');
         lb.className = 'photo-lightbox';
-        lb.innerHTML = `<img src="${src}" alt="Foto"/>`;
-        lb.addEventListener('click', () => lb.remove());
+        const title = options.title ? `<h3 class="photo-lightbox-title">${escapeHtml(options.title)}</h3>` : '';
+        const description = options.description ? `<p class="photo-lightbox-description">${escapeHtml(options.description)}</p>` : '';
+        lb.innerHTML = `
+            <div class="photo-lightbox-content" role="dialog" aria-modal="true">
+                <button type="button" class="photo-lightbox-close" aria-label="Fechar">×</button>
+                <img src="${src}" alt="${escapeHtml(options.alt || options.title || 'Foto')}"/>
+                ${(title || description) ? `<div class="photo-lightbox-info">${title}${description}</div>` : ''}
+            </div>`;
+        lb.addEventListener('click', (e) => { if (e.target === lb) lb.remove(); });
+        lb.querySelector('.photo-lightbox-close')?.addEventListener('click', () => lb.remove());
         document.body.appendChild(lb);
     }
 
@@ -1012,7 +1020,7 @@
             ? '<p class="empty-state">Nenhum membro encontrado</p>'
             : filtered.map(u => `
                 <div class="member-card ${selectedMemberId === u.id ? 'selected' : ''}" data-id="${u.id}" role="button" tabindex="0" aria-label="Abrir perfil de ${escapeHtml(u.callsign)}">
-                    <div class="member-avatar">${escapeHtml((u.callsign || '?').charAt(0))}</div>
+                    <div class="member-avatar" data-avatar-fallback="${escapeHtml((u.callsign || '?').charAt(0))}">${u.avatar ? `<img src="${escapeHtml(u.avatar)}" alt="Foto de perfil de ${escapeHtml(u.callsign || 'operador')}" loading="lazy">` : escapeHtml((u.callsign || '?').charAt(0))}</div>
                     <div class="member-info">
                         <div class="member-callsign">${escapeHtml(u.callsign || 'SEM CALLSIGN')}</div>
                         <div class="member-name-preview">${escapeHtml(u.name || '')}</div>
@@ -1022,6 +1030,14 @@
                     <div class="member-status ${u.online ? 'online' : 'offline'}" title="${u.online ? 'Online' : 'Offline'}"></div>
                 </div>
             `).join('');
+
+        // If a saved profile photo cannot be loaded, fall back to the callsign initial.
+        membersList.querySelectorAll('.member-avatar img').forEach(img => {
+            img.addEventListener('error', () => {
+                const avatar = img.closest('.member-avatar');
+                if (avatar) avatar.textContent = avatar.dataset.avatarFallback || '?';
+            }, { once: true });
+        });
 
         // Clicking a member opens that member's public team profile.
         const openMemberProfile = (card) => {
@@ -1225,7 +1241,7 @@
         profileAchievements.querySelectorAll('.profile-badge').forEach(btn => {
             btn.addEventListener('click', () => {
                 const achievement = (getStore(DB_ACHIEVEMENTS) || []).find(a => a.id === btn.dataset.achievementId);
-                if (achievement?.badge) openPhotoLightbox(achievement.badge);
+                if (achievement?.badge) openPhotoLightbox(achievement.badge, { title: achievement.title || 'Conquista', description: achievement.description || '', alt: `Insígnia ${achievement.title || 'conquistada'}` });
             });
         });
     }
@@ -1279,7 +1295,7 @@
         achievementsGrid.querySelectorAll('.achievement-badge-wrap[data-badge="1"]').forEach(el => {
             el.addEventListener('click', () => {
                 const a = achievements.find(x => x.id === el.dataset.id);
-                if (a?.badge) openPhotoLightbox(a.badge);
+                if (a?.badge) openPhotoLightbox(a.badge, { title: a.title || 'Conquista', description: a.description || '', alt: `Insígnia ${a.title || 'conquistada'}` });
             });
         });
         achievementsGrid.querySelectorAll('.achievement-edit-btn').forEach(btn => btn.addEventListener('click', () => openAchievementModal(btn.dataset.id)));
