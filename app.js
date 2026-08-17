@@ -1548,7 +1548,7 @@
         return `<a class="chat-media-file" href="${url}" target="_blank" rel="noopener">📎 ${escapeHtml(msg.mediaName || 'Arquivo')}</a>`;
     }
 
-    const CHAT_EMOJIS = ['😀','😂','🤣','😊','😍','😎','🤔','😅','😢','😡','👍','👎','👏','🙏','💪','🔥','⚡','🎯','🏆','🫡','💀','🛡️','⚔️','❤️','💙','✅','❌','📍','🔫','🎮'];
+    const CHAT_EMOJIS = ['😀','😂','🤣','😊','😍','😎','🤔','😅','😢','😡','👍','👎','👏','🙏','💪','🔥','⚡','🎯','🏆','💀','❤️','💙','✅','❌','📍','🎮','👊','🤝','💥','⭐'];
     if (chatEmojiPicker) {
         chatEmojiPicker.innerHTML = CHAT_EMOJIS.map(e => `<button type="button" class="emoji-choice">${e}</button>`).join('');
         chatEmojiPicker.addEventListener('click', e => {

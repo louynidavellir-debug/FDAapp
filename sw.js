@@ -1,4 +1,4 @@
-const CACHE_NAME = 'asgard-pwa-firebase-v16-chat-text-emoji';
+const CACHE_NAME = 'asgard-pwa-firebase-v18-new-app-icon';
 const ASSETS = [
     './', './index.html', './style.css', './app.js', './cloud.js', './firebase-config.js',
     './manifest.json', './icons/icon-192.png', './icons/icon-512.png', './icons/logo-asgard.png'
