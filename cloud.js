@@ -365,6 +365,63 @@ async function removeProduct(productId) {
   return true;
 }
 
+
+async function createAchievement(achievement) {
+  const me = auth?.currentUser;
+  if (!me) throw new Error('Sessão expirada.');
+  const role = await currentRole();
+  if (role !== 'admin') throw new Error('Somente o ADMIN pode criar conquistas.');
+  const id = String(achievement?.id || `${Date.now()}_${me.uid}`);
+  const payload = cleanFirestoreObject({
+    ...stripInternal(achievement || {}),
+    id,
+    completedBy: Array.isArray(achievement?.completedBy) ? achievement.completedBy.map(String) : [],
+    createdBy: achievement?.createdBy || me.uid,
+    createdAt: achievement?.createdAt || new Date().toISOString()
+  });
+  await setDoc(doc(db, 'achievements', id), payload, { merge:false });
+  await readCollection('asgard_achievements', 'achievements', role);
+  return payload;
+}
+
+async function updateAchievement(achievementId, patch) {
+  const me = auth?.currentUser;
+  if (!me) throw new Error('Sessão expirada.');
+  const role = await currentRole();
+  if (role !== 'admin') throw new Error('Somente o ADMIN pode editar conquistas.');
+  const id = String(achievementId || '');
+  if (!id) throw new Error('Conquista inválida.');
+  const payload = cleanFirestoreObject({ ...stripInternal(patch || {}), id, updatedAt:new Date().toISOString() });
+  await setDoc(doc(db, 'achievements', id), payload, { merge:true });
+  await readCollection('asgard_achievements', 'achievements', role);
+  return true;
+}
+
+async function setAchievementRecipients(achievementId, userIds) {
+  const me = auth?.currentUser;
+  if (!me) throw new Error('Sessão expirada.');
+  const role = await currentRole();
+  if (role !== 'admin') throw new Error('Somente o ADMIN pode conceder insígnias.');
+  const id = String(achievementId || '');
+  if (!id) throw new Error('Conquista inválida.');
+  const completedBy = [...new Set((Array.isArray(userIds) ? userIds : []).map(String).filter(Boolean))];
+  await setDoc(doc(db, 'achievements', id), { completedBy, updatedAt:new Date().toISOString() }, { merge:true });
+  await readCollection('asgard_achievements', 'achievements', role);
+  return completedBy;
+}
+
+async function removeAchievement(achievementId) {
+  const me = auth?.currentUser;
+  if (!me) throw new Error('Sessão expirada.');
+  const role = await currentRole();
+  if (role !== 'admin') throw new Error('Somente o ADMIN pode excluir conquistas.');
+  const id = String(achievementId || '');
+  if (!id) throw new Error('Conquista inválida.');
+  await deleteDoc(doc(db, 'achievements', id));
+  await readCollection('asgard_achievements', 'achievements', role);
+  return true;
+}
+
 async function removeSession() {
   if (auth) await signOut(auth);
   localStorage.removeItem('asgard_session');
@@ -391,5 +448,6 @@ window.AsgardCloud = {
   init, connectSession, get, set, hasConfig, removeSession,
   signIn, register, getCurrentUser, waitForAuth, addMessage, updateChatLastRead, updateContribution,
   createProduct, updateProduct, removeProduct,
+  createAchievement, updateAchievement, setAchievementRecipients, removeAchievement,
   isOnline: () => initialized
 };

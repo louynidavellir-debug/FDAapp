@@ -1344,49 +1344,64 @@
         });
     });
 
-    if (btnSaveAchievement) btnSaveAchievement.addEventListener('click', () => {
+    if (btnSaveAchievement) btnSaveAchievement.addEventListener('click', async () => {
         if (currentUser.role !== 'admin') { showToast('Apenas ADMIN pode gerenciar conquistas', 'error'); return; }
         const title = achievementTitle.value.trim();
         const description = achievementDescription.value.trim();
         if (!title) { showToast('Informe o título da conquista', 'error'); return; }
         if (!description) { showToast('Informe a descrição da conquista', 'error'); return; }
         if (!pendingAchievementBadge) { showToast('Selecione a imagem da insígnia', 'error'); return; }
-        const achievements = getStore(DB_ACHIEVEMENTS) || [];
-        if (editingAchievementId) {
-            const a = achievements.find(x => x.id === editingAchievementId);
-            if (!a) { showToast('Conquista não encontrada', 'error'); return; }
-            a.title = title;
-            a.description = description;
-            a.badge = pendingAchievementBadge;
-            a.updatedAt = new Date().toISOString();
-            addActivity(`${currentUser.callsign} editou a conquista: ${title}`);
-            showToast('Conquista atualizada!', 'success');
-        } else {
-            achievements.push({
-                id: generateId(), title, description, badge: pendingAchievementBadge,
-                completedBy: [], createdBy: currentUser.id, createdAt: new Date().toISOString()
-            });
-            addActivity(`${currentUser.callsign} criou a conquista: ${title}`);
-            showToast('Conquista criada!', 'success');
+        btnSaveAchievement.disabled = true;
+        try {
+            if (editingAchievementId) {
+                const existing = (getStore(DB_ACHIEVEMENTS) || []).find(x => x.id === editingAchievementId);
+                if (!existing) throw new Error('Conquista não encontrada');
+                if (window.AsgardCloud?.updateAchievement) {
+                    await window.AsgardCloud.updateAchievement(editingAchievementId, {
+                        title, description, badge: pendingAchievementBadge
+                    });
+                } else {
+                    const achievements = getStore(DB_ACHIEVEMENTS) || [];
+                    const a = achievements.find(x => x.id === editingAchievementId);
+                    a.title = title; a.description = description; a.badge = pendingAchievementBadge; a.updatedAt = new Date().toISOString();
+                    setStore(DB_ACHIEVEMENTS, achievements);
+                }
+                addActivity(`${currentUser.callsign} editou a conquista: ${title}`);
+                showToast('Conquista atualizada!', 'success');
+            } else {
+                const achievement = {
+                    id: generateId(), title, description, badge: pendingAchievementBadge,
+                    completedBy: [], createdBy: currentUser.id, createdAt: new Date().toISOString()
+                };
+                if (window.AsgardCloud?.createAchievement) await window.AsgardCloud.createAchievement(achievement);
+                else { const achievements = getStore(DB_ACHIEVEMENTS) || []; achievements.push(achievement); setStore(DB_ACHIEVEMENTS, achievements); }
+                addActivity(`${currentUser.callsign} criou a conquista: ${title}`);
+                showToast('Conquista criada e salva!', 'success');
+            }
+            achievementModal.classList.add('hidden');
+            resetAchievementModal();
+            refreshAchievements();
+        } catch (err) {
+            console.error(err);
+            showToast(err?.message || 'Não foi possível salvar a conquista no servidor.', 'error');
+        } finally {
+            btnSaveAchievement.disabled = false;
         }
-        setStore(DB_ACHIEVEMENTS, achievements);
-        achievementModal.classList.add('hidden');
-        resetAchievementModal();
-        refreshAchievements();
     });
 
-    function deleteAchievement(id) {
+    async function deleteAchievement(id) {
         if (currentUser.role !== 'admin') { showToast('Apenas ADMIN pode excluir conquistas', 'error'); return; }
         const achievements = getStore(DB_ACHIEVEMENTS) || [];
-        const idx = achievements.findIndex(a => a.id === id);
-        if (idx < 0) return;
-        const a = achievements[idx];
+        const a = achievements.find(x => x.id === id);
+        if (!a) return;
         if (!confirm(`Excluir definitivamente a conquista "${a.title}"? As insígnias concedidas também deixarão de aparecer nos perfis.`)) return;
-        achievements.splice(idx, 1);
-        setStore(DB_ACHIEVEMENTS, achievements);
-        addActivity(`${currentUser.callsign} excluiu a conquista: ${a.title}`);
-        showToast('Conquista excluída', 'info');
-        refreshAchievements();
+        try {
+            if (window.AsgardCloud?.removeAchievement) await window.AsgardCloud.removeAchievement(id);
+            else setStore(DB_ACHIEVEMENTS, achievements.filter(x => x.id !== id));
+            addActivity(`${currentUser.callsign} excluiu a conquista: ${a.title}`);
+            showToast('Conquista excluída', 'info');
+            refreshAchievements();
+        } catch (err) { console.error(err); showToast(err?.message || 'Não foi possível excluir a conquista.', 'error'); }
     }
 
     function openAchievementMembers(id) {
@@ -1409,25 +1424,39 @@
 
     if (btnCancelAchievementMembers) btnCancelAchievementMembers.addEventListener('click', () => { managingAchievementId = null; achievementMembersModal.classList.add('hidden'); });
     if (achievementMembersModal) achievementMembersModal.addEventListener('click', e => { if (e.target === achievementMembersModal) { managingAchievementId = null; achievementMembersModal.classList.add('hidden'); } });
-    if (btnSaveAchievementMembers) btnSaveAchievementMembers.addEventListener('click', () => {
+    if (btnSaveAchievementMembers) btnSaveAchievementMembers.addEventListener('click', async () => {
         if (currentUser.role !== 'admin' || !managingAchievementId) return;
         const achievements = getStore(DB_ACHIEVEMENTS) || [];
         const a = achievements.find(x => x.id === managingAchievementId);
         if (!a) return;
         const old = new Set(a.completedBy || []);
         const selected = [...achievementMembersList.querySelectorAll('input[type="checkbox"]:checked')].map(x => x.value);
-        a.completedBy = selected;
-        a.updatedAt = new Date().toISOString();
-        const users = getStore(DB_USERS) || [];
-        selected.filter(id => !old.has(id)).forEach(id => {
-            const u = users.find(x => x.id === id);
-            if (u) addActivity(`${u.callsign} conquistou a insígnia: ${a.title}`);
-        });
-        setStore(DB_ACHIEVEMENTS, achievements);
-        managingAchievementId = null;
-        achievementMembersModal.classList.add('hidden');
-        showToast('Concluintes atualizados!', 'success');
-        refreshAchievements();
+        btnSaveAchievementMembers.disabled = true;
+        try {
+            if (window.AsgardCloud?.setAchievementRecipients) {
+                await window.AsgardCloud.setAchievementRecipients(managingAchievementId, selected);
+            } else {
+                a.completedBy = selected;
+                a.updatedAt = new Date().toISOString();
+                setStore(DB_ACHIEVEMENTS, achievements);
+            }
+            const users = getStore(DB_USERS) || [];
+            selected.filter(id => !old.has(id)).forEach(id => {
+                const u = users.find(x => x.id === id);
+                if (u) addActivity(`${u.callsign} conquistou a insígnia: ${a.title}`);
+            });
+            managingAchievementId = null;
+            achievementMembersModal.classList.add('hidden');
+            showToast('Insígnias concedidas e salvas!', 'success');
+            refreshAchievements();
+            const active = document.querySelector('.page:not(.hidden)');
+            if (active?.id === 'page-profile') refreshProfile();
+        } catch (err) {
+            console.error(err);
+            showToast(err?.message || 'Não foi possível salvar os concluintes.', 'error');
+        } finally {
+            btnSaveAchievementMembers.disabled = false;
+        }
     });
 
     // ===== CHAT =====
