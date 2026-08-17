@@ -1556,7 +1556,30 @@
             chatInput.value += b.textContent; chatInput.focus();
         });
     }
-    btnChatEmoji?.addEventListener('click', () => chatEmojiPicker?.classList.toggle('hidden'));
+    btnChatEmoji?.addEventListener('click', (ev) => {
+        ev.stopPropagation();
+        if (!chatEmojiPicker) return;
+        const opening = chatEmojiPicker.classList.contains('hidden');
+        chatEmojiPicker.classList.toggle('hidden');
+        if (opening) {
+            requestAnimationFrame(() => {
+                const r = btnChatEmoji.getBoundingClientRect();
+                const pr = chatEmojiPicker.getBoundingClientRect();
+                const margin = 10;
+                let left = r.left;
+                if (left + pr.width > window.innerWidth - margin) left = window.innerWidth - pr.width - margin;
+                left = Math.max(margin, left);
+                let top = r.top - pr.height - 8;
+                if (top < margin) top = Math.min(window.innerHeight - pr.height - margin, r.bottom + 8);
+                chatEmojiPicker.style.left = `${left}px`;
+                chatEmojiPicker.style.top = `${Math.max(margin, top)}px`;
+            });
+        }
+    });
+    chatEmojiPicker?.addEventListener('click', ev => ev.stopPropagation());
+    document.addEventListener('click', () => chatEmojiPicker?.classList.add('hidden'));
+    window.addEventListener('resize', () => chatEmojiPicker?.classList.add('hidden'));
+    window.addEventListener('scroll', () => chatEmojiPicker?.classList.add('hidden'), true);
 
     async function sendMessage() {
         const text = chatInput.value.trim();

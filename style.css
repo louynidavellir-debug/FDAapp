@@ -3282,3 +3282,27 @@ body {
 .emoji-choice{width:38px;height:38px;display:flex;align-items:center;justify-content:center;border:0;background:transparent;color:#fff;font-family:"Segoe UI Emoji","Apple Color Emoji","Noto Color Emoji",sans-serif;font-size:1.35rem;line-height:1;cursor:pointer;padding:0;border-radius:7px;appearance:none;-webkit-appearance:none}
 .emoji-choice:hover,.emoji-choice:focus{background:rgba(255,255,255,.09);outline:none}
 @media(max-width:600px){.chat-tools{padding-left:10px;padding-right:10px}.chat-emoji-picker{left:10px;grid-template-columns:repeat(6,36px);max-width:250px}.emoji-choice{width:36px;height:36px;font-size:1.25rem}}
+
+/* Chat emoji picker - overlay seguro (v19) */
+.chat-tools{overflow:visible!important;z-index:10000!important}
+.chat-emoji-picker{
+  position:fixed!important;
+  left:auto;
+  bottom:auto;
+  z-index:2147483647!important;
+  pointer-events:auto!important;
+  display:grid;
+  grid-template-columns:repeat(6,40px);
+  gap:5px;
+  width:max-content;
+  max-width:calc(100vw - 20px);
+  padding:10px;
+  background:#071014!important;
+  border:1px solid rgba(0,229,255,.45);
+  border-radius:12px;
+  box-shadow:0 14px 38px rgba(0,0,0,.9);
+  isolation:isolate;
+}
+.chat-emoji-picker.hidden{display:none!important}
+.emoji-choice{position:relative;z-index:1;pointer-events:auto!important;user-select:none;-webkit-user-select:none;touch-action:manipulation}
+@media(max-width:600px){.chat-emoji-picker{grid-template-columns:repeat(6,38px);gap:3px;padding:8px}.emoji-choice{width:38px;height:38px}}
