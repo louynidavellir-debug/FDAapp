@@ -200,6 +200,15 @@
     const btnSaveAchievementMembers = $('btn-save-achievement-members');
     const btnCancelAchievementMembers = $('btn-cancel-achievement-members');
     const profileAchievements = $('profile-achievements');
+    const achievementNewBadge = $('achievement-new-badge');
+    const achievementUnlockedModal = $('achievement-unlocked-modal');
+    const achievementUnlockedBadge = $('achievement-unlocked-badge');
+    const achievementUnlockedTitle = $('achievement-unlocked-title');
+    const achievementUnlockedDescription = $('achievement-unlocked-description');
+    const btnViewAchievement = $('btn-view-achievement');
+    const btnCloseAchievementUnlocked = $('btn-close-achievement-unlocked');
+    let activeAchievementNotification = null;
+    let achievementNotificationBusy = false;
 
     // Chat
     const chatMessages = $('chat-messages');
@@ -573,6 +582,8 @@
             updateTopbar();
             navigateTo('dashboard');
             startChatPoll();
+            updateAchievementNotificationBadge();
+            setTimeout(maybeShowAchievementNotification, 350);
         }, 600);
     }
 
@@ -1218,6 +1229,90 @@
     let managingAchievementId = null;
     let pendingAchievementBadge = null;
 
+    function getUnreadAchievementNotifications() {
+        if (!currentUser) return [];
+        return (Array.isArray(currentUser.achievementNotifications) ? currentUser.achievementNotifications : [])
+            .filter(n => n && !n.readAt)
+            .sort((a,b) => String(a.awardedAt || '').localeCompare(String(b.awardedAt || '')));
+    }
+
+    function updateAchievementNotificationBadge() {
+        const count = getUnreadAchievementNotifications().length;
+        if (!achievementNewBadge) return;
+        achievementNewBadge.textContent = count > 99 ? '99+' : String(count || '');
+        achievementNewBadge.classList.toggle('visible', count > 0);
+    }
+
+    function showAchievementSystemNotification(n) {
+        if (!n?.id || !('Notification' in window) || Notification.permission !== 'granted') return;
+        const key = `asgard_achievement_system_notified_${currentUser?.id || ''}_${n.id}`;
+        if (localStorage.getItem(key)) return;
+        localStorage.setItem(key, '1');
+        navigator.serviceWorker?.ready.then(reg => reg.showNotification('🏆 Nova conquista desbloqueada!', {
+            body: `${n.title || 'Nova conquista'}${n.description ? ` — ${String(n.description).slice(0, 100)}` : ''}`,
+            icon: './icons/icon-192.png',
+            badge: './icons/icon-192.png',
+            tag: `achievement-${n.id}`,
+            data: { page: 'achievements', achievementId: n.achievementId || '' }
+        })).catch(() => {});
+    }
+
+    function maybeShowAchievementNotification() {
+        updateAchievementNotificationBadge();
+        if (!currentUser || achievementNotificationBusy || !achievementUnlockedModal?.classList.contains('hidden')) return;
+        const unread = getUnreadAchievementNotifications();
+        if (!unread.length) return;
+        const n = unread[0];
+        activeAchievementNotification = n;
+        const achievement = (getStore(DB_ACHIEVEMENTS) || []).find(a => a.id === n.achievementId);
+        const title = achievement?.title || n.title || 'Nova conquista';
+        const description = achievement?.description || n.description || 'Você recebeu uma nova insígnia.';
+        const badge = achievement?.badge || '';
+        achievementUnlockedTitle.textContent = title;
+        achievementUnlockedDescription.textContent = description;
+        achievementUnlockedBadge.innerHTML = badge
+            ? `<img src="${badge}" alt="Insígnia ${escapeHtml(title)}">`
+            : '<span>🏅</span>';
+        n.title = title;
+        n.description = description;
+        achievementUnlockedModal.classList.remove('hidden');
+        showAchievementSystemNotification(n);
+    }
+
+    async function markActiveAchievementNotificationRead(openAchievements = false) {
+        const n = activeAchievementNotification;
+        if (!n || achievementNotificationBusy) return;
+        achievementNotificationBusy = true;
+        try {
+            if (window.AsgardCloud?.markAchievementNotificationRead) {
+                await window.AsgardCloud.markAchievementNotificationRead(n.id);
+            } else {
+                const users = getStore(DB_USERS) || [];
+                const me = users.find(u => u.id === currentUser.id);
+                if (me) {
+                    me.achievementNotifications = (me.achievementNotifications || []).map(x => x?.id === n.id ? { ...x, readAt:new Date().toISOString() } : x);
+                    setStore(DB_USERS, users);
+                    currentUser = me;
+                }
+            }
+        } catch (err) {
+            console.error('[Achievement notification]', err);
+        } finally {
+            achievementUnlockedModal?.classList.add('hidden');
+            activeAchievementNotification = null;
+            achievementNotificationBusy = false;
+            updateAchievementNotificationBadge();
+            if (openAchievements) navigateTo('achievements');
+            setTimeout(maybeShowAchievementNotification, 180);
+        }
+    }
+
+    if (btnCloseAchievementUnlocked) btnCloseAchievementUnlocked.addEventListener('click', () => markActiveAchievementNotificationRead(false));
+    if (btnViewAchievement) btnViewAchievement.addEventListener('click', () => markActiveAchievementNotificationRead(true));
+    if (achievementUnlockedModal) achievementUnlockedModal.addEventListener('click', e => {
+        if (e.target === achievementUnlockedModal) markActiveAchievementNotificationRead(false);
+    });
+
     function getAchievementBadgeMarkup(achievement, className = '') {
         if (achievement?.badge) {
             return `<img class="${className}" src="${achievement.badge}" alt="Insígnia ${escapeHtml(achievement.title || '')}" loading="lazy">`;
@@ -1233,7 +1328,7 @@
             return;
         }
         profileAchievements.innerHTML = achievements.map(a => `
-            <button type="button" class="profile-badge" data-achievement-id="${a.id}" title="${escapeHtml(a.title || 'Conquista')}">
+            <button type="button" class="profile-badge ${getUnreadAchievementNotifications().some(n => n.achievementId === a.id) ? 'new-achievement' : ''}" data-achievement-id="${a.id}" title="${escapeHtml(a.title || 'Conquista')}">
                 ${a.badge ? `<img src="${a.badge}" alt="${escapeHtml(a.title || 'Insígnia')}">` : '<span>🏅</span>'}
                 <small>${escapeHtml(a.title || 'Conquista')}</small>
             </button>
@@ -3323,6 +3418,8 @@
         if (key === DB_USERS) {
             currentUser = (getStore(DB_USERS) || []).find(u => u.id === currentUser.id) || currentUser;
             updateUIForRole(); updateTopbar();
+            updateAchievementNotificationBadge();
+            setTimeout(maybeShowAchievementNotification, 120);
         }
         const active = document.querySelector('.page:not(.hidden)');
         if (!active) return;
@@ -3346,7 +3443,7 @@
     if ('serviceWorker' in navigator) {
         navigator.serviceWorker.register('sw.js').catch(() => {});
         navigator.serviceWorker.addEventListener('message', event => {
-            if (event.data?.type === 'OPEN_PAGE' && event.data?.page === 'chat' && currentUser) navigateTo('chat');
+            if (event.data?.type === 'OPEN_PAGE' && event.data?.page && currentUser) navigateTo(event.data.page);
         });
     }
 

@@ -3386,3 +3386,20 @@ body {
 .chat-mention.mention-me{color:#fff;background:rgba(0,229,255,.30);box-shadow:0 0 0 1px rgba(0,229,255,.28)}
 .chat-msg.mentions-me .chat-msg-content{box-shadow:0 0 0 1px rgba(0,229,255,.32),0 0 18px rgba(0,229,255,.08)}
 @media(max-width:600px){.chat-mention-suggestions{right:52px;max-height:220px}}
+
+
+/* Special achievement notification */
+.achievement-new-badge{display:none;min-width:18px;height:18px;padding:0 5px;margin-left:auto;border-radius:999px;background:#ff334f;color:#fff;font:700 10px/18px Orbitron,sans-serif;text-align:center;box-shadow:0 0 12px rgba(255,51,79,.45)}
+.achievement-new-badge.visible{display:inline-block}
+.achievement-unlocked-modal{z-index:25000;background:rgba(0,0,0,.86);backdrop-filter:blur(7px)}
+.achievement-unlocked-content{position:relative;max-width:480px;text-align:center;overflow:hidden;border:1px solid rgba(255,196,64,.5);background:radial-gradient(circle at 50% 20%,rgba(255,191,46,.12),transparent 42%),linear-gradient(160deg,#12100a,#07090a 60%);box-shadow:0 0 45px rgba(255,184,36,.16),0 20px 70px rgba(0,0,0,.65)}
+.achievement-unlocked-glow{position:absolute;width:260px;height:260px;left:50%;top:-130px;transform:translateX(-50%);border-radius:50%;background:rgba(255,196,64,.12);filter:blur(32px);pointer-events:none}
+.achievement-unlocked-kicker{position:relative;color:#ffd66a;font:700 11px Orbitron,sans-serif;letter-spacing:1.3px;margin-bottom:16px}
+.achievement-unlocked-badge{position:relative;width:164px;height:164px;margin:0 auto 14px;display:flex;align-items:center;justify-content:center;border-radius:50%;background:radial-gradient(circle,rgba(255,210,90,.12),rgba(0,0,0,0) 68%);font-size:70px;animation:achievementPulse 1.8s ease-in-out infinite}
+.achievement-unlocked-badge img{max-width:150px;max-height:150px;object-fit:contain;filter:drop-shadow(0 0 18px rgba(255,211,94,.28))}
+.achievement-unlocked-content h2{position:relative;margin:0 0 10px;color:#fff4cf;font-family:Orbitron,sans-serif;font-size:1.25rem}
+.achievement-unlocked-content p{position:relative;margin:0 auto 18px;max-width:380px;color:#b9c2c5;line-height:1.55}
+.achievement-unlocked-actions{position:relative;justify-content:center}
+@keyframes achievementPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.035)}}
+.profile-badge.new-achievement{border-color:rgba(255,200,70,.65);box-shadow:0 0 14px rgba(255,190,55,.18)}
+@media(max-width:600px){.achievement-unlocked-content{width:calc(100% - 24px);padding:24px 18px}.achievement-unlocked-badge{width:140px;height:140px}.achievement-unlocked-badge img{max-width:128px;max-height:128px}.achievement-unlocked-actions{flex-direction:column}.achievement-unlocked-actions button{width:100%}}

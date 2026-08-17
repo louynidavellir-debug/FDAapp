@@ -1,4 +1,4 @@
-const CACHE_NAME = 'asgard-v20-achievements-persistent';
+const CACHE_NAME = 'asgard-v21-achievement-notifications';
 const ASSETS = [
     './', './index.html', './style.css', './app.js', './cloud.js', './firebase-config.js',
     './manifest.json', './icons/icon-192-v17.png', './icons/icon-512-v17.png', './icons/logo-asgard.png'
@@ -42,7 +42,7 @@ self.addEventListener('notificationclick', event => {
         if (windows.length) {
             const client = windows[0];
             await client.focus();
-            client.postMessage({ type: 'OPEN_PAGE', page: 'chat' });
+            client.postMessage({ type: 'OPEN_PAGE', page: event.notification.data?.page || 'chat' });
             return;
         }
         await clients.openWindow('./');

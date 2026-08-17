@@ -404,10 +404,58 @@ async function setAchievementRecipients(achievementId, userIds) {
   if (role !== 'admin') throw new Error('Somente o ADMIN pode conceder insígnias.');
   const id = String(achievementId || '');
   if (!id) throw new Error('Conquista inválida.');
+  const achievementRef = doc(db, 'achievements', id);
+  const achievementSnap = await getDoc(achievementRef);
+  if (!achievementSnap.exists()) throw new Error('Conquista não encontrada.');
+  const achievement = achievementSnap.data() || {};
+  const previous = new Set((Array.isArray(achievement.completedBy) ? achievement.completedBy : []).map(String));
   const completedBy = [...new Set((Array.isArray(userIds) ? userIds : []).map(String).filter(Boolean))];
-  await setDoc(doc(db, 'achievements', id), { completedBy, updatedAt:new Date().toISOString() }, { merge:true });
+  const newlyAwarded = completedBy.filter(uid => !previous.has(uid));
+  const now = new Date().toISOString();
+
+  const batch = writeBatch(db);
+  batch.set(achievementRef, { completedBy, updatedAt:now }, { merge:true });
+
+  for (const uid of newlyAwarded) {
+    const profileRef = doc(db, 'profiles', uid);
+    const profileSnap = await getDoc(profileRef);
+    if (!profileSnap.exists()) continue;
+    const profile = profileSnap.data() || {};
+    const existing = Array.isArray(profile.achievementNotifications) ? profile.achievementNotifications : [];
+    const notification = {
+      id: `achievement_${id}_${Date.now()}_${uid}`,
+      achievementId: id,
+      title: achievement.title || 'Nova conquista',
+      description: achievement.description || '',
+      awardedAt: now,
+      awardedBy: me.uid,
+      readAt: null
+    };
+    const next = [notification, ...existing.filter(n => n && n.id !== notification.id)].slice(0, 40);
+    batch.set(profileRef, { achievementNotifications: next }, { merge:true });
+  }
+
+  await batch.commit();
   await readCollection('asgard_achievements', 'achievements', role);
-  return completedBy;
+  await readUsers();
+  return { completedBy, newlyAwarded };
+}
+
+async function markAchievementNotificationRead(notificationId) {
+  const me = auth?.currentUser;
+  if (!me) throw new Error('Sessão expirada.');
+  const id = String(notificationId || '');
+  if (!id) return false;
+  const profileRef = doc(db, 'profiles', me.uid);
+  const snap = await getDoc(profileRef);
+  if (!snap.exists()) return false;
+  const profile = snap.data() || {};
+  const notifications = (Array.isArray(profile.achievementNotifications) ? profile.achievementNotifications : []).map(n =>
+    n?.id === id ? { ...n, readAt: n.readAt || new Date().toISOString() } : n
+  );
+  await setDoc(profileRef, { achievementNotifications: notifications }, { merge:true });
+  await readUsers();
+  return true;
 }
 
 async function removeAchievement(achievementId) {
@@ -448,6 +496,6 @@ window.AsgardCloud = {
   init, connectSession, get, set, hasConfig, removeSession,
   signIn, register, getCurrentUser, waitForAuth, addMessage, updateChatLastRead, updateContribution,
   createProduct, updateProduct, removeProduct,
-  createAchievement, updateAchievement, setAchievementRecipients, removeAchievement,
+  createAchievement, updateAchievement, setAchievementRecipients, markAchievementNotificationRead, removeAchievement,
   isOnline: () => initialized
 };

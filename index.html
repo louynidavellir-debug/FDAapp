@@ -125,7 +125,7 @@
                 </a>
                 <a href="#" class="nav-item" data-page="achievements">
                     <span class="nav-icon">🏅</span>
-                    <span class="nav-label">Conquistas</span>
+                    <span class="nav-label">Conquistas</span><span id="achievement-new-badge" class="achievement-new-badge" aria-label="Novas conquistas"></span>
                 </a>
                 <a href="#" class="nav-item" data-page="chat">
                     <span class="nav-icon">💬</span>
@@ -889,6 +889,22 @@
             <div class="modal-actions">
                 <button class="btn-primary" id="btn-whatsapp-checkout">Enviar via WhatsApp</button>
                 <button class="btn-secondary" id="btn-cancel-cart">Cancelar</button>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- SPECIAL ACHIEVEMENT NOTIFICATION -->
+    <div id="achievement-unlocked-modal" class="modal hidden achievement-unlocked-modal">
+        <div class="modal-content achievement-unlocked-content">
+            <div class="achievement-unlocked-glow"></div>
+            <div class="achievement-unlocked-kicker">🏆 NOVA CONQUISTA DESBLOQUEADA</div>
+            <div id="achievement-unlocked-badge" class="achievement-unlocked-badge"><span>🏅</span></div>
+            <h2 id="achievement-unlocked-title">Nova conquista</h2>
+            <p id="achievement-unlocked-description"></p>
+            <div class="modal-actions achievement-unlocked-actions">
+                <button class="btn-primary" id="btn-view-achievement">Ver conquistas</button>
+                <button class="btn-secondary" id="btn-close-achievement-unlocked">Entendi</button>
             </div>
         </div>
     </div>

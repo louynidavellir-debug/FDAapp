@@ -1,0 +1,13 @@
+FILHOS DE ASGARD - NOTIFICACOES DE CONQUISTA
+
+Atualizacao:
+- Ao conceder uma conquista a um novo operador, o ADMIN grava uma notificacao persistente no perfil desse operador no Firestore.
+- O operador recebe um modal especial com insignia, titulo e descricao assim que estiver online ou no proximo login.
+- O menu Conquistas mostra um contador de notificacoes ainda nao lidas.
+- A nova insignia fica destacada no perfil ate a notificacao ser lida.
+- Os botoes "Ver conquistas" e "Entendi" marcam a notificacao como lida.
+- Se notificacoes do navegador/PWA ja estiverem autorizadas, o app tambem exibe uma notificacao do sistema.
+- A notificacao interna funciona mesmo sem permissao de notificacoes do navegador.
+
+Firebase:
+- Nao e necessario alterar as regras do Firestore desta versao. O recurso usa o campo achievementNotifications dentro do perfil, respeitando as regras de perfil existentes.
