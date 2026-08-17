@@ -1,4 +1,4 @@
-const CACHE_NAME = 'asgard-v17-app-icon';
+const CACHE_NAME = 'asgard-v18-chat-mentions';
 const ASSETS = [
     './', './index.html', './style.css', './app.js', './cloud.js', './firebase-config.js',
     './manifest.json', './icons/icon-192-v17.png', './icons/icon-512-v17.png', './icons/logo-asgard.png'
@@ -33,4 +33,18 @@ self.addEventListener('fetch', event => {
             return response;
         }).catch(() => caches.match(req).then(cached => cached || caches.match('./index.html')))
     );
+});
+
+self.addEventListener('notificationclick', event => {
+    event.notification.close();
+    event.waitUntil((async () => {
+        const windows = await clients.matchAll({ type: 'window', includeUncontrolled: true });
+        if (windows.length) {
+            const client = windows[0];
+            await client.focus();
+            client.postMessage({ type: 'OPEN_PAGE', page: 'chat' });
+            return;
+        }
+        await clients.openWindow('./');
+    })());
 });

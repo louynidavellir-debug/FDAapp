@@ -264,10 +264,21 @@ async function addMessage(message) {
     mediaUrl: message?.mediaUrl || '',
     mediaName: message?.mediaName || '',
     mimeType: message?.mimeType || '',
+    mentions: Array.isArray(message?.mentions) ? message.mentions.map(String) : [],
+    mentionCallsigns: Array.isArray(message?.mentionCallsigns) ? message.mentionCallsigns.map(String) : [],
     date: message?.date || new Date().toISOString()
   });
   if (!payload.text && !payload.mediaUrl) return;
   await setDoc(doc(db, 'messages', payload.id), payload, { merge:false });
+}
+
+
+async function updateChatLastRead(date) {
+  const me = auth?.currentUser;
+  if (!me) throw new Error('Usuário não autenticado.');
+  const value = String(date || new Date().toISOString());
+  await setDoc(doc(db, 'profiles', me.uid), { chatLastReadAt: value }, { merge:true });
+  return value;
 }
 
 async function init() {
@@ -378,7 +389,7 @@ function set(key, value) {
 
 window.AsgardCloud = {
   init, connectSession, get, set, hasConfig, removeSession,
-  signIn, register, getCurrentUser, waitForAuth, addMessage, updateContribution,
+  signIn, register, getCurrentUser, waitForAuth, addMessage, updateChatLastRead, updateContribution,
   createProduct, updateProduct, removeProduct,
   isOnline: () => initialized
 };

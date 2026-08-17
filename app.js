@@ -209,6 +209,7 @@
     const chatOnlineUsers = $('chat-online-users');
     const btnChatEmoji = $('btn-chat-emoji');
     const chatEmojiPicker = $('chat-emoji-picker');
+    const chatMentionSuggestions = $('chat-mention-suggestions');
 
     // Games
     const gamesList = $('games-list');
@@ -636,7 +637,11 @@
         if (page === 'members') refreshMembers();
         if (page === 'arsenal') refreshArsenal();
         if (page === 'achievements') refreshAchievements();
-        if (page === 'chat') { createChatEmbers(); refreshChat(); }
+        if (page === 'chat') {
+            createChatEmbers();
+            refreshChat();
+            markChatAsRead().catch(err => console.error('[Chat read]', err));
+        }
         if (page === 'games') refreshGames();
         if (page === 'loja') refreshProducts();
         if (page === 'vendas') { refreshOrderStats(); refreshOrders(); }
@@ -650,6 +655,9 @@
         item.addEventListener('click', (e) => {
             e.preventDefault();
             if (item.dataset.page === 'profile') viewedProfileUserId = null;
+            if (item.dataset.page === 'chat' && 'Notification' in window && Notification.permission === 'default') {
+                Notification.requestPermission().catch(() => {});
+            }
             navigateTo(item.dataset.page);
         });
     });
@@ -1408,6 +1416,8 @@
 
     // ===== CHAT =====
     let lastMessageCount = 0;
+    let knownChatMessageIds = new Set();
+    let mentionQueryState = null;
 
     // ===== CHAT EMBER PARTICLES =====
     let chatEmbersCreated = false;
@@ -1486,24 +1496,77 @@
         }
     }
 
+    function getLatestChatDate(messages = getStore(DB_MESSAGES) || []) {
+        return messages.reduce((latest, m) => {
+            const d = String(m?.date || '');
+            return d > latest ? d : latest;
+        }, '');
+    }
+
+    function getUnreadChatMessages() {
+        if (!currentUser) return [];
+        const messages = getStore(DB_MESSAGES) || [];
+        const lastRead = String(currentUser.chatLastReadAt || '');
+        return messages.filter(m => m.userId !== currentUser.id && String(m.date || '') > lastRead);
+    }
+
+    function updateChatBadge() {
+        if (!chatBadge || !currentUser) return;
+        if (!$('page-chat').classList.contains('hidden')) {
+            chatBadge.classList.add('hidden');
+            chatBadge.textContent = '0';
+            return;
+        }
+        const unread = getUnreadChatMessages().length;
+        if (unread > 0) {
+            chatBadge.textContent = unread > 99 ? '99+' : String(unread);
+            chatBadge.classList.remove('hidden');
+        } else {
+            chatBadge.textContent = '0';
+            chatBadge.classList.add('hidden');
+        }
+    }
+
+    async function markChatAsRead() {
+        if (!currentUser) return;
+        const latest = getLatestChatDate();
+        chatBadge?.classList.add('hidden');
+        if (chatBadge) chatBadge.textContent = '0';
+        if (!latest || String(currentUser.chatLastReadAt || '') >= latest) return;
+        currentUser.chatLastReadAt = latest;
+        if (window.AsgardCloud?.updateChatLastRead) {
+            await window.AsgardCloud.updateChatLastRead(latest);
+        }
+    }
+
     function refreshChat() {
         const messages = getStore(DB_MESSAGES) || [];
         const users = getStore(DB_USERS) || [];
 
-        // Only render new messages
         if (messages.length !== lastMessageCount || messages.length === 0) {
             renderMessages(messages);
             lastMessageCount = messages.length;
         }
 
-        // Online users
         const onlineUsers = users.filter(u => u.online);
         chatOnlineUsers.innerHTML = onlineUsers.map(u =>
-            `<span class="online-user-dot">${u.callsign}</span>`
+            `<span class="online-user-dot">${escapeHtml(u.callsign)}</span>`
         ).join('');
 
-        // Scroll to bottom
         chatMessages.scrollTop = chatMessages.scrollHeight;
+        updateChatBadge();
+    }
+
+    function formatChatText(text) {
+        const safe = escapeHtml(text || '');
+        const users = getStore(DB_USERS) || [];
+        const callsigns = new Map(users.map(u => [String(u.callsign || '').toUpperCase(), u]));
+        return safe.replace(/@([A-Za-z0-9_-]+)/g, (full, raw) => {
+            const u = callsigns.get(String(raw).toUpperCase());
+            if (!u) return full;
+            const mine = u.id === currentUser?.id ? ' mention-me' : '';
+            return `<span class="chat-mention${mine}" data-user-id="${escapeHtml(u.id)}">@${escapeHtml(u.callsign)}</span>`;
+        });
     }
 
     function renderMessages(messages) {
@@ -1515,14 +1578,15 @@
             .forEach(msg => {
             const isOwn = msg.userId === currentUser.id;
             const user = msg.callsign || '?';
+            const mentionsMe = Array.isArray(msg.mentions) && msg.mentions.includes(currentUser.id);
 
             const msgEl = document.createElement('div');
-            msgEl.className = `chat-msg ${isOwn ? 'own' : ''}`;
+            msgEl.className = `chat-msg ${isOwn ? 'own' : ''} ${mentionsMe ? 'mentions-me' : ''}`;
             msgEl.innerHTML = `
-                <div class="chat-msg-avatar">${user.charAt(0)}</div>
+                <div class="chat-msg-avatar">${escapeHtml(user.charAt(0))}</div>
                 <div class="chat-msg-content">
-                    ${!isOwn ? `<div class="chat-msg-sender">${user}</div>` : ''}
-                    ${msg.text ? `<div class="chat-msg-text">${escapeHtml(msg.text)}</div>` : ''}
+                    ${!isOwn ? `<div class="chat-msg-sender">${escapeHtml(user)}</div>` : ''}
+                    ${msg.text ? `<div class="chat-msg-text">${formatChatText(msg.text)}</div>` : ''}
                     ${renderChatMedia(msg)}
                     <div class="chat-msg-time">${formatTime(new Date(msg.date))}</div>
                 </div>
@@ -1581,24 +1645,90 @@
     window.addEventListener('resize', () => chatEmojiPicker?.classList.add('hidden'));
     window.addEventListener('scroll', () => chatEmojiPicker?.classList.add('hidden'), true);
 
+    function getMentionContext() {
+        if (!chatInput) return null;
+        const caret = chatInput.selectionStart ?? chatInput.value.length;
+        const before = chatInput.value.slice(0, caret);
+        const match = before.match(/(?:^|\s)@([A-Za-z0-9_-]*)$/);
+        if (!match) return null;
+        return { query: match[1], start: caret - match[1].length - 1, end: caret };
+    }
+
+    function hideMentionSuggestions() {
+        mentionQueryState = null;
+        chatMentionSuggestions?.classList.add('hidden');
+        if (chatMentionSuggestions) chatMentionSuggestions.innerHTML = '';
+    }
+
+    function refreshMentionSuggestions() {
+        if (!chatMentionSuggestions || !currentUser) return;
+        const ctx = getMentionContext();
+        if (!ctx) { hideMentionSuggestions(); return; }
+        const q = ctx.query.toUpperCase();
+        const users = (getStore(DB_USERS) || [])
+            .filter(u => u.id !== currentUser.id && String(u.callsign || '').toUpperCase().includes(q))
+            .slice(0, 8);
+        if (!users.length) { hideMentionSuggestions(); return; }
+        mentionQueryState = ctx;
+        chatMentionSuggestions.innerHTML = users.map(u => `
+            <button type="button" class="chat-mention-option" data-user-id="${escapeHtml(u.id)}" data-callsign="${escapeHtml(u.callsign)}">
+                <span class="mention-option-avatar">${escapeHtml(String(u.callsign || '?').charAt(0))}</span>
+                <span>@${escapeHtml(u.callsign)}</span>
+            </button>`).join('');
+        chatMentionSuggestions.classList.remove('hidden');
+    }
+
+    chatInput?.addEventListener('input', refreshMentionSuggestions);
+    chatInput?.addEventListener('click', refreshMentionSuggestions);
+    chatMentionSuggestions?.addEventListener('mousedown', e => e.preventDefault());
+    chatMentionSuggestions?.addEventListener('click', e => {
+        const option = e.target.closest('.chat-mention-option');
+        if (!option || !mentionQueryState) return;
+        const callsign = option.dataset.callsign || '';
+        const value = chatInput.value;
+        const replacement = `@${callsign} `;
+        chatInput.value = value.slice(0, mentionQueryState.start) + replacement + value.slice(mentionQueryState.end);
+        const caret = mentionQueryState.start + replacement.length;
+        hideMentionSuggestions();
+        chatInput.focus();
+        chatInput.setSelectionRange(caret, caret);
+    });
+    document.addEventListener('click', e => {
+        if (!e.target.closest('.chat-input-area')) hideMentionSuggestions();
+    });
+
+    function extractMentions(text) {
+        const users = getStore(DB_USERS) || [];
+        const byCallsign = new Map(users.map(u => [String(u.callsign || '').toUpperCase(), u]));
+        const ids = [];
+        const callsigns = [];
+        for (const match of String(text || '').matchAll(/@([A-Za-z0-9_-]+)/g)) {
+            const u = byCallsign.get(String(match[1]).toUpperCase());
+            if (u && !ids.includes(u.id)) { ids.push(u.id); callsigns.push(u.callsign); }
+        }
+        return { ids, callsigns };
+    }
+
     async function sendMessage() {
         const text = chatInput.value.trim();
         if (!text || !currentUser) return;
+        const mentionData = extractMentions(text);
 
         const message = {
             id: generateId(),
             userId: currentUser.id,
             callsign: currentUser.callsign,
             text,
+            mentions: mentionData.ids,
+            mentionCallsigns: mentionData.callsigns,
             date: new Date().toISOString()
         };
 
+        hideMentionSuggestions();
         chatInput.value = '';
         btnSendMsg.disabled = true;
         try {
             if (window.AsgardCloud?.addMessage) {
-                // Dedicated Firestore write: each message is its own document.
-                // This is safe when several users send at the same time.
                 await window.AsgardCloud.addMessage(message);
             } else {
                 const messages = getStore(DB_MESSAGES) || [];
@@ -1619,31 +1749,51 @@
 
     btnSendMsg.addEventListener('click', sendMessage);
     chatInput.addEventListener('keydown', (e) => {
+        if (!chatMentionSuggestions?.classList.contains('hidden') && e.key === 'Escape') {
+            hideMentionSuggestions();
+            return;
+        }
         if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
             sendMessage();
         }
     });
 
+    function notifyMention(msg) {
+        if (!currentUser || msg.userId === currentUser.id) return;
+        if (!Array.isArray(msg.mentions) || !msg.mentions.includes(currentUser.id)) return;
+        showToast(`${msg.callsign || 'Um operador'} marcou você no Chat`, 'info');
+        if ('Notification' in window && Notification.permission === 'granted') {
+            navigator.serviceWorker?.ready.then(reg => reg.showNotification('Filhos de Asgard • menção no Chat', {
+                body: `${msg.callsign || 'Operador'}: ${String(msg.text || '').slice(0, 120)}`,
+                icon: './icons/icon-192.png',
+                badge: './icons/icon-192.png',
+                tag: `chat-mention-${msg.id}`,
+                data: { page: 'chat' }
+            })).catch(() => {});
+        }
+    }
+
+    function handleIncomingChatSync() {
+        const messages = getStore(DB_MESSAGES) || [];
+        for (const msg of messages) {
+            if (!knownChatMessageIds.has(msg.id)) notifyMention(msg);
+        }
+        knownChatMessageIds = new Set(messages.map(m => m.id));
+        updateChatBadge();
+        if (!$('page-chat').classList.contains('hidden')) {
+            refreshChat();
+            markChatAsRead().catch(err => console.error('[Chat read]', err));
+        }
+    }
+
     function startChatPoll() {
-        // Realtime is provided by Cloud Firestore; polling remains as a lightweight fallback.
         stopChatPoll();
-        chatPollInterval = setInterval(() => {
-            const messages = getStore(DB_MESSAGES) || [];
-            if (messages.length !== lastMessageCount) {
-                if (!$('page-chat').classList.contains('hidden')) {
-                    refreshChat();
-                }
-                // Update badge if not on chat page
-                if ($('page-chat').classList.contains('hidden')) {
-                    const newMsgs = messages.length - lastMessageCount;
-                    if (newMsgs > 0) {
-                        chatBadge.textContent = newMsgs;
-                        chatBadge.classList.remove('hidden');
-                    }
-                }
-            }
-        }, 1500);
+        const initial = getStore(DB_MESSAGES) || [];
+        knownChatMessageIds = new Set(initial.map(m => m.id));
+        lastMessageCount = initial.length;
+        updateChatBadge();
+        chatPollInterval = setInterval(() => updateChatBadge(), 1500);
     }
 
     function stopChatPoll() {
@@ -3124,6 +3274,7 @@
     window.addEventListener('asgard:sync', (event) => {
         if (!currentUser) return;
         const key = event.detail?.key;
+        if (key === DB_MESSAGES) handleIncomingChatSync();
         if (key === DB_USERS) {
             currentUser = (getStore(DB_USERS) || []).find(u => u.id === currentUser.id) || currentUser;
             updateUIForRole(); updateTopbar();
@@ -3149,6 +3300,9 @@
     // Register service worker
     if ('serviceWorker' in navigator) {
         navigator.serviceWorker.register('sw.js').catch(() => {});
+        navigator.serviceWorker.addEventListener('message', event => {
+            if (event.data?.type === 'OPEN_PAGE' && event.data?.page === 'chat' && currentUser) navigateTo('chat');
+        });
     }
 
     // Start app
