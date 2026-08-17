@@ -208,12 +208,7 @@
     const chatBadge = $('chat-badge');
     const chatOnlineUsers = $('chat-online-users');
     const btnChatEmoji = $('btn-chat-emoji');
-    const btnChatMedia = $('btn-chat-media');
-    const btnChatAudio = $('btn-chat-audio');
-    const chatMediaInput = $('chat-media-input');
     const chatEmojiPicker = $('chat-emoji-picker');
-    const chatRecording = $('chat-recording');
-    const chatRecordingTime = $('chat-recording-time');
 
     // Games
     const gamesList = $('games-list');
@@ -1553,26 +1548,6 @@
         return `<a class="chat-media-file" href="${url}" target="_blank" rel="noopener">📎 ${escapeHtml(msg.mediaName || 'Arquivo')}</a>`;
     }
 
-    async function sendMediaMessage(file, type) {
-        if (!file || !currentUser) return;
-        const limits = { image: 8, video: 50, audio: 12 };
-        const maxMb = limits[type] || 8;
-        if (file.size > maxMb * 1024 * 1024) { showToast(`Arquivo muito grande. Limite: ${maxMb} MB.`, 'error'); return; }
-        showToast('Enviando mídia...', 'info');
-        try {
-            if (!window.AsgardCloud?.uploadChatMedia) throw new Error('Upload de mídia indisponível.');
-            const mediaUrl = await window.AsgardCloud.uploadChatMedia(file, type);
-            await window.AsgardCloud.addMessage({
-                id: generateId(), userId: currentUser.id, callsign: currentUser.callsign, text: '',
-                type, mediaUrl, mediaName: file.name || type, mimeType: file.type || '', date: new Date().toISOString()
-            });
-            showToast('Enviado!', 'success');
-        } catch (err) {
-            console.error('[Chat media]', err);
-            showToast('Não foi possível enviar. Verifique o Firebase Storage e suas regras.', 'error');
-        }
-    }
-
     const CHAT_EMOJIS = ['😀','😂','🤣','😊','😍','😎','🤔','😅','😢','😡','👍','👎','👏','🙏','💪','🔥','⚡','🎯','🏆','🫡','💀','🛡️','⚔️','❤️','💙','✅','❌','📍','🔫','🎮'];
     if (chatEmojiPicker) {
         chatEmojiPicker.innerHTML = CHAT_EMOJIS.map(e => `<button type="button" class="emoji-choice">${e}</button>`).join('');
@@ -1582,38 +1557,6 @@
         });
     }
     btnChatEmoji?.addEventListener('click', () => chatEmojiPicker?.classList.toggle('hidden'));
-    btnChatMedia?.addEventListener('click', () => chatMediaInput?.click());
-    chatMediaInput?.addEventListener('change', async () => {
-        const file = chatMediaInput.files?.[0]; if (!file) return;
-        const type = file.type.startsWith('image/') ? 'image' : file.type.startsWith('video/') ? 'video' : 'file';
-        await sendMediaMessage(file, type); chatMediaInput.value = '';
-    });
-
-    let mediaRecorder = null, audioChunks = [], recordTimer = null, recordStartedAt = 0;
-    btnChatAudio?.addEventListener('click', async () => {
-        if (mediaRecorder?.state === 'recording') { mediaRecorder.stop(); return; }
-        try {
-            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-            audioChunks = [];
-            mediaRecorder = new MediaRecorder(stream);
-            mediaRecorder.ondataavailable = e => { if (e.data.size) audioChunks.push(e.data); };
-            mediaRecorder.onstop = async () => {
-                clearInterval(recordTimer); chatRecording?.classList.add('hidden'); btnChatAudio?.classList.remove('recording');
-                stream.getTracks().forEach(t => t.stop());
-                const mime = mediaRecorder.mimeType || 'audio/webm';
-                const blob = new Blob(audioChunks, { type: mime });
-                const ext = mime.includes('ogg') ? 'ogg' : mime.includes('mp4') ? 'm4a' : 'webm';
-                await sendMediaMessage(new File([blob], `audio_${Date.now()}.${ext}`, { type: mime }), 'audio');
-            };
-            mediaRecorder.start(); recordStartedAt = Date.now();
-            chatRecording?.classList.remove('hidden'); btnChatAudio?.classList.add('recording');
-            recordTimer = setInterval(() => {
-                const sec = Math.floor((Date.now()-recordStartedAt)/1000);
-                if (chatRecordingTime) chatRecordingTime.textContent = `${Math.floor(sec/60)}:${String(sec%60).padStart(2,'0')}`;
-                if (sec >= 120 && mediaRecorder?.state === 'recording') mediaRecorder.stop();
-            }, 500);
-        } catch (err) { showToast('Não foi possível acessar o microfone. Autorize o uso do microfone no navegador.', 'error'); }
-    });
 
     async function sendMessage() {
         const text = chatInput.value.trim();

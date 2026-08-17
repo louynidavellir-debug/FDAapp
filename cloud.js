@@ -8,12 +8,11 @@ import {
   getFirestore, collection, doc, getDoc, getDocs, setDoc, deleteDoc, writeBatch,
   onSnapshot, runTransaction, serverTimestamp, query, where
 } from 'https://www.gstatic.com/firebasejs/12.17.1/firebase-firestore.js';
-import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from 'https://www.gstatic.com/firebasejs/12.17.1/firebase-storage.js';
 
 const cache = new Map();
 const remoteCache = new Map();
 const unsubs = [];
-let app = null, auth = null, db = null, storage = null, initialized = false, connected = false;
+let app = null, auth = null, db = null, initialized = false, connected = false;
 
 const ARRAY_COLLECTIONS = {
   asgard_messages: 'messages',
@@ -271,24 +270,12 @@ async function addMessage(message) {
   await setDoc(doc(db, 'messages', payload.id), payload, { merge:false });
 }
 
-async function uploadChatMedia(file, kind = 'file') {
-  const me = auth?.currentUser;
-  if (!me) throw new Error('Usuário não autenticado.');
-  if (!storage) throw new Error('Firebase Storage não inicializado.');
-  const safe = String(file.name || kind).replace(/[^a-zA-Z0-9._-]/g, '_');
-  const path = `chat/${me.uid}/${Date.now()}_${safe}`;
-  const ref = storageRef(storage, path);
-  await uploadBytes(ref, file, { contentType: file.type || 'application/octet-stream' });
-  return await getDownloadURL(ref);
-}
-
 async function init() {
   loadLocalCache();
   if (!hasConfig()) return { online:false, configured:false };
   app = initializeApp(cfg());
   auth = getAuth(app);
   db = getFirestore(app);
-  storage = getStorage(app);
   await setPersistence(auth, browserLocalPersistence);
   initialized = true;
   return { online:true, configured:true };
@@ -354,6 +341,6 @@ function set(key, value) {
 
 window.AsgardCloud = {
   init, connectSession, get, set, hasConfig, removeSession,
-  signIn, register, getCurrentUser, waitForAuth, addMessage, uploadChatMedia, updateContribution,
+  signIn, register, getCurrentUser, waitForAuth, addMessage, updateContribution,
   isOnline: () => initialized
 };
