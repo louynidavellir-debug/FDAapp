@@ -118,15 +118,18 @@ async function readContributions(role = null) {
   mirror('asgard_contributions', value);
 }
 async function hydrate() {
-  // Read the signed-in user's profile first so permission-sensitive queries
-  // (notably orders) can be scoped correctly for operators. Firestore rules
-  // are not filters: an unscoped query would be rejected even after Auth succeeds.
+  // The profile is the only critical Firestore read required to enter the app.
+  // Optional modules are hydrated independently: a permission/index problem in
+  // Loja, Contribuições, Conquistas, etc. must never block a valid login.
   await readUsers();
   const role = await currentRole();
-  await Promise.all([
-    ...Object.entries(ARRAY_COLLECTIONS).map(([k,c]) => readCollection(k,c,role)),
-    readContributions(role)
-  ]);
+  const jobs = [
+    ...Object.entries(ARRAY_COLLECTIONS).map(([k,c]) =>
+      readCollection(k,c,role).catch(err => { reportError(err); return null; })
+    ),
+    readContributions(role).catch(err => { reportError(err); return null; })
+  ];
+  await Promise.all(jobs);
 }
 
 function watchCollection(key, colName, role = null) {
