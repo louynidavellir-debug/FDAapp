@@ -18,6 +18,7 @@ const ARRAY_COLLECTIONS = {
   asgard_messages: 'messages',
   asgard_games: 'games',
   asgard_achievements: 'achievements',
+  asgard_achievement_awards: 'achievement_awards',
   asgard_activity: 'activities',
   asgard_announcements: 'announcements',
   asgard_products: 'products',
@@ -410,11 +411,27 @@ async function setAchievementRecipients(achievementId, userIds) {
   const achievement = achievementSnap.data() || {};
   const previous = new Set((Array.isArray(achievement.completedBy) ? achievement.completedBy : []).map(String));
   const completedBy = [...new Set((Array.isArray(userIds) ? userIds : []).map(String).filter(Boolean))];
+  const selectedSet = new Set(completedBy);
   const newlyAwarded = completedBy.filter(uid => !previous.has(uid));
   const now = new Date().toISOString();
 
   const batch = writeBatch(db);
   batch.set(achievementRef, { completedBy, updatedAt:now }, { merge:true });
+
+  const existingAwardsSnap = await getDocs(query(collection(db, 'achievement_awards'), where('achievementId', '==', id)));
+  const existingAwardUsers = new Set();
+  existingAwardsSnap.forEach(d => {
+    const data = d.data() || {};
+    const uid = String(data.userId || '');
+    if (uid) existingAwardUsers.add(uid);
+    if (uid && !selectedSet.has(uid)) batch.delete(d.ref);
+  });
+  for (const uid of completedBy) {
+    const awardId = `${id}__${uid}`;
+    batch.set(doc(db, 'achievement_awards', awardId), {
+      id: awardId, achievementId:id, userId:uid, awardedAt:now, awardedBy:me.uid
+    }, { merge:true });
+  }
 
   for (const uid of newlyAwarded) {
     const profileRef = doc(db, 'profiles', uid);
@@ -423,13 +440,9 @@ async function setAchievementRecipients(achievementId, userIds) {
     const profile = profileSnap.data() || {};
     const existing = Array.isArray(profile.achievementNotifications) ? profile.achievementNotifications : [];
     const notification = {
-      id: `achievement_${id}_${Date.now()}_${uid}`,
-      achievementId: id,
-      title: achievement.title || 'Nova conquista',
-      description: achievement.description || '',
-      awardedAt: now,
-      awardedBy: me.uid,
-      readAt: null
+      id: `achievement_${id}_${Date.now()}_${uid}`, achievementId:id,
+      title: achievement.title || 'Nova conquista', description:achievement.description || '',
+      awardedAt:now, awardedBy:me.uid, readAt:null
     };
     const next = [notification, ...existing.filter(n => n && n.id !== notification.id)].slice(0, 40);
     batch.set(profileRef, { achievementNotifications: next }, { merge:true });
@@ -437,6 +450,7 @@ async function setAchievementRecipients(achievementId, userIds) {
 
   await batch.commit();
   await readCollection('asgard_achievements', 'achievements', role);
+  await readCollection('asgard_achievement_awards', 'achievement_awards', role);
   await readUsers();
   return { completedBy, newlyAwarded };
 }
@@ -465,8 +479,13 @@ async function removeAchievement(achievementId) {
   if (role !== 'admin') throw new Error('Somente o ADMIN pode excluir conquistas.');
   const id = String(achievementId || '');
   if (!id) throw new Error('Conquista inválida.');
-  await deleteDoc(doc(db, 'achievements', id));
+  const batch = writeBatch(db);
+  batch.delete(doc(db, 'achievements', id));
+  const awardsSnap = await getDocs(query(collection(db, 'achievement_awards'), where('achievementId', '==', id)));
+  awardsSnap.forEach(d => batch.delete(d.ref));
+  await batch.commit();
   await readCollection('asgard_achievements', 'achievements', role);
+  await readCollection('asgard_achievement_awards', 'achievement_awards', role);
   return true;
 }
 

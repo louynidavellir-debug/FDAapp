@@ -10,6 +10,7 @@
     const DB_MESSAGES = 'asgard_messages';
     const DB_GAMES = 'asgard_games';
     const DB_ACHIEVEMENTS = 'asgard_achievements';
+    const DB_ACHIEVEMENT_AWARDS = 'asgard_achievement_awards';
     const DB_SESSION = 'asgard_session';
     const DB_ACTIVITY = 'asgard_activity';
     const DB_ANNOUNCEMENTS = 'asgard_announcements';
@@ -1320,9 +1321,19 @@
         return `<div class="achievement-badge-placeholder ${className}">🏅</div>`;
     }
 
+    function getAwardedAchievementIds(userId) {
+        const awards = getStore(DB_ACHIEVEMENT_AWARDS) || [];
+        const ids = new Set(awards.filter(x => String(x.userId || '') === String(userId || '')).map(x => String(x.achievementId || '')));
+        (getStore(DB_ACHIEVEMENTS) || []).forEach(a => {
+            if ((a.completedBy || []).map(String).includes(String(userId || ''))) ids.add(String(a.id || ''));
+        });
+        return ids;
+    }
+
     function renderProfileAchievements(userId) {
         if (!profileAchievements) return;
-        const achievements = (getStore(DB_ACHIEVEMENTS) || []).filter(a => (a.completedBy || []).includes(userId));
+        const awardedIds = getAwardedAchievementIds(userId);
+        const achievements = (getStore(DB_ACHIEVEMENTS) || []).filter(a => awardedIds.has(String(a.id || '')));
         if (!achievements.length) {
             profileAchievements.innerHTML = '<span class="profile-achievements-empty">Nenhuma insígnia conquistada.</span>';
             return;
@@ -1346,7 +1357,9 @@
         const achievements = (getStore(DB_ACHIEVEMENTS) || []).slice()
             .sort((a,b) => String(b.createdAt || '').localeCompare(String(a.createdAt || '')));
         const users = getStore(DB_USERS) || [];
-        const myCount = achievements.filter(a => (a.completedBy || []).includes(currentUser?.id)).length;
+        const awards = getStore(DB_ACHIEVEMENT_AWARDS) || [];
+        const myAwardedIds = getAwardedAchievementIds(currentUser?.id);
+        const myCount = achievements.filter(a => myAwardedIds.has(String(a.id || ''))).length;
         if (achievementsSummary) {
             achievementsSummary.innerHTML = `
                 <span><strong>${achievements.length}</strong> conquista${achievements.length === 1 ? '' : 's'} disponível${achievements.length === 1 ? '' : 'is'}</span>
@@ -1362,9 +1375,10 @@
             return;
         }
         achievementsGrid.innerHTML = achievements.map(a => {
-            const completed = Array.isArray(a.completedBy) ? a.completedBy : [];
-            const mine = completed.includes(currentUser.id);
-            const awardedUsers = completed.map(id => users.find(u => u.id === id)).filter(Boolean);
+            const awardRecipients = awards.filter(x => String(x.achievementId || '') === String(a.id || '')).map(x => String(x.userId || ''));
+            const completed = [...new Set([...(Array.isArray(a.completedBy) ? a.completedBy.map(String) : []), ...awardRecipients])];
+            const mine = completed.includes(String(currentUser.id));
+            const awardedUsers = completed.map(id => users.find(u => String(u.id) === String(id))).filter(Boolean);
             const names = awardedUsers.slice(0, 5).map(u => escapeHtml(u.callsign || u.name || 'Operador')).join(', ');
             const extra = Math.max(0, awardedUsers.length - 5);
             return `
@@ -1506,7 +1520,7 @@
         managingAchievementId = id;
         achievementMembersTitle.textContent = `Concluintes • ${a.title}`;
         const users = (getStore(DB_USERS) || []).slice().sort((x,y) => String(x.callsign || '').localeCompare(String(y.callsign || '')));
-        const completed = new Set(a.completedBy || []);
+        const completed = new Set([...(a.completedBy || []).map(String), ...(getStore(DB_ACHIEVEMENT_AWARDS) || []).filter(x => String(x.achievementId || '') === String(id)).map(x => String(x.userId || ''))]);
         achievementMembersList.innerHTML = users.length ? users.map(u => `
             <label class="achievement-member-option">
                 <input type="checkbox" value="${u.id}" ${completed.has(u.id) ? 'checked' : ''}>
@@ -1647,7 +1661,14 @@
         if (!currentUser) return [];
         const messages = getStore(DB_MESSAGES) || [];
         const lastRead = String(currentUser.chatLastReadAt || '');
-        return messages.filter(m => m.userId !== currentUser.id && String(m.date || '') > lastRead);
+        // O badge/notificação do Chat é exclusivo para menções diretas ao operador.
+        // Mensagens comuns continuam aparecendo no histórico, mas não geram aviso.
+        return messages.filter(m =>
+            m.userId !== currentUser.id &&
+            String(m.date || '') > lastRead &&
+            Array.isArray(m.mentions) &&
+            m.mentions.includes(currentUser.id)
+        );
     }
 
     function updateChatBadge() {
@@ -3420,6 +3441,9 @@
             updateUIForRole(); updateTopbar();
             updateAchievementNotificationBadge();
             setTimeout(maybeShowAchievementNotification, 120);
+        }
+        if (key === DB_ACHIEVEMENTS || key === DB_ACHIEVEMENT_AWARDS) {
+            updateAchievementNotificationBadge();
         }
         const active = document.querySelector('.page:not(.hidden)');
         if (!active) return;
