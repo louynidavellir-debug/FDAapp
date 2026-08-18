@@ -3483,3 +3483,34 @@ body {
 @keyframes achievementPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.035)}}
 .profile-badge.new-achievement{border-color:rgba(255,200,70,.65);box-shadow:0 0 14px rgba(255,190,55,.18)}
 @media(max-width:600px){.achievement-unlocked-content{width:calc(100% - 24px);padding:24px 18px}.achievement-unlocked-badge{width:140px;height:140px}.achievement-unlocked-badge img{max-width:128px;max-height:128px}.achievement-unlocked-actions{flex-direction:column}.achievement-unlocked-actions button{width:100%}}
+
+
+/* ===== DASHBOARD AVISOS / ADMIN ===== */
+.announcement-item {
+    position: relative;
+    padding: 10px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+.announcement-item:last-child { border-bottom: 0; }
+.announcement-text { font-size: .88rem; line-height: 1.45; color: var(--text-primary); white-space: pre-wrap; overflow-wrap: anywhere; }
+.announcement-meta { margin-top: 4px; font-size: .7rem; color: var(--text-dim); }
+.announcement-actions { display: flex; gap: 8px; margin-top: 8px; }
+.announcement-actions button {
+    border: 1px solid rgba(0,229,255,.25);
+    background: rgba(0,229,255,.06);
+    color: var(--text-secondary);
+    border-radius: 7px;
+    padding: 5px 9px;
+    cursor: pointer;
+    font-size: .72rem;
+}
+.announcement-delete-btn { border-color: rgba(255,70,70,.3) !important; color: #ff7777 !important; background: rgba(255,70,70,.06) !important; }
+.announcement-admin-box { margin: 12px 14px 14px; padding-top: 12px; border-top: 1px solid rgba(0,229,255,.12); }
+.announcement-admin-box textarea {
+    width: 100%; resize: vertical; min-height: 72px; box-sizing: border-box;
+    background: rgba(0,0,0,.24); color: var(--text-primary);
+    border: 1px solid rgba(0,229,255,.22); border-radius: 9px;
+    padding: 10px; outline: none; font: inherit;
+}
+.announcement-admin-box textarea:focus { border-color: rgba(0,229,255,.6); box-shadow: 0 0 0 2px rgba(0,229,255,.08); }
+.announcement-admin-box .btn-primary { width: 100%; margin-top: 8px; }

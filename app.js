@@ -124,6 +124,9 @@
     const statGames = $('stat-games');
     const nextGameInfo = $('next-game-info');
     const announcements = $('announcements');
+    const announcementAdminBox = $('announcement-admin-box');
+    const announcementInput = $('announcement-input');
+    const btnAddAnnouncement = $('btn-add-announcement');
     const recentActivity = $('recent-activity');
 
     // Profile
@@ -748,11 +751,24 @@
             nextGameInfo.innerHTML = '<p class="empty-state">Nenhum jogo agendado</p>';
         }
 
-        // Announcements
+        // Announcements — todos podem ler, somente ADMIN pode criar/editar/excluir.
+        if (announcementAdminBox) {
+            announcementAdminBox.classList.toggle('hidden', currentUser?.role !== 'admin');
+        }
         if (anns.length > 0) {
-            announcements.innerHTML = anns.slice(-3).reverse().map(a =>
-                `<div style="padding:6px 0;border-bottom:1px solid rgba(255,255,255,0.04);font-size:0.85rem;">${a.text}<br><span style="font-size:0.7rem;color:var(--text-dim)">${formatDateTime(a.date)}</span></div>`
-            ).join('');
+            announcements.innerHTML = anns.slice().reverse().map(a => {
+                const adminActions = currentUser?.role === 'admin'
+                    ? `<div class="announcement-actions">
+                         <button type="button" class="announcement-edit-btn" data-announcement-edit="${a.id}">Editar</button>
+                         <button type="button" class="announcement-delete-btn" data-announcement-delete="${a.id}">Excluir</button>
+                       </div>`
+                    : '';
+                return `<div class="announcement-item" data-announcement-id="${a.id}">
+                    <div class="announcement-text">${escapeHtml(a.text || '')}</div>
+                    <div class="announcement-meta">${formatDateTime(a.date)}</div>
+                    ${adminActions}
+                </div>`;
+            }).join('');
         } else {
             announcements.innerHTML = '<p class="empty-state">Sem avisos</p>';
         }
@@ -766,6 +782,72 @@
             recentActivity.innerHTML = '<p class="empty-state">Sem atividade</p>';
         }
     }
+
+    function escapeHtml(value) {
+        return String(value ?? '')
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
+    }
+
+    function requireAdminForAnnouncements() {
+        if (!currentUser || currentUser.role !== 'admin') {
+            showToast('Somente o ADMIN pode editar os avisos', 'error');
+            return false;
+        }
+        return true;
+    }
+
+    function saveNewAnnouncement() {
+        if (!requireAdminForAnnouncements()) return;
+        const value = String(announcementInput?.value || '').trim();
+        if (!value) { showToast('Digite o aviso', 'error'); return; }
+        const anns = getStore(DB_ANNOUNCEMENTS) || [];
+        anns.push({ id: generateId(), text: value, date: new Date().toISOString(), createdBy: currentUser.id });
+        setStore(DB_ANNOUNCEMENTS, anns);
+        if (announcementInput) announcementInput.value = '';
+        refreshDashboard();
+        showToast('Aviso publicado', 'success');
+    }
+
+    function editAnnouncement(id) {
+        if (!requireAdminForAnnouncements()) return;
+        const anns = getStore(DB_ANNOUNCEMENTS) || [];
+        const item = anns.find(a => String(a.id) === String(id));
+        if (!item) return;
+        const next = window.prompt('Editar aviso:', item.text || '');
+        if (next === null) return;
+        const clean = next.trim();
+        if (!clean) { showToast('O aviso não pode ficar vazio', 'error'); return; }
+        item.text = clean;
+        item.updatedAt = new Date().toISOString();
+        item.updatedBy = currentUser.id;
+        setStore(DB_ANNOUNCEMENTS, anns);
+        refreshDashboard();
+        showToast('Aviso atualizado', 'success');
+    }
+
+    function deleteAnnouncement(id) {
+        if (!requireAdminForAnnouncements()) return;
+        if (!window.confirm('Excluir este aviso?')) return;
+        const anns = (getStore(DB_ANNOUNCEMENTS) || []).filter(a => String(a.id) !== String(id));
+        setStore(DB_ANNOUNCEMENTS, anns);
+        refreshDashboard();
+        showToast('Aviso excluído', 'success');
+    }
+
+    btnAddAnnouncement?.addEventListener('click', saveNewAnnouncement);
+    announcementInput?.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) saveNewAnnouncement();
+    });
+    announcements?.addEventListener('click', (e) => {
+        const editBtn = e.target.closest('[data-announcement-edit]');
+        if (editBtn) { editAnnouncement(editBtn.dataset.announcementEdit); return; }
+        const deleteBtn = e.target.closest('[data-announcement-delete]');
+        if (deleteBtn) deleteAnnouncement(deleteBtn.dataset.announcementDelete);
+    });
 
     // ===== IMAGE RESIZE UTILITY =====
     function resizeImage(file, maxWidth, quality, callback) {
@@ -1576,6 +1658,8 @@
     // ===== CHAT =====
     let lastMessageCount = 0;
     let knownChatMessageIds = new Set();
+    let chatNotificationBaselineReady = false;
+    let chatNotificationSessionStartedAt = '';
     let mentionQueryState = null;
 
     // ===== CHAT EMBER PARTICLES =====
@@ -1925,9 +2009,25 @@
         }
     });
 
+    function messageActuallyMentionsCurrentUser(msg) {
+        if (!currentUser || !msg || msg.userId === currentUser.id) return false;
+        if (!Array.isArray(msg.mentions) || !msg.mentions.includes(currentUser.id)) return false;
+
+        // Segurança extra: a notificação só é válida se o texto realmente contiver
+        // @CALLSIGN do operador. Isso impede metadados antigos/incorretos de gerar aviso.
+        const callsign = String(currentUser.callsign || '').trim();
+        if (!callsign) return false;
+        const escaped = callsign.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const mentionRx = new RegExp(`(^|\\s)@${escaped}(?=\\s|$|[.,!?;:])`, 'i');
+        return mentionRx.test(String(msg.text || ''));
+    }
+
     function notifyMention(msg) {
-        if (!currentUser || msg.userId === currentUser.id) return;
-        if (!Array.isArray(msg.mentions) || !msg.mentions.includes(currentUser.id)) return;
+        if (!chatNotificationBaselineReady) return;
+        if (!messageActuallyMentionsCurrentUser(msg)) return;
+        // Nunca notificar mensagens anteriores ao início desta sessão do app.
+        if (chatNotificationSessionStartedAt && String(msg.date || '') <= chatNotificationSessionStartedAt) return;
+
         showToast(`${msg.callsign || 'Um operador'} marcou você no Chat`, 'info');
         if ('Notification' in window && Notification.permission === 'granted') {
             navigator.serviceWorker?.ready.then(reg => reg.showNotification('Filhos de Asgard • menção no Chat', {
@@ -1942,6 +2042,16 @@
 
     function handleIncomingChatSync() {
         const messages = getStore(DB_MESSAGES) || [];
+
+        // O primeiro snapshot depois do login é apenas uma linha de base. Ele pode
+        // trazer todo o histórico do Firestore e nunca deve disparar notificações.
+        if (!chatNotificationBaselineReady) {
+            knownChatMessageIds = new Set(messages.map(m => m.id));
+            chatNotificationBaselineReady = true;
+            updateChatBadge();
+            return;
+        }
+
         for (const msg of messages) {
             if (!knownChatMessageIds.has(msg.id)) notifyMention(msg);
         }
@@ -1957,8 +2067,21 @@
         stopChatPoll();
         const initial = getStore(DB_MESSAGES) || [];
         knownChatMessageIds = new Set(initial.map(m => m.id));
+        chatNotificationSessionStartedAt = new Date().toISOString();
+        chatNotificationBaselineReady = true;
         lastMessageCount = initial.length;
         updateChatBadge();
+
+        // Remove notificações antigas de menção que tenham ficado no sistema.
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.ready.then(async reg => {
+                const existing = await reg.getNotifications?.({ tag: undefined }) || [];
+                existing.forEach(n => {
+                    if (String(n.tag || '').startsWith('chat-mention-')) n.close();
+                });
+            }).catch(() => {});
+        }
+
         chatPollInterval = setInterval(() => updateChatBadge(), 1500);
     }
 

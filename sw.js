@@ -1,4 +1,4 @@
-const CACHE_NAME = 'filhos-asgard-v20260817-splash-cyan-flames';
+const CACHE_NAME = 'filhos-asgard-v20260817-chat-mention-strict-dashboard-ann-admin';
 const ASSETS = [
     './', './index.html', './style.css', './app.js', './cloud.js', './firebase-config.js',
     './manifest.json', './icons/icon-192-v17.png', './icons/icon-512-v17.png', './icons/logo-asgard.png'
