@@ -571,9 +571,14 @@
                         </div>
                     </div>
                     <div class="chat-tools">
+                        <button class="chat-tool-btn" id="btn-chat-attach" title="Enviar foto ou vídeo" aria-label="Enviar foto ou vídeo">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21.44 11.05 12.25 20.24a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 1 1-2.83-2.83l8.49-8.48"/></svg>
+                        </button>
+                        <input type="file" id="chat-media-input" accept="image/*,video/*" hidden>
                         <button class="chat-tool-btn" id="btn-chat-emoji" title="Emojis">😊</button>
                         <div class="chat-emoji-picker hidden" id="chat-emoji-picker"></div>
                     </div>
+                    <div class="chat-upload-status hidden" id="chat-upload-status"><div class="chat-upload-status-row"><span id="chat-upload-label">Enviando mídia...</span><strong id="chat-upload-percent">0%</strong></div><div class="chat-upload-progress"><span id="chat-upload-progress-bar"></span></div></div>
                     <div id="chat-reply-preview" class="chat-reply-preview hidden">
                         <div><span>Respondendo a</span><strong id="chat-reply-author"></strong><small id="chat-reply-text"></small></div>
                         <button type="button" id="btn-cancel-chat-reply" aria-label="Cancelar resposta">✕</button>
@@ -1009,7 +1014,7 @@
     <div id="toast" class="toast hidden"></div>
 
     <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
-    <script src="firebase-config.js?v=20260818-2"></script>
+    <script src="firebase-config.js"></script>
     <script type="module" src="cloud.js"></script>
     <script type="module" src="app.js"></script>
 </body>

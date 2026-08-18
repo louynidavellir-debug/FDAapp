@@ -226,6 +226,12 @@
     const btnSendMsg = $('btn-send-msg');
     const chatBadge = $('chat-badge');
     const chatOnlineUsers = $('chat-online-users');
+    const btnChatAttach = $('btn-chat-attach');
+    const chatMediaInput = $('chat-media-input');
+    const chatUploadStatus = $('chat-upload-status');
+    const chatUploadLabel = $('chat-upload-label');
+    const chatUploadPercent = $('chat-upload-percent');
+    const chatUploadProgressBar = $('chat-upload-progress-bar');
     const btnChatEmoji = $('btn-chat-emoji');
     const chatEmojiPicker = $('chat-emoji-picker');
     const chatMentionSuggestions = $('chat-mention-suggestions');
@@ -2074,6 +2080,90 @@
         if (msg.type === 'audio') return `<audio class="chat-media-audio" src="${url}" controls preload="metadata"></audio>`;
         return `<a class="chat-media-file" href="${url}" target="_blank" rel="noopener">📎 ${escapeHtml(msg.mediaName || 'Arquivo')}</a>`;
     }
+
+    function setChatUploadProgress(percent, label = 'Enviando mídia...') {
+        const pct = Math.max(0, Math.min(100, Number(percent || 0)));
+        chatUploadStatus?.classList.remove('hidden');
+        if (chatUploadLabel) chatUploadLabel.textContent = label;
+        if (chatUploadPercent) chatUploadPercent.textContent = `${pct}%`;
+        if (chatUploadProgressBar) chatUploadProgressBar.style.width = `${pct}%`;
+    }
+
+    function hideChatUploadProgress() {
+        chatUploadStatus?.classList.add('hidden');
+        if (chatUploadProgressBar) chatUploadProgressBar.style.width = '0%';
+        if (chatUploadPercent) chatUploadPercent.textContent = '0%';
+    }
+
+    async function sendChatMedia(file) {
+        if (!file || !currentUser) return;
+        const mime = String(file.type || '').toLowerCase();
+        const isImage = mime.startsWith('image/');
+        const isVideo = mime.startsWith('video/');
+        if (!isImage && !isVideo) {
+            showToast('Selecione somente uma foto ou vídeo.', 'error');
+            return;
+        }
+        const maxBytes = isImage ? 10 * 1024 * 1024 : 50 * 1024 * 1024;
+        if (file.size > maxBytes) {
+            showToast(isImage ? 'A imagem deve ter no máximo 10 MB.' : 'O vídeo deve ter no máximo 50 MB.', 'error');
+            return;
+        }
+        if (!window.AsgardCloud?.uploadChatMedia || !window.AsgardCloud?.addMessage) {
+            showToast('O envio de mídia requer conexão com o Firebase Storage.', 'error');
+            return;
+        }
+
+        const text = chatInput.value.trim();
+        const mentionData = extractMentions(text);
+        const messageId = generateId();
+        btnChatAttach.disabled = true;
+        btnSendMsg.disabled = true;
+        setChatUploadProgress(0, isImage ? 'Enviando foto...' : 'Enviando vídeo...');
+
+        try {
+            const uploaded = await window.AsgardCloud.uploadChatMedia(file, messageId, pct => {
+                setChatUploadProgress(pct, isImage ? 'Enviando foto...' : 'Enviando vídeo...');
+            });
+            await window.AsgardCloud.addMessage({
+                id: messageId,
+                userId: currentUser.id,
+                callsign: currentUser.callsign,
+                text,
+                type: uploaded.type,
+                mediaUrl: uploaded.mediaUrl,
+                mediaName: uploaded.mediaName,
+                mimeType: uploaded.mimeType,
+                storagePath: uploaded.storagePath,
+                mediaSize: uploaded.size,
+                mentions: mentionData.ids,
+                mentionCallsigns: mentionData.callsigns,
+                date: new Date().toISOString()
+            });
+            chatInput.value = '';
+            hideMentionSuggestions();
+            setChatUploadProgress(100, 'Enviado!');
+            setTimeout(hideChatUploadProgress, 650);
+        } catch (err) {
+            console.error('[Chat mídia]', err);
+            hideChatUploadProgress();
+            showToast(err?.message || 'Não foi possível enviar a mídia.', 'error');
+        } finally {
+            btnChatAttach.disabled = false;
+            btnSendMsg.disabled = false;
+            if (chatMediaInput) chatMediaInput.value = '';
+            chatInput.focus();
+        }
+    }
+
+    btnChatAttach?.addEventListener('click', () => {
+        if (!currentUser) return;
+        chatMediaInput?.click();
+    });
+    chatMediaInput?.addEventListener('change', () => {
+        const file = chatMediaInput.files?.[0];
+        if (file) sendChatMedia(file);
+    });
 
     const CHAT_EMOJIS = ['😀','😂','🤣','😊','😍','😎','🤔','😅','😢','😡','👍','👎','👏','🙏','💪','🔥','⚡','🎯','🏆','💀','❤️','💙','✅','❌','📍','🎮','👊','🤝','💥','⭐'];
     if (chatEmojiPicker) {

@@ -3559,6 +3559,14 @@ body {
 /* Chat media upload */
 .chat-tool-btn svg{width:19px;height:19px;display:block;margin:auto}
 .chat-tool-btn:disabled{opacity:.45;cursor:not-allowed}
+.chat-upload-status{padding:8px 16px 2px;background:var(--bg-secondary);border-top:1px solid rgba(0,229,255,.07)}
+.chat-upload-status-row{display:flex;align-items:center;justify-content:space-between;gap:12px;color:#91a9b0;font-size:.72rem}
+.chat-upload-status-row strong{color:var(--cyan);font-family:Orbitron,sans-serif;font-size:.68rem}
+.chat-upload-progress{height:4px;margin-top:6px;border-radius:999px;overflow:hidden;background:rgba(0,229,255,.08)}
+.chat-upload-progress span{display:block;width:0;height:100%;background:linear-gradient(90deg,#00b8d4,#00e5ff);transition:width .18s ease}
+.chat-media-image{display:block;max-width:min(320px,72vw);max-height:360px;border-radius:10px;border:1px solid rgba(0,229,255,.16);object-fit:cover;margin-top:6px;background:#06090a}
+.chat-media-video{display:block;width:min(360px,74vw);max-height:420px;border-radius:10px;border:1px solid rgba(0,229,255,.16);margin-top:6px;background:#000}
+@media(max-width:600px){.chat-upload-status{padding-left:10px;padding-right:10px}.chat-media-image{max-width:76vw;max-height:330px}.chat-media-video{width:78vw;max-height:380px}}
 
 
 /* Featured achievement selection */

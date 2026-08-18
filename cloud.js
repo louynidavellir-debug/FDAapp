@@ -8,11 +8,14 @@ import {
   getFirestore, collection, doc, getDoc, getDocs, setDoc, deleteDoc, writeBatch,
   onSnapshot, runTransaction, serverTimestamp, query, where, orderBy, limit
 } from 'https://www.gstatic.com/firebasejs/12.17.1/firebase-firestore.js';
+import {
+  getStorage, ref as storageRef, uploadBytesResumable, getDownloadURL
+} from 'https://www.gstatic.com/firebasejs/12.17.1/firebase-storage.js';
 
 const cache = new Map();
 const remoteCache = new Map();
 const unsubs = [];
-let app = null, auth = null, db = null, initialized = false, connected = false;
+let app = null, auth = null, db = null, storage = null, initialized = false, connected = false;
 
 const ARRAY_COLLECTIONS = {
   asgard_messages: 'messages',
@@ -278,6 +281,51 @@ async function updateContribution(userId, monthKey, patch) {
 }
 
 
+async function uploadChatMedia(file, messageId, onProgress = null) {
+  const me = auth?.currentUser;
+  if (!me) throw new Error('Usuário não autenticado.');
+  if (!storage) throw new Error('Firebase Storage não inicializado.');
+  if (!(file instanceof File)) throw new Error('Arquivo inválido.');
+
+  const mime = String(file.type || '').toLowerCase();
+  const isImage = mime.startsWith('image/');
+  const isVideo = mime.startsWith('video/');
+  if (!isImage && !isVideo) throw new Error('Envie somente fotos ou vídeos.');
+
+  const maxBytes = isImage ? 10 * 1024 * 1024 : 50 * 1024 * 1024;
+  if (file.size <= 0 || file.size > maxBytes) {
+    throw new Error(isImage ? 'A imagem deve ter no máximo 10 MB.' : 'O vídeo deve ter no máximo 50 MB.');
+  }
+
+  const id = String(messageId || `${Date.now()}_${me.uid}`).replace(/[^a-zA-Z0-9_-]/g, '_');
+  const originalName = String(file.name || (isImage ? 'imagem' : 'video'));
+  const safeName = originalName.replace(/[^a-zA-Z0-9._-]/g, '_').slice(-120) || (isImage ? 'imagem' : 'video');
+  const path = `chat-media/${me.uid}/${id}/${Date.now()}_${safeName}`;
+  const task = uploadBytesResumable(storageRef(storage, path), file, {
+    contentType: mime,
+    customMetadata: { ownerUid: me.uid, messageId: id }
+  });
+
+  return await new Promise((resolve, reject) => {
+    task.on('state_changed', snap => {
+      const pct = snap.totalBytes ? Math.round((snap.bytesTransferred / snap.totalBytes) * 100) : 0;
+      try { if (typeof onProgress === 'function') onProgress(pct); } catch (_) {}
+    }, reject, async () => {
+      try {
+        const url = await getDownloadURL(task.snapshot.ref);
+        resolve({
+          mediaUrl: url,
+          mediaName: originalName,
+          mimeType: mime,
+          type: isImage ? 'image' : 'video',
+          storagePath: path,
+          size: file.size
+        });
+      } catch (err) { reject(err); }
+    });
+  });
+}
+
 async function addMessage(message) {
   const me = auth?.currentUser;
   if (!me) throw new Error('Usuário não autenticado.');
@@ -327,6 +375,7 @@ async function init() {
   app = initializeApp(cfg());
   auth = getAuth(app);
   db = getFirestore(app);
+  storage = getStorage(app);
   await setPersistence(auth, browserLocalPersistence);
   initialized = true;
   return { online:true, configured:true };
@@ -816,7 +865,7 @@ function set(key, value) {
 
 window.AsgardCloud = {
   init, connectSession, readMyProfile, get, set, hasConfig, removeSession,
-  signIn, register, getCurrentUser, waitForAuth, updatePresence, addMessage, updateChatLastRead, updateContribution,
+  signIn, register, getCurrentUser, waitForAuth, updatePresence, addMessage, uploadChatMedia, updateChatLastRead, updateContribution,
   createAnnouncement, updateAnnouncement, removeAnnouncement,
   createProduct, updateProduct, removeProduct,
   createAchievement, updateAchievement, setAchievementRecipients, markAchievementNotificationRead, removeAchievement, updateFeaturedAchievements,
