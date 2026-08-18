@@ -1,4 +1,4 @@
-const CACHE_NAME = 'asgard-v1-contrib-quota-20260818-v1-mediafix-no-chat-media';
+const CACHE_NAME = 'asgard-v1-20260818-firebase-config-restored-v2';
 const ASSETS = [
     './', './index.html', './style.css', './app.js', './cloud.js', './firebase-config.js',
     './manifest.json', './icons/icon-192-v17.png', './icons/icon-512-v17.png', './icons/logo-asgard.png'
@@ -24,6 +24,18 @@ self.addEventListener('fetch', event => {
     if (url.hostname.includes('firebase') || url.hostname.includes('googleapis.com') ||
         url.hostname.includes('gstatic.com') || url.hostname.includes('google.com') ||
         url.hostname.includes('jsdelivr.net')) return;
+    // Firebase configuration must always prefer the deployed file.
+    // This prevents an old/empty firebase-config.js from being kept by the PWA cache.
+    if (url.origin === self.location.origin && url.pathname.endsWith('/firebase-config.js')) {
+        event.respondWith(
+            fetch(req, { cache: 'no-store' }).then(response => {
+                if (response.ok) caches.open(CACHE_NAME).then(cache => cache.put(req, response.clone()));
+                return response;
+            }).catch(() => caches.match(req))
+        );
+        return;
+    }
+
     // Navigations stay network-first so a newly deployed index.html is discovered quickly.
     if (req.mode === 'navigate') {
         event.respondWith(
