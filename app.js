@@ -482,6 +482,64 @@
         toggleAuthForm(false);
     });
 
+    // ===== PRESENÇA ONLINE =====
+    // Um operador só é considerado online enquanto o app estiver realmente aberto/visível.
+    // O heartbeat evita status preso em "online" se o navegador/app for encerrado abruptamente.
+    const PRESENCE_HEARTBEAT_MS = 20000;
+    const PRESENCE_STALE_MS = 55000;
+    let presenceHeartbeat = null;
+
+    function isUserOnline(user) {
+        if (!user || user.online !== true || !user.lastSeen) return false;
+        const seen = new Date(user.lastSeen).getTime();
+        return Number.isFinite(seen) && (Date.now() - seen) <= PRESENCE_STALE_MS;
+    }
+
+    async function pushPresence(isOnline) {
+        if (!currentUser || !window.AsgardCloud?.updatePresence) return;
+        try {
+            const result = await window.AsgardCloud.updatePresence(isOnline);
+            if (result) {
+                currentUser.online = result.online;
+                currentUser.lastSeen = result.lastSeen;
+            }
+        } catch (err) {
+            console.warn('[Presence]', err);
+        }
+    }
+
+    function startPresenceTracking() {
+        stopPresenceTracking(false);
+        const active = !document.hidden;
+        pushPresence(active);
+        if (active) {
+            presenceHeartbeat = setInterval(() => {
+                if (!document.hidden && currentUser) pushPresence(true);
+            }, PRESENCE_HEARTBEAT_MS);
+        }
+    }
+
+    function stopPresenceTracking(markOffline = true) {
+        if (presenceHeartbeat) { clearInterval(presenceHeartbeat); presenceHeartbeat = null; }
+        if (markOffline && currentUser) pushPresence(false);
+    }
+
+    document.addEventListener('visibilitychange', () => {
+        if (!currentUser) return;
+        if (document.hidden) {
+            stopPresenceTracking(true);
+        } else {
+            startPresenceTracking();
+        }
+    });
+
+    window.addEventListener('pagehide', () => {
+        if (currentUser) pushPresence(false);
+    });
+    window.addEventListener('beforeunload', () => {
+        if (currentUser) pushPresence(false);
+    });
+
     btnLogin.addEventListener('click', async () => {
         const callsign = loginCallsign.value.trim().toUpperCase();
         const pin = loginPin.value.trim();
@@ -498,12 +556,7 @@
             // Enter first. Presence/activity writes are best-effort and must never
             // turn a valid authentication into a blocked login.
             currentUser = { ...user, online:true, lastSeen:new Date().toISOString() };
-            try {
-                const nextUsers = users.some(u => u.id === currentUser.id)
-                    ? users.map(u => u.id === currentUser.id ? { ...u, online:true, lastSeen:currentUser.lastSeen } : u)
-                    : [currentUser, ...users];
-                setStore(DB_USERS, nextUsers);
-            } catch (presenceErr) { console.warn('Presence update skipped', presenceErr); }
+            try { await pushPresence(true); } catch (presenceErr) { console.warn('Presence update skipped', presenceErr); }
             try { addActivity(`${currentUser.callsign} entrou online`); } catch (activityErr) { console.warn('Activity skipped', activityErr); }
             showToast(`Bem-vindo, ${user.callsign}!`, 'success');
             enterApp();
@@ -540,7 +593,7 @@
             if (!currentUser) throw new Error('Perfil criado, mas ainda não sincronizado. Tente entrar novamente.');
             currentUser.online = true;
             currentUser.lastSeen = new Date().toISOString();
-            setStore(DB_USERS, users);
+            await pushPresence(true);
             addActivity(`${callsign} se registrou na equipe`);
             showToast(`Registro concluído! Bem-vindo, ${callsign}!`, 'success');
             enterApp();
@@ -568,10 +621,8 @@
                 const users = getStore(DB_USERS) || [];
                 const user = users.find(u => u.id === authUser.uid);
                 if (user) {
-                    user.online = true;
-                    user.lastSeen = new Date().toISOString();
-                    setStore(DB_USERS, users);
                     currentUser = user;
+                    await pushPresence(true);
                     enterApp();
                     return;
                 }
@@ -590,6 +641,7 @@
             updateUIForRole();
             updateTopbar();
             navigateTo('dashboard');
+            startPresenceTracking();
             startChatPoll();
             updateAchievementNotificationBadge();
             setTimeout(maybeShowAchievementNotification, 350);
@@ -698,14 +750,8 @@
 
     // ===== LOGOUT =====
     btnLogout.addEventListener('click', async () => {
-        const users = getStore(DB_USERS) || [];
-        const user = users.find(u => u.id === currentUser.id);
-        if (user) {
-            user.online = false;
-            user.lastSeen = new Date().toISOString();
-            setStore(DB_USERS, users);
-        }
-
+        stopPresenceTracking(false);
+        await pushPresence(false);
         addActivity(`${currentUser.callsign} saiu`);
         await window.AsgardCloud?.removeSession();
         currentUser = null;
@@ -728,7 +774,7 @@
         const anns = getStore(DB_ANNOUNCEMENTS) || [];
 
         statMembers.textContent = users.length;
-        statOnline.textContent = users.filter(u => u.online).length;
+        statOnline.textContent = users.filter(isUserOnline).length;
         statGames.textContent = games.length;
 
         // Next game
@@ -1143,7 +1189,7 @@
                         <div class="member-role role-badge ${u.role}">${u.role === 'admin' ? 'ADMIN' : 'OPERADOR'}</div>
                     </div>
                     ${currentUser.role === 'admin' && u.id !== currentUser.id ? `<button type="button" class="member-manage-btn" data-manage-id="${u.id}" title="Gerenciar membro">Gerenciar</button>` : ''}
-                    <div class="member-status ${u.online ? 'online' : 'offline'}" title="${u.online ? 'Online' : 'Offline'}"></div>
+                    <div class="member-status ${isUserOnline(u) ? 'online' : 'offline'}" title="${isUserOnline(u) ? 'Online' : 'Offline'}"></div>
                 </div>
             `).join('');
 
@@ -1815,7 +1861,7 @@
             lastMessageCount = messages.length;
         }
 
-        const onlineUsers = users.filter(u => u.online);
+        const onlineUsers = users.filter(isUserOnline);
         chatOnlineUsers.innerHTML = onlineUsers.map(u =>
             `<span class="online-user-dot">${escapeHtml(u.callsign)}</span>`
         ).join('');

@@ -292,6 +292,18 @@ async function addMessage(message) {
 }
 
 
+
+async function updatePresence(isOnline = true) {
+  const me = auth?.currentUser;
+  if (!me) return false;
+  const now = new Date().toISOString();
+  await setDoc(doc(db, 'profiles', me.uid), {
+    online: Boolean(isOnline),
+    lastSeen: now
+  }, { merge:true });
+  return { online:Boolean(isOnline), lastSeen:now };
+}
+
 async function updateChatLastRead(date) {
   const me = auth?.currentUser;
   if (!me) throw new Error('Usuário não autenticado.');
@@ -577,7 +589,7 @@ function set(key, value) {
 
 window.AsgardCloud = {
   init, connectSession, readMyProfile, get, set, hasConfig, removeSession,
-  signIn, register, getCurrentUser, waitForAuth, addMessage, updateChatLastRead, updateContribution,
+  signIn, register, getCurrentUser, waitForAuth, updatePresence, addMessage, updateChatLastRead, updateContribution,
   createAnnouncement, updateAnnouncement, removeAnnouncement,
   createProduct, updateProduct, removeProduct,
   createAchievement, updateAchievement, setAchievementRecipients, markAchievementNotificationRead, removeAchievement,

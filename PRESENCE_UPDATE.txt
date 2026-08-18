@@ -1,0 +1,7 @@
+STATUS ONLINE
+
+- O operador fica ONLINE somente enquanto o app está aberto e visível.
+- Ao minimizar/trocar de aba/fechar/sair, o app tenta marcar OFFLINE imediatamente.
+- Há heartbeat enquanto o app está ativo para impedir status ONLINE preso após encerramento abrupto.
+- A interface considera como offline qualquer presença antiga, mesmo que um fechamento brusco impeça a última gravação.
+- Não exige alteração nas regras do Firestore; cada usuário atualiza apenas o próprio perfil.
