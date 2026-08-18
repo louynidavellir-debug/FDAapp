@@ -350,6 +350,50 @@ function waitForAuth() {
   });
 }
 
+
+async function createAnnouncement(announcement) {
+  const me = auth?.currentUser;
+  if (!me) throw new Error('Sessão expirada.');
+  const role = await currentRole();
+  if (role !== 'admin') throw new Error('Somente o ADMIN pode publicar avisos.');
+  const id = String(announcement?.id || `${Date.now()}_${me.uid}`);
+  const payload = cleanFirestoreObject({
+    id,
+    text: String(announcement?.text || '').trim(),
+    date: announcement?.date || new Date().toISOString(),
+    createdBy: me.uid
+  });
+  if (!payload.text) throw new Error('Digite o aviso.');
+  await setDoc(doc(db, 'announcements', id), payload, { merge:false });
+  await readCollection('asgard_announcements', 'announcements', role);
+  return payload;
+}
+
+async function updateAnnouncement(announcementId, patch) {
+  const me = auth?.currentUser;
+  if (!me) throw new Error('Sessão expirada.');
+  const role = await currentRole();
+  if (role !== 'admin') throw new Error('Somente o ADMIN pode editar avisos.');
+  const id = String(announcementId || '');
+  const text = String(patch?.text || '').trim();
+  if (!id || !text) throw new Error('Aviso inválido.');
+  await setDoc(doc(db, 'announcements', id), cleanFirestoreObject({ text, updatedAt:new Date().toISOString(), updatedBy:me.uid }), { merge:true });
+  await readCollection('asgard_announcements', 'announcements', role);
+  return true;
+}
+
+async function removeAnnouncement(announcementId) {
+  const me = auth?.currentUser;
+  if (!me) throw new Error('Sessão expirada.');
+  const role = await currentRole();
+  if (role !== 'admin') throw new Error('Somente o ADMIN pode excluir avisos.');
+  const id = String(announcementId || '');
+  if (!id) throw new Error('Aviso inválido.');
+  await deleteDoc(doc(db, 'announcements', id));
+  await readCollection('asgard_announcements', 'announcements', role);
+  return true;
+}
+
 async function createProduct(product) {
   const me = auth?.currentUser;
   if (!me) throw new Error('Sessão expirada.');
@@ -534,6 +578,7 @@ function set(key, value) {
 window.AsgardCloud = {
   init, connectSession, readMyProfile, get, set, hasConfig, removeSession,
   signIn, register, getCurrentUser, waitForAuth, addMessage, updateChatLastRead, updateContribution,
+  createAnnouncement, updateAnnouncement, removeAnnouncement,
   createProduct, updateProduct, removeProduct,
   createAchievement, updateAchievement, setAchievementRecipients, markAchievementNotificationRead, removeAchievement,
   isOnline: () => initialized

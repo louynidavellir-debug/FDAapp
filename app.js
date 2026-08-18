@@ -800,19 +800,28 @@
         return true;
     }
 
-    function saveNewAnnouncement() {
+    async function saveNewAnnouncement() {
         if (!requireAdminForAnnouncements()) return;
         const value = String(announcementInput?.value || '').trim();
         if (!value) { showToast('Digite o aviso', 'error'); return; }
-        const anns = getStore(DB_ANNOUNCEMENTS) || [];
-        anns.push({ id: generateId(), text: value, date: new Date().toISOString(), createdBy: currentUser.id });
-        setStore(DB_ANNOUNCEMENTS, anns);
-        if (announcementInput) announcementInput.value = '';
-        refreshDashboard();
-        showToast('Aviso publicado', 'success');
+        try {
+            if (window.AsgardCloud?.createAnnouncement) {
+                await window.AsgardCloud.createAnnouncement({ id: generateId(), text: value, date: new Date().toISOString() });
+            } else {
+                const anns = getStore(DB_ANNOUNCEMENTS) || [];
+                anns.push({ id: generateId(), text: value, date: new Date().toISOString(), createdBy: currentUser.id });
+                setStore(DB_ANNOUNCEMENTS, anns);
+            }
+            if (announcementInput) announcementInput.value = '';
+            refreshDashboard();
+            showToast('Aviso publicado', 'success');
+        } catch (err) {
+            console.error('[Avisos] Falha ao publicar:', err);
+            showToast(err?.message || 'Não foi possível publicar o aviso', 'error');
+        }
     }
 
-    function editAnnouncement(id) {
+    async function editAnnouncement(id) {
         if (!requireAdminForAnnouncements()) return;
         const anns = getStore(DB_ANNOUNCEMENTS) || [];
         const item = anns.find(a => String(a.id) === String(id));
@@ -821,21 +830,29 @@
         if (next === null) return;
         const clean = next.trim();
         if (!clean) { showToast('O aviso não pode ficar vazio', 'error'); return; }
-        item.text = clean;
-        item.updatedAt = new Date().toISOString();
-        item.updatedBy = currentUser.id;
-        setStore(DB_ANNOUNCEMENTS, anns);
-        refreshDashboard();
-        showToast('Aviso atualizado', 'success');
+        try {
+            if (window.AsgardCloud?.updateAnnouncement) await window.AsgardCloud.updateAnnouncement(id, { text: clean });
+            else {
+                item.text = clean; item.updatedAt = new Date().toISOString(); item.updatedBy = currentUser.id;
+                setStore(DB_ANNOUNCEMENTS, anns);
+            }
+            refreshDashboard();
+            showToast('Aviso atualizado', 'success');
+        } catch (err) { showToast(err?.message || 'Não foi possível atualizar o aviso', 'error'); }
     }
 
-    function deleteAnnouncement(id) {
+    async function deleteAnnouncement(id) {
         if (!requireAdminForAnnouncements()) return;
         if (!window.confirm('Excluir este aviso?')) return;
-        const anns = (getStore(DB_ANNOUNCEMENTS) || []).filter(a => String(a.id) !== String(id));
-        setStore(DB_ANNOUNCEMENTS, anns);
-        refreshDashboard();
-        showToast('Aviso excluído', 'success');
+        try {
+            if (window.AsgardCloud?.removeAnnouncement) await window.AsgardCloud.removeAnnouncement(id);
+            else {
+                const anns = (getStore(DB_ANNOUNCEMENTS) || []).filter(a => String(a.id) !== String(id));
+                setStore(DB_ANNOUNCEMENTS, anns);
+            }
+            refreshDashboard();
+            showToast('Aviso excluído', 'success');
+        } catch (err) { showToast(err?.message || 'Não foi possível excluir o aviso', 'error'); }
     }
 
     btnAddAnnouncement?.addEventListener('click', saveNewAnnouncement);
