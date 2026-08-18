@@ -121,6 +121,8 @@
     // Dashboard
     const statMembers = $('stat-members');
     const statOnline = $('stat-online');
+    const statOnlineDetail = $('stat-online-detail');
+    const profilePresence = $('profile-presence');
     const statGames = $('stat-games');
     const nextGameInfo = $('next-game-info');
     const announcements = $('announcements');
@@ -774,7 +776,9 @@
         const anns = getStore(DB_ANNOUNCEMENTS) || [];
 
         statMembers.textContent = users.length;
-        statOnline.textContent = users.filter(isUserOnline).length;
+        const onlineCount = users.filter(isUserOnline).length;
+        statOnline.textContent = onlineCount;
+        if (statOnlineDetail) statOnlineDetail.textContent = `${onlineCount} ${onlineCount === 1 ? 'operador ativo' : 'operadores ativos'}`;
         statGames.textContent = games.length;
 
         // Next game
@@ -1040,6 +1044,13 @@
         profileCallsign.textContent = profileUser.callsign || '—';
         profileRole.textContent = profileUser.role === 'admin' ? 'ADMIN' : 'OPERADOR';
         profileRole.className = `role-badge large ${profileUser.role || 'operador'}`;
+        if (profilePresence) {
+            const online = isUserOnline(profileUser);
+            profilePresence.className = `profile-presence ${online ? 'online' : 'offline'}`;
+            const text = profilePresence.querySelector('.presence-text');
+            if (text) text.textContent = online ? 'Online agora' : 'Offline';
+            profilePresence.title = online ? 'Operador está dentro do app' : 'Operador não está ativo no app';
+        }
         profileName.textContent = profileUser.name || '—';
         profileCallsignText.textContent = profileUser.callsign || '—';
         profileFuncao.textContent = profileUser.funcao || 'Operador';
@@ -1189,7 +1200,10 @@
                         <div class="member-role role-badge ${u.role}">${u.role === 'admin' ? 'ADMIN' : 'OPERADOR'}</div>
                     </div>
                     ${currentUser.role === 'admin' && u.id !== currentUser.id ? `<button type="button" class="member-manage-btn" data-manage-id="${u.id}" title="Gerenciar membro">Gerenciar</button>` : ''}
-                    <div class="member-status ${isUserOnline(u) ? 'online' : 'offline'}" title="${isUserOnline(u) ? 'Online' : 'Offline'}"></div>
+                    <div class="member-presence ${isUserOnline(u) ? 'online' : 'offline'}" title="${isUserOnline(u) ? 'Operador online agora' : 'Operador offline'}">
+                        <span class="member-status ${isUserOnline(u) ? 'online' : 'offline'}"></span>
+                        <span>${isUserOnline(u) ? 'Online' : 'Offline'}</span>
+                    </div>
                 </div>
             `).join('');
 

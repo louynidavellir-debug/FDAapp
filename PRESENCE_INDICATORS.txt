@@ -1,0 +1,6 @@
+INDICADORES VISUAIS DE PRESENÇA
+
+- Aba Membros: mostra ponto + texto Online/Offline ao lado de cada operador.
+- Perfil: mostra Online agora/Offline abaixo do cargo.
+- Dashboard: mostra a quantidade de operadores ativos no app.
+- O estado usa o heartbeat/lastSeen da correção de presença anterior.
