@@ -9,7 +9,7 @@ import {
   onSnapshot, runTransaction, serverTimestamp, query, where, orderBy, limit
 } from 'https://www.gstatic.com/firebasejs/12.17.1/firebase-firestore.js';
 import {
-  getStorage, ref as storageRef, uploadBytesResumable, getDownloadURL
+  getStorage, ref as storageRef, uploadBytesResumable, getDownloadURL, setMaxUploadRetryTime
 } from 'https://www.gstatic.com/firebasejs/12.17.1/firebase-storage.js';
 
 const cache = new Map();
@@ -307,10 +307,45 @@ async function uploadChatMedia(file, messageId, onProgress = null) {
   });
 
   return await new Promise((resolve, reject) => {
+    let settled = false;
+    let lastTransferred = 0;
+    let stallTimer = null;
+
+    const clearStallTimer = () => {
+      if (stallTimer) clearTimeout(stallTimer);
+      stallTimer = null;
+    };
+    const armStallTimer = () => {
+      clearStallTimer();
+      stallTimer = setTimeout(() => {
+        if (settled) return;
+        settled = true;
+        try { task.cancel(); } catch (_) {}
+        const err = new Error('O upload não conseguiu iniciar. Verifique se o Firebase Storage está ativado, se o projeto está no plano Blaze e se storage.rules foi publicado.');
+        err.code = 'storage/upload-stalled';
+        reject(err);
+      }, 35000);
+    };
+
+    armStallTimer();
     task.on('state_changed', snap => {
-      const pct = snap.totalBytes ? Math.round((snap.bytesTransferred / snap.totalBytes) * 100) : 0;
+      if (settled) return;
+      const transferred = Number(snap.bytesTransferred || 0);
+      const pct = snap.totalBytes ? Math.round((transferred / snap.totalBytes) * 100) : 0;
+      if (transferred > lastTransferred) {
+        lastTransferred = transferred;
+        armStallTimer();
+      }
       try { if (typeof onProgress === 'function') onProgress(pct); } catch (_) {}
-    }, reject, async () => {
+    }, err => {
+      if (settled) return;
+      settled = true;
+      clearStallTimer();
+      reject(err);
+    }, async () => {
+      if (settled) return;
+      settled = true;
+      clearStallTimer();
       try {
         const url = await getDownloadURL(task.snapshot.ref);
         resolve({
@@ -376,6 +411,10 @@ async function init() {
   auth = getAuth(app);
   db = getFirestore(app);
   storage = getStorage(app);
+  // Fail fast instead of leaving media uploads apparently frozen at 0% for minutes.
+  // This is especially important when Storage is disabled, billing is unavailable,
+  // rules reject the upload, or the device loses connectivity.
+  try { setMaxUploadRetryTime(storage, 25000); } catch (_) {}
   await setPersistence(auth, browserLocalPersistence);
   initialized = true;
   return { online:true, configured:true };

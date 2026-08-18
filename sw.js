@@ -1,4 +1,4 @@
-const CACHE_NAME = 'asgard-v1-contrib-quota-20260818-v1';
+const CACHE_NAME = 'asgard-v1-contrib-quota-20260818-v1-mediafix';
 const ASSETS = [
     './', './index.html', './style.css', './app.js', './cloud.js', './firebase-config.js',
     './manifest.json', './icons/icon-192-v17.png', './icons/icon-512-v17.png', './icons/logo-asgard.png'

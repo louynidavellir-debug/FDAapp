@@ -17,3 +17,8 @@ IMPORTANTE — FIREBASE:
 3. Confirme que o Firebase Storage está ativado no projeto filhosdeasgard-7204e.
 
 Storage paths: chat-media/{uid}/{messageId}/{arquivo}
+
+IMPORTANTE (Firebase 2026):
+- Desde 03/02/2026, o Cloud Storage for Firebase exige que o projeto esteja no plano Blaze para manter acesso ao bucket.
+- Se o upload ficar em 0%, confira Firebase Console > Uso e faturamento e confirme que o projeto está no Blaze.
+- Esta versão reduz o tempo de retry e mostra um erro específico em vez de permanecer indefinidamente em 0%.

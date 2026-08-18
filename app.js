@@ -2147,7 +2147,20 @@
         } catch (err) {
             console.error('[Chat mídia]', err);
             hideChatUploadProgress();
-            showToast(err?.message || 'Não foi possível enviar a mídia.', 'error');
+            const code = String(err?.code || '');
+            let message = err?.message || 'Não foi possível enviar a mídia.';
+            if (code.includes('quota-exceeded')) {
+                message = 'Firebase Storage indisponível por cobrança/cota. Desde 03/02/2026 o Storage exige o plano Blaze. Ative o Blaze no projeto e tente novamente.';
+            } else if (code.includes('unauthorized')) {
+                message = 'O Firebase Storage recusou o arquivo. Publique o arquivo storage.rules desta versão no Firebase.';
+            } else if (code.includes('bucket-not-found') || code.includes('no-default-bucket')) {
+                message = 'O bucket do Firebase Storage não foi encontrado. Ative o Storage no projeto Firebase.';
+            } else if (code.includes('unauthenticated')) {
+                message = 'Sua sessão expirou. Entre novamente antes de enviar a mídia.';
+            } else if (code.includes('retry-limit-exceeded') || code.includes('upload-stalled')) {
+                message = 'O upload não iniciou. Verifique internet, Firebase Storage ativo, plano Blaze e storage.rules publicado.';
+            }
+            showToast(message, 'error');
         } finally {
             btnChatAttach.disabled = false;
             btnSendMsg.disabled = false;

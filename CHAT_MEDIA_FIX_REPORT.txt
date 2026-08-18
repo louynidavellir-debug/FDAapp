@@ -1,0 +1,22 @@
+CORREÇÃO — UPLOAD DE FOTOS/VÍDEOS NO CHAT
+Data: 18/08/2026
+
+Problema observado:
+- Upload permanecia visualmente em 0% por muito tempo quando o Firebase Storage não conseguia iniciar a transferência.
+
+Correções aplicadas:
+1. Tempo máximo de retry do Firebase Storage reduzido para 25 segundos.
+2. Watchdog de 35 segundos sem transferência; o upload é cancelado e uma mensagem clara é exibida.
+3. Mensagens específicas para:
+   - storage/quota-exceeded
+   - storage/unauthorized
+   - storage/bucket-not-found
+   - storage/no-default-bucket
+   - storage/unauthenticated
+   - storage/retry-limit-exceeded
+4. Mantidos limites: imagens 10 MB e vídeos 50 MB.
+5. Cache do PWA atualizado.
+
+ATENÇÃO:
+Desde 03/02/2026, o Cloud Storage for Firebase exige plano Blaze para uso do bucket. Se o projeto estiver no Spark, o upload não funcionará mesmo com o código correto.
+Também é necessário publicar storage.rules no Firebase Storage.
