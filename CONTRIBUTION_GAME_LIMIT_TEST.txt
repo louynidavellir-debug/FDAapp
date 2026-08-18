@@ -1,0 +1,16 @@
+Teste estático da regra de limite mensal
+
+[OK] app.js passa em node --check
+[OK] cloud.js passa em node --check
+[OK] sw.js passa em node --check
+[OK] Regra identifica status exato "Em Atraso"
+[OK] Limite é calculado pelo mês YYYY-MM da operação
+[OK] Usuário já confirmado pode cancelar normalmente
+[OK] Check-in impede cancelamento, preservando a participação
+[OK] Operação concluída continua contando no limite mensal
+[OK] Exclusão pelo ADMIN remove a reserva mensal
+[OK] Transação usa documento único por usuário/mês
+[OK] Interface desabilita novas confirmações quando o limite foi atingido
+[OK] Regras de contribuição impedem operador de trocar o próprio status
+
+Observação: teste real contra um projeto Firebase publicado depende das regras serem publicadas no console do Firebase.

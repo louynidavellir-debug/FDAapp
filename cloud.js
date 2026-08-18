@@ -8,11 +8,14 @@ import {
   getFirestore, collection, doc, getDoc, getDocs, setDoc, deleteDoc, writeBatch,
   onSnapshot, runTransaction, serverTimestamp, query, where, orderBy, limit
 } from 'https://www.gstatic.com/firebasejs/12.17.1/firebase-firestore.js';
+import {
+  getStorage, ref as storageRef, uploadBytesResumable, getDownloadURL
+} from 'https://www.gstatic.com/firebasejs/12.17.1/firebase-storage.js';
 
 const cache = new Map();
 const remoteCache = new Map();
 const unsubs = [];
-let app = null, auth = null, db = null, initialized = false, connected = false;
+let app = null, auth = null, db = null, storage = null, initialized = false, connected = false;
 
 const ARRAY_COLLECTIONS = {
   asgard_messages: 'messages',
@@ -163,10 +166,12 @@ function watchCollection(key, colName, role = null) {
   }, reportError);
   unsubs.push(unsub);
 }
-async function setupRealtime() {
+async function setupRealtime(roleHint = null) {
   if (connected) return;
   connected = true;
-  const role = await currentRole();
+  // Reuse the role already obtained with the authenticated profile whenever possible.
+  // This avoids an extra profile read during every login.
+  const role = roleHint || await currentRole();
   unsubs.push(onSnapshot(collection(db, 'profiles'), snap => {
     const rows = snap.docs.map(d => ({ id: d.id, ...d.data() }))
       .sort((a,b) => String(a.createdAt || '').localeCompare(String(b.createdAt || '')));
@@ -275,6 +280,52 @@ async function updateContribution(userId, monthKey, patch) {
   return payload;
 }
 
+
+async function uploadChatMedia(file, messageId, onProgress = null) {
+  const me = auth?.currentUser;
+  if (!me) throw new Error('Usuário não autenticado.');
+  if (!storage) throw new Error('Firebase Storage não inicializado.');
+  if (!(file instanceof File)) throw new Error('Arquivo inválido.');
+
+  const mime = String(file.type || '').toLowerCase();
+  const isImage = mime.startsWith('image/');
+  const isVideo = mime.startsWith('video/');
+  if (!isImage && !isVideo) throw new Error('Envie somente fotos ou vídeos.');
+
+  const maxBytes = isImage ? 10 * 1024 * 1024 : 50 * 1024 * 1024;
+  if (file.size <= 0 || file.size > maxBytes) {
+    throw new Error(isImage ? 'A imagem deve ter no máximo 10 MB.' : 'O vídeo deve ter no máximo 50 MB.');
+  }
+
+  const id = String(messageId || `${Date.now()}_${me.uid}`).replace(/[^a-zA-Z0-9_-]/g, '_');
+  const originalName = String(file.name || (isImage ? 'imagem' : 'video'));
+  const safeName = originalName.replace(/[^a-zA-Z0-9._-]/g, '_').slice(-120) || (isImage ? 'imagem' : 'video');
+  const path = `chat-media/${me.uid}/${id}/${Date.now()}_${safeName}`;
+  const task = uploadBytesResumable(storageRef(storage, path), file, {
+    contentType: mime,
+    customMetadata: { ownerUid: me.uid, messageId: id }
+  });
+
+  return await new Promise((resolve, reject) => {
+    task.on('state_changed', snap => {
+      const pct = snap.totalBytes ? Math.round((snap.bytesTransferred / snap.totalBytes) * 100) : 0;
+      try { if (typeof onProgress === 'function') onProgress(pct); } catch (_) {}
+    }, reject, async () => {
+      try {
+        const url = await getDownloadURL(task.snapshot.ref);
+        resolve({
+          mediaUrl: url,
+          mediaName: originalName,
+          mimeType: mime,
+          type: isImage ? 'image' : 'video',
+          storagePath: path,
+          size: file.size
+        });
+      } catch (err) { reject(err); }
+    });
+  });
+}
+
 async function addMessage(message) {
   const me = auth?.currentUser;
   if (!me) throw new Error('Usuário não autenticado.');
@@ -287,6 +338,8 @@ async function addMessage(message) {
     mediaUrl: message?.mediaUrl || '',
     mediaName: message?.mediaName || '',
     mimeType: message?.mimeType || '',
+    storagePath: message?.storagePath || '',
+    mediaSize: Number(message?.mediaSize || 0),
     mentions: Array.isArray(message?.mentions) ? message.mentions.map(String) : [],
     mentionCallsigns: Array.isArray(message?.mentionCallsigns) ? message.mentionCallsigns.map(String) : [],
     date: message?.date || new Date().toISOString()
@@ -322,15 +375,19 @@ async function init() {
   app = initializeApp(cfg());
   auth = getAuth(app);
   db = getFirestore(app);
+  storage = getStorage(app);
   await setPersistence(auth, browserLocalPersistence);
   initialized = true;
   return { online:true, configured:true };
 }
 async function connectSession() {
   if (!auth?.currentUser) throw new Error('Usuário não autenticado.');
-  const profile = await hydrate();
-  // Realtime listeners are not allowed to make login fail.
-  setupRealtime().catch(reportError);
+  // Login only waits for the operator's own profile. Shared collections are populated
+  // by Firestore realtime listeners immediately afterwards. The previous flow fetched
+  // every collection with getDocs() and then fetched them again for onSnapshot(),
+  // doubling initial reads and making login unnecessarily slow.
+  const profile = await readMyProfile();
+  setupRealtime(profile?.role || null).catch(reportError);
   return profile;
 }
 async function signIn(callsign, password) {
@@ -575,8 +632,13 @@ async function appendActivity(text, type = 'general', meta = {}) {
   if (!me) return false;
   const value = String(text || '').trim().slice(0, 250);
   if (!value) return false;
-  const profileSnap = await getDoc(doc(db, 'profiles', me.uid));
-  const profile = profileSnap.exists() ? profileSnap.data() || {} : {};
+  // Prefer the profile already held by the realtime cache. Activity logging happens
+  // frequently and should not perform an extra Firestore read for every click/action.
+  let profile = (cache.get('asgard_users') || []).find(u => u?.id === me.uid) || null;
+  if (!profile) {
+    const profileSnap = await getDoc(doc(db, 'profiles', me.uid));
+    profile = profileSnap.exists() ? profileSnap.data() || {} : {};
+  }
   const now = new Date().toISOString();
   const id = `${Date.now()}_${me.uid}_${Math.random().toString(36).slice(2,7)}`;
   const allowedType = ['general','auth','member','achievement','game','store','order','contribution','admin'].includes(String(type)) ? String(type) : 'general';
@@ -592,6 +654,191 @@ async function appendActivity(text, type = 'general', meta = {}) {
   });
   await setDoc(doc(db, 'activities', id), payload, { merge:false });
   return payload;
+}
+
+
+// ===== GAMES: transactional persistence =====
+// Games are long-lived shared records. Dedicated operations avoid replacing the
+// whole games collection and prevent simultaneous confirmations from overwriting
+// each other (last-write-wins race).
+async function createGame(game) {
+  const me = auth?.currentUser;
+  if (!me) throw new Error('Sessão expirada.');
+  if (await currentRole() !== 'admin') throw new Error('Somente o ADMIN pode criar jogos.');
+  const id = String(game?.id || `${Date.now()}_${Math.random().toString(36).slice(2,8)}`);
+  const payload = cleanFirestoreObject({
+    ...game,
+    id,
+    createdBy: me.uid,
+    confirmed: Array.isArray(game?.confirmed) ? game.confirmed : [],
+    checkedIn: Array.isArray(game?.checkedIn) ? game.checkedIn : [],
+    completed: false,
+    operationMonth: operationMonthKey(game),
+    createdAt: game?.createdAt || new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  });
+  await setDoc(doc(db, 'games', id), payload, { merge:false });
+  return payload;
+}
+
+async function updateGame(gameId, patch) {
+  const me = auth?.currentUser;
+  if (!me) throw new Error('Sessão expirada.');
+  if (await currentRole() !== 'admin') throw new Error('Somente o ADMIN pode editar jogos.');
+  const id = String(gameId || '');
+  if (!id) throw new Error('Jogo inválido.');
+  const safe = { ...patch };
+  delete safe.id; delete safe.createdBy; delete safe.confirmed; delete safe.checkedIn; delete safe.completed;
+  const ref = doc(db, 'games', id);
+  const currentSnap = await getDoc(ref);
+  if (!currentSnap.exists()) throw new Error('Jogo não encontrado.');
+  const current = currentSnap.data() || {};
+  if (safe.date) {
+    const nextMonth = operationMonthKey({ date:safe.date });
+    const currentMonth = operationMonthKey(current);
+    if (nextMonth && currentMonth && nextMonth !== currentMonth && Array.isArray(current.confirmed) && current.confirmed.length) {
+      throw new Error('Não é possível mover a operação para outro mês enquanto houver operadores confirmados.');
+    }
+    safe.operationMonth = nextMonth;
+  }
+  await setDoc(ref, cleanFirestoreObject({ ...safe, updatedAt:new Date().toISOString() }), { merge:true });
+  return true;
+}
+
+async function removeGame(gameId) {
+  const me = auth?.currentUser;
+  if (!me) throw new Error('Sessão expirada.');
+  if (await currentRole() !== 'admin') throw new Error('Somente o ADMIN pode excluir jogos.');
+  const id = String(gameId || '');
+  const gameRef = doc(db, 'games', id);
+  const snap = await getDoc(gameRef);
+  const game = snap.exists() ? (snap.data() || {}) : {};
+  const monthKey = operationMonthKey(game);
+  const confirmed = Array.isArray(game.confirmed) ? game.confirmed : [];
+  const batch = writeBatch(db);
+  batch.delete(gameRef);
+  if (monthKey) confirmed.forEach(uid => batch.delete(doc(db, 'game_monthly_limits', `${monthKey}_${uid}`)));
+  await batch.commit();
+  return true;
+}
+
+function operationMonthKey(game) {
+  const date = String(game?.date || '');
+  const m = date.match(/^(\d{4}-\d{2})/);
+  return m ? m[1] : null;
+}
+
+async function toggleGameConfirmation(gameId) {
+  const me = auth?.currentUser;
+  if (!me) throw new Error('Sessão expirada.');
+  const id = String(gameId || '');
+  const ref = doc(db, 'games', id);
+
+  // Compatibility check for confirmations created before the monthly quota feature.
+  // We only need the operator's own confirmations and filter them by operation month.
+  let existingConfirmedGames = [];
+  try {
+    const mine = await getDocs(query(collection(db, 'games'), where('confirmed', 'array-contains', me.uid)));
+    existingConfirmedGames = mine.docs.map(d => ({ id:d.id, ...d.data() }));
+  } catch (err) {
+    console.warn('[Games quota] Could not pre-read previous confirmations', err);
+  }
+
+  return await runTransaction(db, async tx => {
+    const snap = await tx.get(ref);
+    if (!snap.exists()) throw new Error('Jogo não encontrado.');
+    const game = snap.data() || {};
+    if (game.completed === true) throw new Error('Esta operação já foi concluída.');
+
+    const monthKey = operationMonthKey(game);
+    if (!monthKey) throw new Error('A operação não possui uma data mensal válida.');
+    const contribRef = doc(db, 'contributions', `${monthKey}_${me.uid}`);
+    const quotaRef = doc(db, 'game_monthly_limits', `${monthKey}_${me.uid}`);
+    const contribSnap = await tx.get(contribRef);
+    const quotaSnap = await tx.get(quotaRef);
+
+    const contribution = contribSnap.exists() ? (contribSnap.data() || {}) : {};
+    const isLate = contribution.status === 'Em Atraso';
+    const confirmed = Array.isArray(game.confirmed) ? [...game.confirmed] : [];
+    const checkedIn = Array.isArray(game.checkedIn) ? [...game.checkedIn] : [];
+    const idx = confirmed.indexOf(me.uid);
+    let confirmedNow;
+
+    if (idx >= 0) {
+      if (checkedIn.includes(me.uid)) throw new Error('Seu check-in já foi realizado. Solicite ao ADMIN para alterar a presença.');
+      confirmed.splice(idx, 1);
+      confirmedNow = false;
+      if (quotaSnap.exists() && String(quotaSnap.data()?.gameId || '') === id) tx.delete(quotaRef);
+    } else {
+      if (isLate) {
+        const previous = existingConfirmedGames.find(g => g.id !== id && operationMonthKey(g) === monthKey);
+        const quotaGameId = quotaSnap.exists() ? String(quotaSnap.data()?.gameId || '') : '';
+        if ((quotaGameId && quotaGameId !== id) || previous) {
+          throw new Error('Sua contribuição está Em Atraso. Você pode confirmar presença em apenas 1 operação por mês.');
+        }
+        tx.set(quotaRef, {
+          userId: me.uid,
+          monthKey,
+          gameId: id,
+          updatedAt: new Date().toISOString()
+        }, { merge:true });
+      }
+      confirmed.push(me.uid);
+      confirmedNow = true;
+    }
+
+    tx.update(ref, { confirmed, updatedAt:new Date().toISOString() });
+    return confirmedNow;
+  });
+}
+
+async function setGameCheckin(gameId, userId) {
+  const me = auth?.currentUser;
+  if (!me) throw new Error('Sessão expirada.');
+  if (await currentRole() !== 'admin') throw new Error('Somente o ADMIN pode fazer check-in.');
+  const ref = doc(db, 'games', String(gameId || ''));
+  return await runTransaction(db, async tx => {
+    const snap = await tx.get(ref);
+    if (!snap.exists()) throw new Error('Jogo não encontrado.');
+    const game = snap.data() || {};
+    if (game.completed === true) throw new Error('Esta operação já foi concluída.');
+    const confirmed = Array.isArray(game.confirmed) ? [...game.confirmed] : [];
+    if (!confirmed.includes(userId)) throw new Error('O operador precisa confirmar presença antes do check-in.');
+    const checkedIn = Array.isArray(game.checkedIn) ? [...game.checkedIn] : [];
+    const idx = checkedIn.indexOf(userId);
+    let checkedNow;
+    if (idx >= 0) { checkedIn.splice(idx, 1); checkedNow = false; }
+    else { checkedIn.push(userId); checkedNow = true; }
+    tx.update(ref, { checkedIn, updatedAt:new Date().toISOString() });
+    return checkedNow;
+  });
+}
+
+async function setGameCompleted(gameId, completed = true) {
+  const me = auth?.currentUser;
+  if (!me) throw new Error('Sessão expirada.');
+  if (await currentRole() !== 'admin') throw new Error('Somente o ADMIN pode concluir operações.');
+  await setDoc(doc(db, 'games', String(gameId || '')), {
+    completed: !!completed,
+    completedAt: completed ? new Date().toISOString() : null,
+    completedBy: completed ? me.uid : null,
+    updatedAt: new Date().toISOString()
+  }, { merge:true });
+  return true;
+}
+
+
+async function updateFeaturedAchievements(ids) {
+  const me = auth?.currentUser;
+  if (!me) throw new Error('Sessão expirada.');
+  const cleanIds = [...new Set((Array.isArray(ids) ? ids : []).map(String).filter(Boolean))].slice(0, 3);
+  await setDoc(doc(db, 'profiles', me.uid), { featuredAchievementIds: cleanIds, updatedAt:new Date().toISOString() }, { merge:true });
+  const current = cache.get('asgard_users') || [];
+  const next = current.map(u => String(u.id) === String(me.uid) ? { ...u, featuredAchievementIds: cleanIds } : u);
+  cache.set('asgard_users', next);
+  remoteCache.set('asgard_users', next);
+  mirror('asgard_users', next);
+  return cleanIds;
 }
 
 async function removeSession() {
@@ -618,10 +865,11 @@ function set(key, value) {
 
 window.AsgardCloud = {
   init, connectSession, readMyProfile, get, set, hasConfig, removeSession,
-  signIn, register, getCurrentUser, waitForAuth, updatePresence, addMessage, updateChatLastRead, updateContribution,
+  signIn, register, getCurrentUser, waitForAuth, updatePresence, addMessage, uploadChatMedia, updateChatLastRead, updateContribution,
   createAnnouncement, updateAnnouncement, removeAnnouncement,
   createProduct, updateProduct, removeProduct,
-  createAchievement, updateAchievement, setAchievementRecipients, markAchievementNotificationRead, removeAchievement,
+  createAchievement, updateAchievement, setAchievementRecipients, markAchievementNotificationRead, removeAchievement, updateFeaturedAchievements,
   appendActivity,
+  createGame, updateGame, removeGame, toggleGameConfirmation, setGameCheckin, setGameCompleted,
   isOnline: () => initialized
 };

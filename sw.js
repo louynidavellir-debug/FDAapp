@@ -1,4 +1,4 @@
-const CACHE_NAME = 'asgard-v20260817-presenca-indicadores-presence-rt-v2suite';
+const CACHE_NAME = 'asgard-v1-contrib-quota-20260818-v1';
 const ASSETS = [
     './', './index.html', './style.css', './app.js', './cloud.js', './firebase-config.js',
     './manifest.json', './icons/icon-192-v17.png', './icons/icon-512-v17.png', './icons/logo-asgard.png'
@@ -24,15 +24,30 @@ self.addEventListener('fetch', event => {
     if (url.hostname.includes('firebase') || url.hostname.includes('googleapis.com') ||
         url.hostname.includes('gstatic.com') || url.hostname.includes('google.com') ||
         url.hostname.includes('jsdelivr.net')) return;
-    event.respondWith(
-        fetch(req).then(response => {
-            if (response.ok && url.origin === self.location.origin) {
-                const clone = response.clone();
-                caches.open(CACHE_NAME).then(cache => cache.put(req, clone));
-            }
-            return response;
-        }).catch(() => caches.match(req).then(cached => cached || caches.match('./index.html')))
-    );
+    // Navigations stay network-first so a newly deployed index.html is discovered quickly.
+    if (req.mode === 'navigate') {
+        event.respondWith(
+            fetch(req).then(response => {
+                if (response.ok) caches.open(CACHE_NAME).then(cache => cache.put('./index.html', response.clone()));
+                return response;
+            }).catch(() => caches.match('./index.html'))
+        );
+        return;
+    }
+
+    // Same-origin static files use stale-while-revalidate: render immediately from cache,
+    // then refresh in the background. This substantially reduces repeated PWA startup time.
+    if (url.origin === self.location.origin) {
+        event.respondWith((async () => {
+            const cached = await caches.match(req);
+            const networkPromise = fetch(req).then(response => {
+                if (response.ok) caches.open(CACHE_NAME).then(cache => cache.put(req, response.clone()));
+                return response;
+            }).catch(() => null);
+            return cached || await networkPromise || caches.match('./index.html');
+        })());
+        return;
+    }
 });
 
 self.addEventListener('notificationclick', event => {

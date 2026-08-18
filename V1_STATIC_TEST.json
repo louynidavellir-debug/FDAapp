@@ -1,0 +1,24 @@
+{
+  "html_ids": 253,
+  "duplicate_ids": [],
+  "buttons": 56,
+  "pages": [
+    "page-dashboard",
+    "page-profile",
+    "page-members",
+    "page-arsenal",
+    "page-achievements",
+    "page-chat",
+    "page-games",
+    "page-contribuicao",
+    "page-configuracoes",
+    "page-loja",
+    "page-vendas"
+  ],
+  "has_dashboard_hero": true,
+  "has_achievement_rarity": true,
+  "has_chat_reply": true,
+  "has_sniper_filter": true,
+  "app_js_bytes": 209963,
+  "style_css_bytes": 115870
+}

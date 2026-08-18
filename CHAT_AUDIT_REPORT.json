@@ -1,0 +1,18 @@
+{
+  "checks": {
+    "chat_page": true,
+    "send_button": true,
+    "enter_send": true,
+    "realtime_sync": true,
+    "mention_extract": true,
+    "mention_only_notify": true,
+    "unread_mention_only": true,
+    "emoji_picker": true,
+    "online_users": true,
+    "200_window_render_fix": true,
+    "scroll_preservation": true,
+    "xss_escape": true
+  },
+  "passed": 12,
+  "total": 12
+}

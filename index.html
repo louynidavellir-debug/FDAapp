@@ -139,10 +139,6 @@
                     <span class="nav-icon">🎯</span>
                     <span class="nav-label">Jogos</span>
                 </a>
-                <a href="#" class="nav-item" data-page="calendar">
-                    <span class="nav-icon">📅</span>
-                    <span>Calendário</span>
-                </a>
                 <a href="#" class="nav-item" data-page="contribuicao">
                     <span class="nav-icon">🛡️</span>
                     <span class="nav-label">Contribuição</span>
@@ -155,10 +151,6 @@
                     <span class="nav-icon">🛒</span>
                     <span class="nav-label">Loja</span>
                     <span class="nav-badge hidden" id="cart-badge">0</span>
-                </a>
-                <a href="#" class="nav-item admin-only hidden" data-page="admin">
-                    <span class="nav-icon">🛡️</span>
-                    <span>Painel Admin</span>
                 </a>
                 <a href="#" class="nav-item admin-only hidden" data-page="vendas">
                     <span class="nav-icon">💰</span>
@@ -195,6 +187,20 @@
             <!-- PAGES -->
             <!-- DASHBOARD -->
             <section id="page-dashboard" class="page active">
+                <div id="dashboard-operator-hero" class="dashboard-operator-hero">
+                    <div class="operator-hero-main">
+                        <div class="operator-hero-avatar" id="dashboard-hero-avatar">?</div>
+                        <div>
+                            <span class="command-kicker">CENTRAL DE COMANDO</span>
+                            <h2 id="dashboard-hero-callsign">OPERADOR</h2>
+                            <div class="operator-hero-meta"><span id="dashboard-hero-function">Operador</span><span>•</span><span id="dashboard-hero-level">Nível 1</span></div>
+                        </div>
+                    </div>
+                    <div class="operator-hero-progress">
+                        <div class="operator-hero-progress-head"><span>Progressão</span><strong id="dashboard-hero-xp">0 / 250 XP</strong></div>
+                        <div class="operator-hero-progress-track"><span id="dashboard-hero-xp-bar"></span></div>
+                    </div>
+                </div>
                 <div class="dashboard-grid">
                     <div class="dash-card card-wide">
                         <div class="dash-card-header">
@@ -257,7 +263,6 @@
                         <div class="dash-card-body dashboard-shortcuts">
                             <button class="btn-secondary" data-quick-page="chat">💬 Chat</button>
                             <button class="btn-secondary" data-quick-page="games">🎯 Jogos</button>
-                            <button class="btn-secondary" data-quick-page="calendar">📅 Calendário</button>
                             <button class="btn-secondary" data-quick-page="achievements">🏆 Conquistas</button>
                         </div>
                     </div>
@@ -363,7 +368,7 @@
                             </div>
                         </div>
                         <div class="profile-achievements-panel">
-                            <div class="profile-achievements-title">🏅 Insígnias conquistadas</div>
+                            <div class="profile-achievements-title">🏅 Insígnias em destaque</div>
                             <div id="profile-achievements" class="profile-achievements-list">
                                 <span class="empty-state">Nenhuma insígnia conquistada.</span>
                             </div>
@@ -469,6 +474,7 @@
                             <option value="all">Todas</option>
                             <option value="primaria">Primárias</option>
                             <option value="secundaria">Secundárias</option>
+                            <option value="sniper">Snipers / DMR</option>
                         </select>
                     </div>
                 </div>
@@ -488,6 +494,18 @@
                     <button class="btn-primary admin-only hidden" id="btn-create-achievement">+ Nova Conquista</button>
                 </div>
                 <div id="achievements-summary" class="achievements-summary"></div>
+                <div id="featured-achievements-panel" class="featured-achievements-panel">
+                    <div class="featured-achievements-head">
+                        <div>
+                            <strong>Insígnias em destaque no perfil</strong>
+                            <small>Escolha até 3 insígnias que você já conquistou.</small>
+                        </div>
+                        <span id="featured-achievements-count">0/3</span>
+                    </div>
+                    <div id="featured-achievements-list" class="featured-achievements-list">
+                        <span class="profile-achievements-empty">Nenhuma insígnia selecionada.</span>
+                    </div>
+                </div>
                 <div id="achievements-grid" class="achievements-grid">
                     <p class="empty-state">Nenhuma conquista criada.</p>
                 </div>
@@ -502,6 +520,17 @@
                         <div class="input-group">
                             <label>Descrição</label>
                             <textarea id="achievement-description" rows="4" maxlength="500" placeholder="Descreva o que é necessário para obter esta conquista..."></textarea>
+                        </div>
+                        <div class="input-group">
+                            <label>Raridade</label>
+                            <select id="achievement-rarity">
+                                <option value="comum">Comum</option>
+                                <option value="incomum">Incomum</option>
+                                <option value="rara">Rara</option>
+                                <option value="epica">Épica</option>
+                                <option value="lendaria">Lendária</option>
+                            </select>
+                            <small class="achievement-hint">A raridade aparece no perfil e na galeria de conquistas.</small>
                         </div>
                         <div class="input-group">
                             <label>Imagem da insígnia</label>
@@ -542,8 +571,17 @@
                         </div>
                     </div>
                     <div class="chat-tools">
+                        <button class="chat-tool-btn" id="btn-chat-attach" title="Enviar foto ou vídeo" aria-label="Enviar foto ou vídeo">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21.44 11.05 12.25 20.24a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 1 1-2.83-2.83l8.49-8.48"/></svg>
+                        </button>
+                        <input type="file" id="chat-media-input" accept="image/*,video/*" hidden>
                         <button class="chat-tool-btn" id="btn-chat-emoji" title="Emojis">😊</button>
                         <div class="chat-emoji-picker hidden" id="chat-emoji-picker"></div>
+                    </div>
+                    <div class="chat-upload-status hidden" id="chat-upload-status"><div class="chat-upload-status-row"><span id="chat-upload-label">Enviando mídia...</span><strong id="chat-upload-percent">0%</strong></div><div class="chat-upload-progress"><span id="chat-upload-progress-bar"></span></div></div>
+                    <div id="chat-reply-preview" class="chat-reply-preview hidden">
+                        <div><span>Respondendo a</span><strong id="chat-reply-author"></strong><small id="chat-reply-text"></small></div>
+                        <button type="button" id="btn-cancel-chat-reply" aria-label="Cancelar resposta">✕</button>
                     </div>
                     <div class="chat-input-area">
                         <div class="chat-mention-suggestions hidden" id="chat-mention-suggestions"></div>
@@ -564,9 +602,9 @@
             <!-- GAMES -->
             <section id="page-games" class="page hidden">
                 <div class="games-header">
-                    <h2>Jogos</h2>
+                    <div><h2>Operações</h2><p class="games-subtitle">Planejamento, confirmação de presença e histórico da equipe.</p></div>
                     <div class="games-filter">
-                        <button class="filter-btn active" data-filter="all">Todos</button>
+                        <button class="filter-btn active" data-filter="all">Todas</button>
                         <button class="filter-btn" data-filter="partida">Partidas</button>
                         <button class="filter-btn" data-filter="treinamento">Treinamentos</button>
                         <button class="filter-btn" data-filter="operacao">Operações</button>
@@ -861,30 +899,6 @@
                     <div class="section-heading-row"><div><div class="settings-kicker">COMPRAS</div><h2>Meus Pedidos</h2></div><button type="button" id="btn-refresh-my-orders" class="btn-secondary">Atualizar</button></div>
                     <div id="my-orders-list" class="my-orders-list"><p class="empty-state">Nenhum pedido registrado.</p></div>
                 </div>
-            </section>
-
-            <!-- CALENDÁRIO -->
-            <section id="page-calendar" class="page hidden">
-                <div class="feature-page-header"><div><div class="settings-kicker">AGENDA DA EQUIPE</div><h2>Calendário Operacional</h2><p>Os jogos criados pelo ADMIN aparecem aqui automaticamente.</p></div><div class="feature-header-icon">📅</div></div>
-                <div id="calendar-summary" class="calendar-summary"></div>
-                <div id="calendar-list" class="calendar-list"><p class="empty-state">Nenhum evento agendado.</p></div>
-            </section>
-
-            <!-- PAINEL ADMIN -->
-            <section id="page-admin" class="page hidden">
-                <div class="feature-page-header"><div><div class="settings-kicker">ADMINISTRAÇÃO</div><h2>Painel Administrativo</h2><p>Central de gerenciamento do Filhos de Asgard.</p></div><div class="feature-header-icon">🛡️</div></div>
-                <div id="admin-overview" class="admin-overview-grid"></div>
-                <div class="admin-tools-grid">
-                    <button class="admin-tool-card" data-admin-page="members"><span>👥</span><strong>Membros</strong><small>Perfis e operadores</small></button>
-                    <button class="admin-tool-card" data-admin-page="games"><span>🎯</span><strong>Jogos</strong><small>Partidas e check-in</small></button>
-                    <button class="admin-tool-card" data-admin-page="achievements"><span>🏆</span><strong>Conquistas</strong><small>Insígnias e concluintes</small></button>
-                    <button class="admin-tool-card" data-admin-page="contribuicao"><span>💰</span><strong>Contribuições</strong><small>Status de pagamentos</small></button>
-                    <button class="admin-tool-card" data-admin-page="loja"><span>🛒</span><strong>Loja</strong><small>Catálogo de produtos</small></button>
-                    <button class="admin-tool-card" data-admin-page="vendas"><span>📦</span><strong>Pedidos</strong><small>Vendas e entregas</small></button>
-                    <button class="admin-tool-card" data-admin-page="dashboard"><span>📢</span><strong>Avisos</strong><small>Comunicados da equipe</small></button>
-                    <button class="admin-tool-card" data-admin-page="calendar"><span>📅</span><strong>Calendário</strong><small>Agenda operacional</small></button>
-                </div>
-                <div class="admin-audit-box"><h3>🔐 Segurança</h3><p>As ações administrativas são protegidas tanto na interface quanto pelas regras do Firestore. Operadores comuns mantêm acesso somente às funções permitidas.</p></div>
             </section>
 
             <!-- VENDAS (ADMIN) -->

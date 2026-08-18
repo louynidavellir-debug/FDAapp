@@ -1,0 +1,20 @@
+FILHOS DE ASGARD — AUDITORIA DA ABA JOGOS
+Data: 18/08/2026
+
+Correções aplicadas:
+1. Jogos criados pelo ADMIN agora usam gravação dedicada no Firestore (documento por jogo).
+2. O jogo não é removido automaticamente pela data. Mesmo após a data/horário, ele continua disponível para confirmação enquanto não estiver concluído.
+3. Somente o ADMIN pode criar, editar, excluir, concluir/reabrir e fazer check-in.
+4. Operadores podem confirmar/cancelar apenas a própria presença.
+5. Confirmações usam transação do Firestore, evitando que duas confirmações simultâneas sobrescrevam uma à outra.
+6. Check-in do ADMIN também usa transação.
+7. Ao concluir a operação, o botão de confirmar presença desaparece e novas confirmações são bloqueadas.
+8. A operação concluída continua registrada para histórico/XP, mas deixa de aceitar novas presenças.
+9. Ao excluir, o documento é removido do Firestore e desaparece para todos em tempo real.
+10. Regras do Firestore reforçadas para impedir confirmação em operação já concluída.
+
+Validações estáticas:
+- app.js: sintaxe JavaScript válida.
+- cloud.js: sintaxe JavaScript válida.
+- listeners realtime existentes continuam atualizando a aba Jogos para todos os usuários.
+- cache do PWA atualizado para forçar a versão nova.

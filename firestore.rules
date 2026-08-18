@@ -5,6 +5,15 @@ service cloud.firestore {
     function profile() { return get(/databases/$(database)/documents/profiles/$(request.auth.uid)); }
     function isAdmin() { return signedIn() && profile().data.role == 'admin'; }
     function isOwner(uid) { return signedIn() && request.auth.uid == uid; }
+    function isLateForMonth(monthKey) {
+      return signedIn()
+             && exists(/databases/$(database)/documents/contributions/$(monthKey + '_' + request.auth.uid))
+             && get(/databases/$(database)/documents/contributions/$(monthKey + '_' + request.auth.uid)).data.status == 'Em Atraso';
+    }
+    function hasQuotaForGame(monthKey, gameId) {
+      return existsAfter(/databases/$(database)/documents/game_monthly_limits/$(monthKey + '_' + request.auth.uid))
+             && getAfter(/databases/$(database)/documents/game_monthly_limits/$(monthKey + '_' + request.auth.uid)).data.gameId == gameId;
+    }
 
     match /system/bootstrap {
       allow read: if signedIn();
@@ -34,8 +43,21 @@ service cloud.firestore {
 
     match /messages/{id} {
       allow read: if signedIn();
-      allow create: if signedIn() && request.resource.data.userId == request.auth.uid;
-      allow update, delete: if isAdmin() || (signedIn() && resource.data.userId == request.auth.uid);
+      allow create: if signedIn()
+                    && request.resource.data.userId == request.auth.uid
+                    && request.resource.data.callsign == profile().data.callsign
+                    && request.resource.data.text is string
+                    && request.resource.data.text.size() <= 2000
+                    && request.resource.data.mentions is list
+                    && request.resource.data.mentionCallsigns is list
+                    && (
+                      request.resource.data.text.size() > 0 ||
+                      (request.resource.data.mediaUrl is string
+                        && request.resource.data.mediaUrl.size() > 0
+                        && request.resource.data.type in ['image', 'video'])
+                    );
+      allow update: if isAdmin();
+      allow delete: if isAdmin() || (signedIn() && resource.data.userId == request.auth.uid);
     }
 
     match /games/{id} {
@@ -45,7 +67,8 @@ service cloud.firestore {
       // their own UID from the confirmation list; they can never change checkedIn.
       allow update: if isAdmin() ||
         (signedIn()
-          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['confirmed'])
+          && resource.data.completed != true
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['confirmed', 'updatedAt'])
           && request.resource.data.checkedIn == resource.data.checkedIn
           && (
             (
@@ -53,6 +76,11 @@ service cloud.firestore {
               && request.resource.data.confirmed.hasAll(resource.data.confirmed)
               && request.resource.data.confirmed.hasAny([request.auth.uid])
               && !resource.data.confirmed.hasAny([request.auth.uid])
+              && (
+                !('operationMonth' in resource.data)
+                || !isLateForMonth(resource.data.operationMonth)
+                || hasQuotaForGame(resource.data.operationMonth, id)
+              )
             ) ||
             (
               request.resource.data.confirmed.size() + 1 == resource.data.confirmed.size()
@@ -63,6 +91,23 @@ service cloud.firestore {
             )
           )
         );
+    }
+
+    match /game_monthly_limits/{id} {
+      // Registro auxiliar da cota mensal para operadores com contribuição Em Atraso.
+      // Cada usuário só pode ler/gravar o próprio registro de mês.
+      allow read: if signedIn();
+      allow create: if isAdmin() || (signedIn()
+                    && request.resource.data.userId == request.auth.uid
+                    && request.resource.data.monthKey is string
+                    && request.resource.data.gameId is string
+                    && id == request.resource.data.monthKey + '_' + request.auth.uid);
+      allow update: if isAdmin() || (signedIn()
+                    && resource.data.userId == request.auth.uid
+                    && request.resource.data.userId == request.auth.uid
+                    && request.resource.data.monthKey == resource.data.monthKey
+                    && id == request.resource.data.monthKey + '_' + request.auth.uid);
+      allow delete: if isAdmin() || (signedIn() && resource.data.userId == request.auth.uid);
     }
 
     match /achievements/{id} {
@@ -120,12 +165,19 @@ service cloud.firestore {
       // by userId to match this rule.
       allow read: if isAdmin() ||
                   (signedIn() && resource.data.userId == request.auth.uid);
-      allow create, update: if isAdmin() ||
-                            (signedIn()
-                             && request.resource.data.userId == request.auth.uid
-                             && id == request.resource.data.monthKey + '_' + request.auth.uid);
-      allow delete: if isAdmin() ||
-                    (signedIn() && resource.data.userId == request.auth.uid);
+      allow create: if isAdmin() ||
+                    (signedIn()
+                     && request.resource.data.userId == request.auth.uid
+                     && request.resource.data.status == 'Pendente'
+                     && id == request.resource.data.monthKey + '_' + request.auth.uid);
+      allow update: if isAdmin() ||
+                    (signedIn()
+                     && resource.data.userId == request.auth.uid
+                     && request.resource.data.userId == resource.data.userId
+                     && request.resource.data.monthKey == resource.data.monthKey
+                     && request.resource.data.status == resource.data.status
+                     && id == request.resource.data.monthKey + '_' + request.auth.uid);
+      allow delete: if isAdmin();
     }
   }
 }

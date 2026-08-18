@@ -1,0 +1,47 @@
+{
+  "buttons_total": 54,
+  "buttons_with_id": 40,
+  "button_ids_missing_js_reference": [],
+  "nav_items": [
+    "dashboard",
+    "profile",
+    "members",
+    "arsenal",
+    "achievements",
+    "chat",
+    "games",
+    "contribuicao",
+    "configuracoes",
+    "loja",
+    "vendas"
+  ],
+  "pages": [
+    "achievements",
+    "arsenal",
+    "chat",
+    "configuracoes",
+    "contribuicao",
+    "dashboard",
+    "games",
+    "loja",
+    "members",
+    "profile",
+    "vendas"
+  ],
+  "invalid_nav_targets": [],
+  "duplicate_ids": [],
+  "missing_dom_refs": [],
+  "simulation_runs": 55,
+  "simulation_failures": [],
+  "checks": {
+    "no_forced_nav_reflow": true,
+    "chat_poll_removed": true,
+    "sync_debounce": true,
+    "login_no_full_hydrate": true,
+    "activity_uses_profile_cache": true,
+    "sw_static_swr": true
+  },
+  "app_js_bytes": 187776,
+  "style_css_bytes": 103782,
+  "index_bytes": 57703
+}

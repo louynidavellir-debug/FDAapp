@@ -1,0 +1,29 @@
+FILHOS DE ASGARD — AUDITORIA DE INTERAÇÃO E PERFORMANCE
+
+Data: 18/08/2026
+
+VALIDAÇÕES AUTOMÁTICAS
+- Botões encontrados: 54
+- Botões com ID: 40
+- Botões com ID sem referência no JavaScript: 0
+- Abas testadas estruturalmente: 11
+- Ciclos simulados de navegação: 5 por aba (55 transições)
+- Falhas de alvo de navegação: 0
+- IDs HTML duplicados: 0
+- Referências DOM inexistentes: 0
+- app.js: sintaxe validada com node --check
+- cloud.js: sintaxe validada com node --check
+- sw.js: sintaxe validada com node --check
+
+OTIMIZAÇÕES APLICADAS
+1. Removido reflow forçado em cada troca de aba (offsetHeight), reduzindo travadas em mobile.
+2. Proteção contra toque duplo acidental na mesma aba em intervalo inferior a 280 ms.
+3. Removido polling do badge do Chat a cada 1,5 s; agora usa o listener em tempo real do Firestore.
+4. Eventos de sincronização simultâneos do Firestore são agrupados em uma janela de 70 ms para evitar múltiplas renderizações pesadas na mesma sequência.
+5. Login não baixa todas as coleções duas vezes. O perfil autenticado libera a entrada e os listeners em tempo real carregam os módulos em seguida.
+6. O Feed de atividade reutiliza o perfil em cache e evita uma leitura extra do Firestore para cada ação.
+7. Service Worker otimizado: navegação network-first; arquivos estáticos stale-while-revalidate para abertura mais rápida do PWA após o primeiro acesso.
+8. Navegação para página inexistente agora falha de forma segura, com aviso ao usuário, em vez de deixar a tela vazia.
+
+OBSERVAÇÃO DE TESTE
+A sandbox desta sessão bloqueia navegação do Chromium por política administrativa, então o teste automatizado de clique real em browser não pôde ser executado aqui. A auditoria executada foi estrutural/estática, incluindo cinco ciclos por rota, validação de handlers/referências, sintaxe e análise dos fluxos de carregamento. O Firebase real continua devendo ser validado após deploy com contas ADMIN e OPERADOR.

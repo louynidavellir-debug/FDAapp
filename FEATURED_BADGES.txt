@@ -1,0 +1,8 @@
+INSÍGNIAS EM DESTAQUE
+
+- Cada operador pode escolher até 3 insígnias que já conquistou.
+- A seleção é feita na aba Conquistas pelo botão “Destacar no perfil”.
+- A escolha é salva no perfil do operador no Firestore (featuredAchievementIds).
+- O perfil público mostra somente as 3 insígnias selecionadas.
+- Se uma conquista for retirada do operador ou excluída, ela deixa de aparecer automaticamente no perfil.
+- Não é necessária uma nova coleção no Firestore.

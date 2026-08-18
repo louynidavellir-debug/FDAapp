@@ -1,0 +1,18 @@
+AUDITORIA DO CHAT
+
+[OK] chat_page
+[OK] send_button
+[OK] enter_send
+[OK] realtime_sync
+[OK] mention_extract
+[OK] mention_only_notify
+[OK] unread_mention_only
+[OK] emoji_picker
+[OK] online_users
+[OK] 200_window_render_fix
+[OK] scroll_preservation
+[OK] xss_escape
+
+Resultado: 12/12 verificações estruturais aprovadas.
+
+Correção aplicada: o chat agora detecta novas mensagens por assinatura de IDs, não apenas pela quantidade. Isso corrige o caso em que o histórico já possui 200 mensagens e uma nova entra sem alterar o tamanho da lista. O scroll também é preservado quando o usuário está lendo mensagens antigas. As regras do Firestore foram reforçadas para impedir falsificação de callsign e edição silenciosa de mensagens por operadores.

@@ -191,11 +191,15 @@
     // Achievements
     const achievementsGrid = $('achievements-grid');
     const achievementsSummary = $('achievements-summary');
+    const featuredAchievementsPanel = $('featured-achievements-panel');
+    const featuredAchievementsList = $('featured-achievements-list');
+    const featuredAchievementsCount = $('featured-achievements-count');
     const btnCreateAchievement = $('btn-create-achievement');
     const achievementModal = $('achievement-modal');
     const achievementModalTitle = $('achievement-modal-title');
     const achievementTitle = $('achievement-title');
     const achievementDescription = $('achievement-description');
+    const achievementRarity = $('achievement-rarity');
     const achievementBadgeInput = $('achievement-badge-input');
     const achievementBadgePreview = $('achievement-badge-preview');
     const btnSaveAchievement = $('btn-save-achievement');
@@ -222,6 +226,12 @@
     const btnSendMsg = $('btn-send-msg');
     const chatBadge = $('chat-badge');
     const chatOnlineUsers = $('chat-online-users');
+    const btnChatAttach = $('btn-chat-attach');
+    const chatMediaInput = $('chat-media-input');
+    const chatUploadStatus = $('chat-upload-status');
+    const chatUploadLabel = $('chat-upload-label');
+    const chatUploadPercent = $('chat-upload-percent');
+    const chatUploadProgressBar = $('chat-upload-progress-bar');
     const btnChatEmoji = $('btn-chat-emoji');
     const chatEmojiPicker = $('chat-emoji-picker');
     const chatMentionSuggestions = $('chat-mention-suggestions');
@@ -698,15 +708,26 @@
     }
 
     // ===== NAVIGATION =====
-    function navigateTo(page) {
-        pages.forEach(p => p.classList.add('hidden'));
-        const target = $('page-' + page);
-        if (target) {
-            target.classList.remove('hidden');
-            target.style.animation = 'none';
-            target.offsetHeight; // Trigger reflow
-            target.style.animation = '';
+    let activePageName = '';
+    let lastNavigationAt = 0;
+    function navigateTo(page, forceRefresh = false) {
+        const now = performance.now();
+        // Ignore accidental double taps on the same sidebar item. This also avoids
+        // rebuilding large lists repeatedly on slower phones.
+        if (!forceRefresh && activePageName === page && (now - lastNavigationAt) < 280) {
+            closeSidebar();
+            return;
         }
+        lastNavigationAt = now;
+        const target = $('page-' + page);
+        if (!target) {
+            console.warn('[Navigation] Página inexistente:', page);
+            showToast('Esta seção não está disponível.', 'error');
+            return;
+        }
+        pages.forEach(p => p.classList.add('hidden'));
+        target.classList.remove('hidden');
+        activePageName = page;
 
         navItems.forEach(n => {
             n.classList.toggle('active', n.dataset.page === page);
@@ -720,11 +741,9 @@
             achievements: 'Conquistas',
             chat: 'Chat',
             games: 'Jogos',
-            calendar: 'Calendário',
             loja: 'Loja',
             contribuicao: 'Contribuição',
             configuracoes: 'Configurações',
-            admin: 'Painel Admin',
             vendas: 'Vendas'
         };
         pageTitle.textContent = titles[page] || 'Dashboard';
@@ -748,9 +767,7 @@
             markChatAsRead().catch(err => console.error('[Chat read]', err));
         }
         if (page === 'games') refreshGames();
-        if (page === 'calendar') refreshCalendarV2();
         if (page === 'loja') { refreshProducts(); renderMyOrdersV2(); }
-        if (page === 'admin') refreshAdminPanelV2();
         if (page === 'vendas') { refreshOrderStats(); refreshOrders(); }
         if (page === 'contribuicao') refreshContribuicao();
 
@@ -813,7 +830,7 @@
         const onlineCount = users.filter(isUserOnline).length;
         statOnline.textContent = onlineCount;
         if (statOnlineDetail) statOnlineDetail.textContent = `${onlineCount} ${onlineCount === 1 ? 'operador ativo' : 'operadores ativos'}`;
-        statGames.textContent = games.length;
+        statGames.textContent = games.filter(g => !g.completed).length;
 
         // Next game
         const upcomingGames = games
@@ -1350,8 +1367,11 @@
                 { type: 'secundaria', label: 'SECUNDÁRIA', name: user.secundaria, photo: user.fotoSecundaria }
             ];
             entries.forEach(weapon => {
-                if (filter !== 'all' && filter !== weapon.type) return;
                 const weaponName = (weapon.name || '').trim();
+                const sniperLike = /sniper|dmr|m40|vsr|l96|mb0|srs|tac-41|bar-10|sr25|mk12/i.test(weaponName);
+                if (filter === 'sniper' && !sniperLike) return;
+                if (filter !== 'all' && filter !== 'sniper' && filter !== weapon.type) return;
+
                 const searchable = `${memberText} ${weaponName}`.toUpperCase();
                 if (term && !searchable.includes(term)) return;
                 // Show a card when a member has at least identified the weapon or uploaded its photo.
@@ -1534,16 +1554,80 @@
         return ids;
     }
 
+    function getFeaturedAchievementIds(user) {
+        const awarded = getAwardedAchievementIds(user?.id);
+        return [...new Set((Array.isArray(user?.featuredAchievementIds) ? user.featuredAchievementIds : []).map(String))]
+            .filter(id => awarded.has(id))
+            .slice(0, 3);
+    }
+
+    async function toggleFeaturedAchievement(achievementId) {
+        if (!currentUser) return;
+        const id = String(achievementId || '');
+        if (!getAwardedAchievementIds(currentUser.id).has(id)) {
+            showToast('Você só pode destacar insígnias que já conquistou.', 'error');
+            return;
+        }
+        const selected = getFeaturedAchievementIds(currentUser);
+        const exists = selected.includes(id);
+        let next;
+        if (exists) next = selected.filter(x => x !== id);
+        else {
+            if (selected.length >= 3) { showToast('Você pode destacar no máximo 3 insígnias.', 'error'); return; }
+            next = [...selected, id];
+        }
+        try {
+            if (window.AsgardCloud?.updateFeaturedAchievements) {
+                await window.AsgardCloud.updateFeaturedAchievements(next);
+            } else {
+                const users = getStore(DB_USERS) || [];
+                const me = users.find(u => String(u.id) === String(currentUser.id));
+                if (me) { me.featuredAchievementIds = next; setStore(DB_USERS, users); currentUser = me; }
+            }
+            currentUser.featuredAchievementIds = next;
+            const users = getStore(DB_USERS) || [];
+            const me = users.find(u => String(u.id) === String(currentUser.id));
+            if (me) me.featuredAchievementIds = next;
+            renderFeaturedAchievementsSelector();
+            renderProfileAchievements(currentUser.id);
+            refreshAchievements();
+            showToast(exists ? 'Insígnia removida do destaque.' : 'Insígnia destacada no perfil!', 'success');
+        } catch (err) {
+            console.error(err);
+            showToast(err?.message || 'Não foi possível salvar as insígnias em destaque.', 'error');
+        }
+    }
+
+    function renderFeaturedAchievementsSelector() {
+        if (!featuredAchievementsList || !currentUser) return;
+        const selectedIds = getFeaturedAchievementIds(currentUser);
+        if (featuredAchievementsCount) featuredAchievementsCount.textContent = `${selectedIds.length}/3`;
+        const achievements = (getStore(DB_ACHIEVEMENTS) || []).filter(a => selectedIds.includes(String(a.id || '')));
+        if (!achievements.length) {
+            featuredAchievementsList.innerHTML = '<span class="profile-achievements-empty">Nenhuma insígnia selecionada. Use o botão “Destacar no perfil” em uma conquista recebida.</span>';
+            return;
+        }
+        featuredAchievementsList.innerHTML = achievements.map(a => `
+            <button type="button" class="featured-achievement-chip" data-id="${a.id}" title="Remover ${escapeHtml(a.title || 'conquista')} do destaque">
+                ${a.badge ? `<img src="${a.badge}" alt="${escapeHtml(a.title || 'Insígnia')}">` : '<span>🏅</span>'}
+                <span>${escapeHtml(a.title || 'Conquista')}</span>
+                <b>×</b>
+            </button>`).join('');
+        featuredAchievementsList.querySelectorAll('.featured-achievement-chip').forEach(btn => btn.addEventListener('click', () => toggleFeaturedAchievement(btn.dataset.id)));
+    }
+
     function renderProfileAchievements(userId) {
         if (!profileAchievements) return;
-        const awardedIds = getAwardedAchievementIds(userId);
-        const achievements = (getStore(DB_ACHIEVEMENTS) || []).filter(a => awardedIds.has(String(a.id || '')));
+        const users = getStore(DB_USERS) || [];
+        const profileUser = users.find(u => String(u.id) === String(userId));
+        const selectedIds = getFeaturedAchievementIds(profileUser || { id:userId });
+        const achievements = (getStore(DB_ACHIEVEMENTS) || []).filter(a => selectedIds.includes(String(a.id || '')));
         if (!achievements.length) {
-            profileAchievements.innerHTML = '<span class="profile-achievements-empty">Nenhuma insígnia conquistada.</span>';
+            profileAchievements.innerHTML = '<span class="profile-achievements-empty">Nenhuma insígnia em destaque.</span>';
             return;
         }
         profileAchievements.innerHTML = achievements.map(a => `
-            <button type="button" class="profile-badge ${getUnreadAchievementNotifications().some(n => n.achievementId === a.id) ? 'new-achievement' : ''}" data-achievement-id="${a.id}" title="${escapeHtml(a.title || 'Conquista')}">
+            <button type="button" class="profile-badge ${String(userId) === String(currentUser?.id) && getUnreadAchievementNotifications().some(n => n.achievementId === a.id) ? 'new-achievement' : ''}" data-achievement-id="${a.id}" title="${escapeHtml(a.title || 'Conquista')}">
                 ${a.badge ? `<img src="${a.badge}" alt="${escapeHtml(a.title || 'Insígnia')}">` : '<span>🏅</span>'}
                 <small>${escapeHtml(a.title || 'Conquista')}</small>
             </button>
@@ -1551,7 +1635,7 @@
         profileAchievements.querySelectorAll('.profile-badge').forEach(btn => {
             btn.addEventListener('click', () => {
                 const achievement = (getStore(DB_ACHIEVEMENTS) || []).find(a => a.id === btn.dataset.achievementId);
-                if (achievement?.badge) openPhotoLightbox(achievement.badge, { title: achievement.title || 'Conquista', description: achievement.description || '', alt: `Insígnia ${achievement.title || 'conquistada'}` });
+                if (achievement?.badge) openPhotoLightbox(achievement.badge, { title: achievement.title || 'Conquista', description: `${RARITY_LABELS[String(achievement.rarity || 'comum').toLowerCase()] || 'COMUM'} • ${achievement.description || ''}`, alt: `Insígnia ${achievement.title || 'conquistada'}` });
             });
         });
     }
@@ -1570,6 +1654,7 @@
                 <span class="achievements-summary-sep">•</span>
                 <span>Você conquistou <strong>${myCount}</strong></span>`;
         }
+        renderFeaturedAchievementsSelector();
         if (!achievements.length) {
             achievementsGrid.innerHTML = `<div class="achievements-empty">
                 <div class="achievements-empty-icon">🏅</div>
@@ -1586,7 +1671,7 @@
             const names = awardedUsers.slice(0, 5).map(u => escapeHtml(u.callsign || u.name || 'Operador')).join(', ');
             const extra = Math.max(0, awardedUsers.length - 5);
             return `
-                <article class="achievement-card ${mine ? 'achievement-earned' : ''}">
+                <article class="achievement-card ${mine ? 'achievement-earned' : ''}" data-achievement-id="${a.id}">
                     <div class="achievement-badge-wrap" data-badge="${a.badge ? '1' : '0'}" data-id="${a.id}">
                         ${getAchievementBadgeMarkup(a, 'achievement-badge-image')}
                         ${mine ? '<span class="achievement-earned-ribbon">CONQUISTADA</span>' : ''}
@@ -1596,6 +1681,7 @@
                         <p>${escapeHtml(a.description || 'Sem descrição.')}</p>
                         <div class="achievement-awarded-count">🏅 ${completed.length} operador${completed.length === 1 ? '' : 'es'} recebeu${completed.length === 1 ? '' : 'ram'} esta insígnia</div>
                         ${awardedUsers.length ? `<div class="achievement-awarded-names">${names}${extra ? ` e +${extra}` : ''}</div>` : '<div class="achievement-awarded-names muted">Ainda sem concluintes</div>'}
+                        ${mine ? `<button type="button" class="btn-secondary achievement-feature-btn ${getFeaturedAchievementIds(currentUser).includes(String(a.id)) ? 'is-featured' : ''}" data-id="${a.id}">${getFeaturedAchievementIds(currentUser).includes(String(a.id)) ? '★ Em destaque' : '☆ Destacar no perfil'}</button>` : ''}
                     </div>
                     ${currentUser.role === 'admin' ? `<div class="achievement-admin-actions">
                         <button class="btn-secondary achievement-completers-btn" data-id="${a.id}">Concluintes</button>
@@ -1611,6 +1697,7 @@
                 if (a?.badge) openPhotoLightbox(a.badge, { title: a.title || 'Conquista', description: a.description || '', alt: `Insígnia ${a.title || 'conquistada'}` });
             });
         });
+        achievementsGrid.querySelectorAll('.achievement-feature-btn').forEach(btn => btn.addEventListener('click', () => toggleFeaturedAchievement(btn.dataset.id)));
         achievementsGrid.querySelectorAll('.achievement-edit-btn').forEach(btn => btn.addEventListener('click', () => openAchievementModal(btn.dataset.id)));
         achievementsGrid.querySelectorAll('.achievement-delete-btn').forEach(btn => btn.addEventListener('click', () => deleteAchievement(btn.dataset.id)));
         achievementsGrid.querySelectorAll('.achievement-completers-btn').forEach(btn => btn.addEventListener('click', () => openAchievementMembers(btn.dataset.id)));
@@ -1637,6 +1724,7 @@
             achievementModalTitle.textContent = 'Editar Conquista';
             achievementTitle.value = a.title || '';
             achievementDescription.value = a.description || '';
+            if (achievementRarity) achievementRarity.value = a.rarity || 'comum';
             achievementBadgePreview.innerHTML = a.badge ? `<img src="${a.badge}" alt="Prévia da insígnia">` : '<span>🏅</span>';
         }
         achievementModal.classList.remove('hidden');
@@ -1661,6 +1749,7 @@
         if (currentUser.role !== 'admin') { showToast('Apenas ADMIN pode gerenciar conquistas', 'error'); return; }
         const title = achievementTitle.value.trim();
         const description = achievementDescription.value.trim();
+        const rarity = achievementRarity?.value || 'comum';
         if (!title) { showToast('Informe o título da conquista', 'error'); return; }
         if (!description) { showToast('Informe a descrição da conquista', 'error'); return; }
         if (!pendingAchievementBadge) { showToast('Selecione a imagem da insígnia', 'error'); return; }
@@ -1671,19 +1760,19 @@
                 if (!existing) throw new Error('Conquista não encontrada');
                 if (window.AsgardCloud?.updateAchievement) {
                     await window.AsgardCloud.updateAchievement(editingAchievementId, {
-                        title, description, badge: pendingAchievementBadge
+                        title, description, rarity, badge: pendingAchievementBadge
                     });
                 } else {
                     const achievements = getStore(DB_ACHIEVEMENTS) || [];
                     const a = achievements.find(x => x.id === editingAchievementId);
-                    a.title = title; a.description = description; a.badge = pendingAchievementBadge; a.updatedAt = new Date().toISOString();
+                    a.title = title; a.description = description; a.rarity = rarity; a.badge = pendingAchievementBadge; a.updatedAt = new Date().toISOString();
                     setStore(DB_ACHIEVEMENTS, achievements);
                 }
                 addActivity(`${currentUser.callsign} editou a conquista: ${title}`);
                 showToast('Conquista atualizada!', 'success');
             } else {
                 const achievement = {
-                    id: generateId(), title, description, badge: pendingAchievementBadge,
+                    id: generateId(), title, description, rarity, badge: pendingAchievementBadge,
                     completedBy: [], createdBy: currentUser.id, createdAt: new Date().toISOString()
                 };
                 if (window.AsgardCloud?.createAchievement) await window.AsgardCloud.createAchievement(achievement);
@@ -1775,6 +1864,7 @@
 
     // ===== CHAT =====
     let lastMessageCount = 0;
+    let lastChatRenderSignature = '';
     let knownChatMessageIds = new Set();
     let chatNotificationBaselineReady = false;
     let chatNotificationSessionStartedAt = '';
@@ -1910,10 +2000,16 @@
     function refreshChat() {
         const messages = getStore(DB_MESSAGES) || [];
         const users = getStore(DB_USERS) || [];
+        const signature = messages.map(m => `${m.id || ''}:${m.date || ''}`).join('|');
+        const distanceFromBottom = Math.max(0, chatMessages.scrollHeight - chatMessages.scrollTop - chatMessages.clientHeight);
+        const shouldStickToBottom = distanceFromBottom < 90 || lastChatRenderSignature === '';
 
-        if (messages.length !== lastMessageCount || messages.length === 0) {
-            renderMessages(messages);
+        // Do not rely only on array length: after the 200-message realtime limit is reached,
+        // a new message replaces the oldest one and the length remains exactly 200.
+        if (signature !== lastChatRenderSignature || messages.length === 0) {
+            renderMessages(messages, shouldStickToBottom);
             lastMessageCount = messages.length;
+            lastChatRenderSignature = signature;
         }
 
         const onlineUsers = users.filter(isUserOnline);
@@ -1921,7 +2017,6 @@
             `<span class="online-user-dot">${escapeHtml(u.callsign)}</span>`
         ).join('');
 
-        chatMessages.scrollTop = chatMessages.scrollHeight;
         updateChatBadge();
     }
 
@@ -1937,7 +2032,9 @@
         });
     }
 
-    function renderMessages(messages) {
+    function renderMessages(messages, stickToBottom = true) {
+        const previousScrollTop = chatMessages.scrollTop;
+        const previousScrollHeight = chatMessages.scrollHeight;
         chatMessages.innerHTML = '<div class="chat-system-msg"><span>Bem-vindo ao chat da equipe!</span></div>';
 
         [...messages]
@@ -1962,7 +2059,11 @@
             chatMessages.appendChild(msgEl);
         });
 
-        chatMessages.scrollTop = chatMessages.scrollHeight;
+        if (stickToBottom) {
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        } else {
+            chatMessages.scrollTop = Math.max(0, previousScrollTop + (chatMessages.scrollHeight - previousScrollHeight));
+        }
     }
 
     function escapeHtml(text) {
@@ -1979,6 +2080,90 @@
         if (msg.type === 'audio') return `<audio class="chat-media-audio" src="${url}" controls preload="metadata"></audio>`;
         return `<a class="chat-media-file" href="${url}" target="_blank" rel="noopener">📎 ${escapeHtml(msg.mediaName || 'Arquivo')}</a>`;
     }
+
+    function setChatUploadProgress(percent, label = 'Enviando mídia...') {
+        const pct = Math.max(0, Math.min(100, Number(percent || 0)));
+        chatUploadStatus?.classList.remove('hidden');
+        if (chatUploadLabel) chatUploadLabel.textContent = label;
+        if (chatUploadPercent) chatUploadPercent.textContent = `${pct}%`;
+        if (chatUploadProgressBar) chatUploadProgressBar.style.width = `${pct}%`;
+    }
+
+    function hideChatUploadProgress() {
+        chatUploadStatus?.classList.add('hidden');
+        if (chatUploadProgressBar) chatUploadProgressBar.style.width = '0%';
+        if (chatUploadPercent) chatUploadPercent.textContent = '0%';
+    }
+
+    async function sendChatMedia(file) {
+        if (!file || !currentUser) return;
+        const mime = String(file.type || '').toLowerCase();
+        const isImage = mime.startsWith('image/');
+        const isVideo = mime.startsWith('video/');
+        if (!isImage && !isVideo) {
+            showToast('Selecione somente uma foto ou vídeo.', 'error');
+            return;
+        }
+        const maxBytes = isImage ? 10 * 1024 * 1024 : 50 * 1024 * 1024;
+        if (file.size > maxBytes) {
+            showToast(isImage ? 'A imagem deve ter no máximo 10 MB.' : 'O vídeo deve ter no máximo 50 MB.', 'error');
+            return;
+        }
+        if (!window.AsgardCloud?.uploadChatMedia || !window.AsgardCloud?.addMessage) {
+            showToast('O envio de mídia requer conexão com o Firebase Storage.', 'error');
+            return;
+        }
+
+        const text = chatInput.value.trim();
+        const mentionData = extractMentions(text);
+        const messageId = generateId();
+        btnChatAttach.disabled = true;
+        btnSendMsg.disabled = true;
+        setChatUploadProgress(0, isImage ? 'Enviando foto...' : 'Enviando vídeo...');
+
+        try {
+            const uploaded = await window.AsgardCloud.uploadChatMedia(file, messageId, pct => {
+                setChatUploadProgress(pct, isImage ? 'Enviando foto...' : 'Enviando vídeo...');
+            });
+            await window.AsgardCloud.addMessage({
+                id: messageId,
+                userId: currentUser.id,
+                callsign: currentUser.callsign,
+                text,
+                type: uploaded.type,
+                mediaUrl: uploaded.mediaUrl,
+                mediaName: uploaded.mediaName,
+                mimeType: uploaded.mimeType,
+                storagePath: uploaded.storagePath,
+                mediaSize: uploaded.size,
+                mentions: mentionData.ids,
+                mentionCallsigns: mentionData.callsigns,
+                date: new Date().toISOString()
+            });
+            chatInput.value = '';
+            hideMentionSuggestions();
+            setChatUploadProgress(100, 'Enviado!');
+            setTimeout(hideChatUploadProgress, 650);
+        } catch (err) {
+            console.error('[Chat mídia]', err);
+            hideChatUploadProgress();
+            showToast(err?.message || 'Não foi possível enviar a mídia.', 'error');
+        } finally {
+            btnChatAttach.disabled = false;
+            btnSendMsg.disabled = false;
+            if (chatMediaInput) chatMediaInput.value = '';
+            chatInput.focus();
+        }
+    }
+
+    btnChatAttach?.addEventListener('click', () => {
+        if (!currentUser) return;
+        chatMediaInput?.click();
+    });
+    chatMediaInput?.addEventListener('change', () => {
+        const file = chatMediaInput.files?.[0];
+        if (file) sendChatMedia(file);
+    });
 
     const CHAT_EMOJIS = ['😀','😂','🤣','😊','😍','😎','🤔','😅','😢','😡','👍','👎','👏','🙏','💪','🔥','⚡','🎯','🏆','💀','❤️','💙','✅','❌','📍','🎮','👊','🤝','💥','⭐'];
     if (chatEmojiPicker) {
@@ -2188,6 +2373,7 @@
         chatNotificationSessionStartedAt = new Date().toISOString();
         chatNotificationBaselineReady = true;
         lastMessageCount = initial.length;
+        lastChatRenderSignature = '';
         updateChatBadge();
 
         // Remove notificações antigas de menção que tenham ficado no sistema.
@@ -2200,7 +2386,10 @@
             }).catch(() => {});
         }
 
-        chatPollInterval = setInterval(() => updateChatBadge(), 1500);
+        // Firestore's realtime message listener updates the badge through
+        // handleIncomingChatSync(). A 1.5s polling loop duplicated work and caused
+        // unnecessary DOM updates on every device, so no timer is needed here.
+        chatPollInterval = null;
     }
 
     function stopChatPoll() {
@@ -2256,7 +2445,7 @@
             }).join('');
 
             return `
-                <div class="game-card ${isPast ? 'opacity:0.6' : ''}">
+                <div class="game-card ${isPast ? 'opacity:0.6' : ''}" data-game-id="${g.id}">
                     <div class="game-card-header">
                         ${g.completed ? '<span class="game-completed-badge">✓ OPERAÇÃO CONCLUÍDA</span>' : ''}
                         <div>
@@ -2278,10 +2467,13 @@
                         </div>
                     ` : ''}
                     <div class="game-actions">
-                        ${!isPast ? `
-                            <button class="btn-secondary confirm-game-btn" data-id="${g.id}" ${isConfirmed ? 'style="border-color:var(--success);color:var(--success)"' : ''}>
-                                ${isConfirmed ? '✓ Confirmado' : 'Confirmar Presença'}
-                            </button>
+                        ${!g.completed ? `
+                            ${(() => {
+                                const quotaBlocked = !isConfirmed && lateUserHasAnotherGameThisMonth(g);
+                                return `<button class="btn-secondary confirm-game-btn" data-id="${g.id}" ${isConfirmed ? 'style="border-color:var(--success);color:var(--success)"' : ''} ${quotaBlocked ? 'disabled title="Contribuição Em Atraso: limite de 1 operação por mês"' : ''}>
+                                    ${isConfirmed ? '✓ Confirmado' : (quotaBlocked ? 'Limite mensal atingido' : 'Confirmar Presença')}
+                                </button>`;
+                            })()}
                         ` : ''}
                         ${currentUser.role === 'admin' ? `
                             <button class="btn-secondary complete-game-btn" data-id="${g.id}">${g.completed ? 'Reabrir' : 'Concluir Operação'}</button>
@@ -2315,65 +2507,87 @@
         });
     }
 
-    function toggleConfirmGame(gameId) {
-        const games = getStore(DB_GAMES) || [];
-        const game = games.find(g => g.id === gameId);
-        if (!game) return;
-
-        if (!game.confirmed) game.confirmed = [];
-        if (!game.checkedIn) game.checkedIn = [];
-        const idx = game.confirmed.indexOf(currentUser.id);
-
-        if (idx >= 0) {
-            // Depois que o ADMIN registra o check-in, o operador não pode apagar
-            // a própria presença e invalidar a lista de chamada.
-            if (game.checkedIn.includes(currentUser.id) && currentUser.role !== 'admin') {
-                showToast('Seu check-in já foi realizado. Solicite ao ADMIN para alterar a presença.', 'info');
-                return;
-            }
-            game.confirmed.splice(idx, 1);
-            if (currentUser.role === 'admin') {
-                const ciIdx = game.checkedIn.indexOf(currentUser.id);
-                if (ciIdx >= 0) game.checkedIn.splice(ciIdx, 1);
-            }
-            showToast('Presença cancelada', 'info');
-        } else {
-            game.confirmed.push(currentUser.id);
-            addActivity(`${currentUser.callsign} confirmou presença em ${game.title}`);
-            showToast('Presença confirmada!', 'success');
-        }
-        setStore(DB_GAMES, games);
-        refreshGames();
+    function gameMonthKey(game) {
+        const match = String(game?.date || '').match(/^(\d{4}-\d{2})/);
+        return match ? match[1] : null;
     }
 
-    function checkinMember(gameId, userId) {
-        if (currentUser.role !== 'admin') {
-            showToast('Apenas ADMIN pode fazer check-in', 'error');
-            return;
-        }
-        const games = getStore(DB_GAMES) || [];
-        const game = games.find(g => g.id === gameId);
+    function currentUserContributionStatusForGame(game) {
+        if (!currentUser) return 'Pendente';
+        const monthKey = gameMonthKey(game);
+        if (!monthKey) return 'Pendente';
+        const data = getContribData();
+        return data?.months?.[monthKey]?.[currentUser.id]?.status || 'Pendente';
+    }
+
+    function lateUserHasAnotherGameThisMonth(game) {
+        if (!currentUser || currentUserContributionStatusForGame(game) !== 'Em Atraso') return false;
+        const monthKey = gameMonthKey(game);
+        return (getStore(DB_GAMES) || []).some(other =>
+            other.id !== game.id &&
+            gameMonthKey(other) === monthKey &&
+            Array.isArray(other.confirmed) &&
+            other.confirmed.includes(currentUser.id)
+        );
+    }
+
+    async function toggleConfirmGame(gameId) {
+        const game = (getStore(DB_GAMES) || []).find(g => g.id === gameId);
         if (!game) return;
-        if (!(game.confirmed || []).includes(userId)) {
-            showToast('O operador precisa confirmar presença antes do check-in.', 'error');
+        if (game.completed) { showToast('Esta operação já foi concluída.', 'info'); return; }
+        const alreadyConfirmed = Array.isArray(game.confirmed) && game.confirmed.includes(currentUser.id);
+        if (!alreadyConfirmed && lateUserHasAnotherGameThisMonth(game)) {
+            showToast('Contribuição Em Atraso: limite de 1 operação confirmada por mês atingido.', 'error');
             return;
         }
-        if (!game.checkedIn) game.checkedIn = [];
+        try {
+            if (window.AsgardCloud?.toggleGameConfirmation) {
+                const confirmedNow = await window.AsgardCloud.toggleGameConfirmation(gameId);
+                if (confirmedNow) {
+                    addActivity(`${currentUser.callsign} confirmou presença em ${game.title}`);
+                    showToast('Presença confirmada!', 'success');
+                } else {
+                    showToast('Presença cancelada', 'info');
+                }
+            } else {
+                if (!game.confirmed) game.confirmed = [];
+                if (!game.checkedIn) game.checkedIn = [];
+                const idx = game.confirmed.indexOf(currentUser.id);
+                if (idx >= 0) {
+                    if (game.checkedIn.includes(currentUser.id) && currentUser.role !== 'admin') {
+                        showToast('Seu check-in já foi realizado. Solicite ao ADMIN para alterar a presença.', 'info');
+                        return;
+                    }
+                    game.confirmed.splice(idx, 1);
+                    showToast('Presença cancelada', 'info');
+                } else {
+                    game.confirmed.push(currentUser.id);
+                    addActivity(`${currentUser.callsign} confirmou presença em ${game.title}`);
+                    showToast('Presença confirmada!', 'success');
+                }
+                setStore(DB_GAMES, getStore(DB_GAMES) || []);
+            }
+        } catch (err) {
+            showToast(err?.message || 'Não foi possível atualizar sua presença.', 'error');
+        }
+    }
+
+    async function checkinMember(gameId, userId) {
+        if (currentUser.role !== 'admin') { showToast('Apenas ADMIN pode fazer check-in', 'error'); return; }
+        const game = (getStore(DB_GAMES) || []).find(g => g.id === gameId);
+        if (!game) return;
         const users = getStore(DB_USERS) || [];
         const member = users.find(u => u.id === userId);
         const memberName = member ? member.callsign : 'Operador';
-        const idx = game.checkedIn.indexOf(userId);
-        if (idx >= 0) {
-            game.checkedIn.splice(idx, 1);
-            addActivity(`${currentUser.callsign} desfez o check-in de ${memberName} em ${game.title}`);
-            showToast(`Check-in de ${memberName} removido`, 'info');
-        } else {
-            game.checkedIn.push(userId);
-            addActivity(`${memberName} recebeu check-in em ${game.title}`);
-            showToast(`Check-in de ${memberName} realizado!`, 'success');
+        try {
+            if (window.AsgardCloud?.setGameCheckin) {
+                const checkedNow = await window.AsgardCloud.setGameCheckin(gameId, userId);
+                addActivity(checkedNow ? `${memberName} recebeu check-in em ${game.title}` : `${currentUser.callsign} desfez o check-in de ${memberName} em ${game.title}`);
+                showToast(checkedNow ? `Check-in de ${memberName} realizado!` : `Check-in de ${memberName} removido`, checkedNow ? 'success' : 'info');
+            }
+        } catch (err) {
+            showToast(err?.message || 'Não foi possível atualizar o check-in.', 'error');
         }
-        setStore(DB_GAMES, games);
-        refreshGames();
     }
 
     function openEditGame(gameId) {
@@ -2395,22 +2609,20 @@
         createGameModal.classList.remove('hidden');
     }
 
-    function deleteGame(gameId) {
-        if (currentUser.role !== 'admin') {
-            showToast('Apenas ADMIN pode excluir partidas', 'error');
-            return;
-        }
-        const games = getStore(DB_GAMES) || [];
-        const idx = games.findIndex(g => g.id === gameId);
-        if (idx >= 0) {
-            const game = games[idx];
-            if (!confirm(`Excluir definitivamente "${game.title}"?`)) return;
-            games.splice(idx, 1);
-            setStore(DB_GAMES, games);
+    async function deleteGame(gameId) {
+        if (currentUser.role !== 'admin') { showToast('Apenas ADMIN pode excluir partidas', 'error'); return; }
+        const game = (getStore(DB_GAMES) || []).find(g => g.id === gameId);
+        if (!game) return;
+        if (!confirm(`Excluir definitivamente "${game.title}"?`)) return;
+        try {
+            if (window.AsgardCloud?.removeGame) await window.AsgardCloud.removeGame(gameId);
+            else {
+                const games = (getStore(DB_GAMES) || []).filter(g => g.id !== gameId);
+                setStore(DB_GAMES, games);
+            }
             addActivity(`${currentUser.callsign} cancelou o jogo: ${game.title}`);
             showToast('Jogo excluído', 'info');
-            refreshGames();
-        }
+        } catch (err) { showToast(err?.message || 'Não foi possível excluir o jogo.', 'error'); }
     }
 
     // Filter buttons
@@ -2449,7 +2661,7 @@
         if (e.target === createGameModal) createGameModal.classList.add('hidden');
     });
 
-    btnSaveGame.addEventListener('click', () => {
+    btnSaveGame.addEventListener('click', async () => {
         if (currentUser.role !== 'admin') {
             showToast('Apenas ADMIN pode criar ou editar partidas', 'error');
             return;
@@ -2464,37 +2676,30 @@
         if (!title) { showToast('Informe o título do jogo', 'error'); return; }
         if (!date) { showToast('Informe a data', 'error'); return; }
 
-        const games = getStore(DB_GAMES) || [];
-        if (editingGameId) {
-            const game = games.find(g => g.id === editingGameId);
-            if (!game) { showToast('Jogo não encontrado', 'error'); return; }
-            game.type = type;
-            game.title = title;
-            game.date = date;
-            game.time = time;
-            game.location = location;
-            game.description = description;
-            game.updatedAt = new Date().toISOString();
-            addActivity(`${currentUser.callsign} editou ${type}: ${title}`);
-            showToast('Jogo atualizado com sucesso!', 'success');
-        } else {
-            games.push({
-                id: generateId(),
-                type,
-                title,
-                date,
-                time,
-                location,
-                description,
-                createdBy: currentUser.id,
-                confirmed: [],
-                checkedIn: [],
-                createdAt: new Date().toISOString()
-            });
-            addActivity(`${currentUser.callsign} criou ${type}: ${title}`);
-            showToast('Jogo criado com sucesso!', 'success');
+        try {
+            if (editingGameId) {
+                const game = (getStore(DB_GAMES) || []).find(g => g.id === editingGameId);
+                if (!game) { showToast('Jogo não encontrado', 'error'); return; }
+                const patch = { type, title, date, time, location, description };
+                if (window.AsgardCloud?.updateGame) await window.AsgardCloud.updateGame(editingGameId, patch);
+                else Object.assign(game, patch, { updatedAt:new Date().toISOString() });
+                addActivity(`${currentUser.callsign} editou ${type}: ${title}`);
+                showToast('Jogo atualizado com sucesso!', 'success');
+            } else {
+                const game = {
+                    id: generateId(), type, title, date, time, location, description,
+                    createdBy: currentUser.id, confirmed: [], checkedIn: [], completed:false,
+                    createdAt: new Date().toISOString()
+                };
+                if (window.AsgardCloud?.createGame) await window.AsgardCloud.createGame(game);
+                else { const games=getStore(DB_GAMES)||[]; games.push(game); setStore(DB_GAMES,games); }
+                addActivity(`${currentUser.callsign} criou ${type}: ${title}`);
+                showToast('Jogo criado com sucesso!', 'success');
+            }
+        } catch (err) {
+            showToast(err?.message || 'Não foi possível salvar o jogo.', 'error');
+            return;
         }
-        setStore(DB_GAMES, games);
 
         editingGameId = null;
         gameTitle.value = '';
@@ -3742,7 +3947,14 @@
         const attended = completed.filter(g => (g.checkedIn || []).includes(userId));
         const confirmed = games.filter(g => (g.confirmed || []).includes(userId));
         const awards = (getStore(DB_ACHIEVEMENT_AWARDS) || []).filter(a => String(a.userId) === String(userId));
-        const xp = attended.length * 50 + awards.length * 100;
+        const achievementCatalog = getStore(DB_ACHIEVEMENTS) || [];
+        const achievementXp = awards.reduce((sum, award) => {
+            const achievement = achievementCatalog.find(a => String(a.id) === String(award.achievementId));
+            const rarity = String(achievement?.rarity || 'comum').toLowerCase();
+            const xpByRarity = { comum:100, incomum:125, rara:150, epica:200, lendaria:250 };
+            return sum + (xpByRarity[rarity] || 100);
+        }, 0);
+        const xp = attended.length * 50 + achievementXp;
         const level = Math.floor(xp / 250) + 1;
         const inLevel = xp % 250;
         const attendanceBase = completed.filter(g => (g.confirmed || []).includes(userId)).length;
@@ -3763,20 +3975,17 @@
         if (hist) hist.innerHTML = s.attended.length ? s.attended.slice().sort((a,b)=>String(b.date).localeCompare(String(a.date))).slice(0,8).map(g=>`<div class="operation-history-item"><div><strong>${escapeHtml(g.title || 'Operação')}</strong><span>${formatDate(g.date)} • ${escapeHtml(g.location || 'Local não informado')}</span></div><span class="operation-history-xp">+50 XP</span></div>`).join('') : '<p class="empty-state">Nenhuma operação concluída.</p>';
     }
 
-    function toggleGameCompletedV2(gameId) {
-        if (currentUser?.role !== 'admin') return;
-        const games = getStore(DB_GAMES) || []; const game = games.find(g=>g.id===gameId); if (!game) return;
-        game.completed = !game.completed; game.completedAt = game.completed ? new Date().toISOString() : null; game.updatedAt = new Date().toISOString();
-        setStore(DB_GAMES, games); addActivity(`${currentUser.callsign} ${game.completed ? 'concluiu' : 'reabriu'} a operação ${game.title}`); showToast(game.completed ? 'Operação concluída. XP e estatísticas atualizados.' : 'Operação reaberta.', 'success'); refreshGames();
-    }
-
-    function refreshCalendarV2() {
-        const el = $('calendar-list'), summary = $('calendar-summary'); if (!el) return;
-        const games = (getStore(DB_GAMES) || []).slice().sort((a,b)=>String(a.date).localeCompare(String(b.date)) || String(a.time||'').localeCompare(String(b.time||'')));
-        const upcoming = games.filter(g => !g.completed && new Date(`${g.date}T${g.time || '23:59'}`) >= new Date());
-        if (summary) summary.innerHTML = `<div><strong>${upcoming.length}</strong><span>Próximos</span></div><div><strong>${games.filter(g=>g.completed).length}</strong><span>Concluídos</span></div><div><strong>${games.length}</strong><span>Total</span></div>`;
-        el.innerHTML = games.length ? games.map(g=>`<article class="calendar-event ${g.completed ? 'completed' : ''}"><div class="calendar-date-box"><strong>${String(g.date||'').slice(8,10) || '--'}</strong><span>${new Date((g.date||'2000-01-01')+'T12:00:00').toLocaleDateString('pt-BR',{month:'short'}).replace('.','')}</span></div><div class="calendar-event-copy"><div><span class="game-type-badge ${g.type}">${escapeHtml((g.type||'jogo').toUpperCase())}</span>${g.completed ? '<span class="calendar-done">CONCLUÍDO</span>' : ''}</div><h3>${escapeHtml(g.title || 'Evento')}</h3><p>⏰ ${escapeHtml(g.time || '—')} &nbsp; 📍 ${escapeHtml(g.location || '—')}</p><small>${(g.confirmed||[]).length} confirmados • ${(g.checkedIn||[]).length} check-ins</small></div><button class="btn-secondary calendar-open-game" data-id="${g.id}">Ver em Jogos</button></article>`).join('') : '<p class="empty-state">Nenhum evento agendado.</p>';
-        el.querySelectorAll('.calendar-open-game').forEach(b=>b.addEventListener('click',()=>navigateTo('games')));
+    async function toggleGameCompletedV2(gameId) {
+        if (currentUser.role !== 'admin') { showToast('Apenas ADMIN pode concluir operações.', 'error'); return; }
+        const game = (getStore(DB_GAMES) || []).find(g => g.id === gameId);
+        if (!game) return;
+        const completed = !game.completed;
+        try {
+            if (window.AsgardCloud?.setGameCompleted) await window.AsgardCloud.setGameCompleted(gameId, completed);
+            else { game.completed = completed; setStore(DB_GAMES, getStore(DB_GAMES) || []); }
+            addActivity(`${currentUser.callsign} ${completed ? 'concluiu' : 'reabriu'} a operação ${game.title}`);
+            showToast(completed ? 'Operação concluída. Ela não aceita mais confirmações.' : 'Operação reaberta para confirmações.', 'success');
+        } catch (err) { showToast(err?.message || 'Não foi possível alterar o status da operação.', 'error'); }
     }
 
     function renderMyOrdersV2() {
@@ -3799,14 +4008,6 @@
     }
     document.querySelectorAll('[data-quick-page]').forEach(b=>b.addEventListener('click',()=>navigateTo(b.dataset.quickPage)));
 
-    function refreshAdminPanelV2() {
-        if (currentUser?.role !== 'admin') { navigateTo('dashboard'); return; }
-        const el=$('admin-overview'); if(!el) return;
-        const users=getStore(DB_USERS)||[], games=getStore(DB_GAMES)||[], products=getStore(DB_PRODUCTS)||[], orders=getStore(DB_ORDERS)||[], awards=getStore(DB_ACHIEVEMENT_AWARDS)||[];
-        el.innerHTML = `<div class="admin-overview-card"><span>👥</span><strong>${users.length}</strong><small>Membros</small></div><div class="admin-overview-card"><span>🟢</span><strong>${users.filter(isUserOnline).length}</strong><small>Online</small></div><div class="admin-overview-card"><span>🎯</span><strong>${games.filter(g=>!g.completed).length}</strong><small>Operações abertas</small></div><div class="admin-overview-card"><span>🏆</span><strong>${awards.length}</strong><small>Insígnias concedidas</small></div><div class="admin-overview-card"><span>🛒</span><strong>${products.length}</strong><small>Produtos</small></div><div class="admin-overview-card"><span>📦</span><strong>${orders.filter(o=>o.status==='Pendente').length}</strong><small>Pedidos pendentes</small></div>`;
-    }
-    document.querySelectorAll('[data-admin-page]').forEach(b=>b.addEventListener('click',()=>navigateTo(b.dataset.adminPage)));
-
     function updateConnectionUiV2() {
         if (!connectionStatusV2) return;
         const offline = !navigator.onLine;
@@ -3816,6 +4017,170 @@
     window.addEventListener('online',()=>{ cloudHasRecentErrorV2=false; updateConnectionUiV2(); showToast('Conexão restabelecida. Sincronizando...', 'success'); });
     window.addEventListener('offline',()=>{ updateConnectionUiV2(); showToast('Sem conexão — alterações podem aguardar sincronização.', 'info'); });
     updateConnectionUiV2();
+
+
+    // ===== V1.0 EXPERIENCE ENHANCEMENTS =====
+    const RARITY_LABELS = { comum:'COMUM', incomum:'INCOMUM', rara:'RARA', epica:'ÉPICA', lendaria:'LENDÁRIA' };
+    const RARITY_XP = { comum:100, incomum:125, rara:150, epica:200, lendaria:250 };
+
+    function getRarityMeta(a) {
+        const rarity = String(a?.rarity || 'comum').toLowerCase();
+        return { rarity, label: RARITY_LABELS[rarity] || 'COMUM', xp: RARITY_XP[rarity] || 100 };
+    }
+
+    function decorateAchievementRarity() {
+        if (!achievementsGrid) return;
+        const achievements = getStore(DB_ACHIEVEMENTS) || [];
+        achievementsGrid.querySelectorAll('.achievement-card[data-achievement-id]').forEach(card => {
+            const a = achievements.find(x => String(x.id) === String(card.dataset.achievementId));
+            if (!a) return;
+            const meta = getRarityMeta(a);
+            card.classList.add(`rarity-${meta.rarity}`);
+            const content = card.querySelector('.achievement-card-body') || card;
+            if (!card.querySelector('.achievement-rarity-chip')) {
+                const chip = document.createElement('span');
+                chip.className = `achievement-rarity-chip rarity-${meta.rarity}`;
+                chip.textContent = `${meta.label} • ${meta.xp} XP`;
+                content.prepend(chip);
+            }
+        });
+    }
+
+    const refreshAchievementsBaseV10 = refreshAchievements;
+    refreshAchievements = function() {
+        refreshAchievementsBaseV10();
+        decorateAchievementRarity();
+    };
+
+    const renderProfileAchievementsBaseV10 = renderProfileAchievements;
+    renderProfileAchievements = function(userId) {
+        renderProfileAchievementsBaseV10(userId);
+        const achievements = getStore(DB_ACHIEVEMENTS) || [];
+        profileAchievements?.querySelectorAll('[data-achievement-id], .profile-achievement-item, .profile-achievement-badge').forEach(el => {
+            const id = el.dataset.achievementId || el.dataset.id;
+            const a = achievements.find(x => String(x.id) === String(id));
+            if (a) el.classList.add(`rarity-${getRarityMeta(a).rarity}`);
+        });
+    };
+
+    function renderDashboardOperatorHeroV10() {
+        if (!currentUser) return;
+        const stats = getOperatorStatsV2(currentUser.id);
+        const callsign = $('dashboard-hero-callsign'), fn = $('dashboard-hero-function'), level = $('dashboard-hero-level');
+        const xp = $('dashboard-hero-xp'), bar = $('dashboard-hero-xp-bar'), avatar = $('dashboard-hero-avatar');
+        if (callsign) callsign.textContent = currentUser.callsign || 'OPERADOR';
+        if (fn) fn.textContent = currentUser.funcao || (currentUser.role === 'admin' ? 'Comando' : 'Operador');
+        if (level) level.textContent = `Nível ${stats.level}`;
+        if (xp) xp.textContent = `${stats.xp} / ${stats.level * 250} XP`;
+        if (bar) bar.style.width = `${Math.min(100, (stats.inLevel / 250) * 100)}%`;
+        if (avatar) avatar.innerHTML = currentUser.avatar ? `<img src="${escapeHtml(currentUser.avatar)}" alt="">` : escapeHtml((currentUser.callsign || '?').charAt(0));
+    }
+
+    const refreshDashboardV2BaseV10 = refreshDashboardV2;
+    refreshDashboardV2 = function() {
+        refreshDashboardV2BaseV10();
+        renderDashboardOperatorHeroV10();
+        const next = (getStore(DB_GAMES)||[]).filter(g=>!g.completed).sort((a,b)=>String(a.date+a.time).localeCompare(String(b.date+b.time)))[0];
+        if (nextGameInfo && next) {
+            nextGameInfo.innerHTML = `<div class="next-operation-card"><span class="next-operation-status">INSCRIÇÕES ABERTAS</span><strong>${escapeHtml(next.title||'Operação')}</strong><div>${formatDate(next.date)} • ${escapeHtml(next.time||'—')}</div><div>📍 ${escapeHtml(next.location||'Local a definir')}</div><div class="next-operation-people">👥 ${(next.confirmed||[]).length} confirmados</div><button type="button" class="btn-primary" data-dashboard-confirm-game="${escapeHtml(next.id)}">Ver operação</button></div>`;
+            nextGameInfo.querySelector('[data-dashboard-confirm-game]')?.addEventListener('click',()=>navigateTo('games'));
+        }
+    };
+
+    const refreshMembersBaseV10 = refreshMembers;
+    refreshMembers = function() {
+        refreshMembersBaseV10();
+        const users = getStore(DB_USERS)||[];
+        membersList?.querySelectorAll('.member-card').forEach(card => {
+            const u = users.find(x=>String(x.id)===String(card.dataset.id)); if(!u) return;
+            const info = card.querySelector('.member-info'); if(!info) return;
+            const stats = getOperatorStatsV2(u.id);
+            if (!info.querySelector('.member-v10-meta')) {
+                const el=document.createElement('div'); el.className='member-v10-meta';
+                el.innerHTML=`<span>${escapeHtml(u.funcao||'Operador')}</span><span>NV. ${stats.level}</span><span>${stats.awards} insígnias</span>`;
+                info.appendChild(el);
+            }
+        });
+    };
+
+    const refreshGamesBaseV10 = refreshGames;
+    refreshGames = function() {
+        refreshGamesBaseV10();
+        if (!gamesList) return;
+        const cards=[...gamesList.querySelectorAll('.game-card')];
+        if (!cards.length) return;
+        const games=getStore(DB_GAMES)||[];
+        const active=[], history=[];
+        cards.forEach(card=>{
+            const id=card.dataset.gameId;
+            const g=games.find(x=>String(x.id)===String(id));
+            (g?.completed ? history : active).push(card);
+        });
+        if (!active.length && !history.length) return;
+        gamesList.innerHTML='';
+        if(active.length){ const h=document.createElement('div');h.className='games-section-title';h.innerHTML='<span>⚔</span><div><strong>Operações abertas</strong><small>Confirme sua presença enquanto a operação estiver ativa.</small></div>';gamesList.appendChild(h);active.forEach(c=>gamesList.appendChild(c)); }
+        if(history.length){ const h=document.createElement('div');h.className='games-section-title history';h.innerHTML='<span>ᛏ</span><div><strong>Operações anteriores</strong><small>Histórico concluído da equipe.</small></div>';gamesList.appendChild(h);history.forEach(c=>gamesList.appendChild(c)); }
+    };
+
+    // Chat: reply-to, date separators and better message context.
+    let activeChatReplyV10 = null;
+    const chatReplyPreviewV10 = $('chat-reply-preview');
+    const chatReplyAuthorV10 = $('chat-reply-author');
+    const chatReplyTextV10 = $('chat-reply-text');
+    function clearChatReplyV10(){ activeChatReplyV10=null; chatReplyPreviewV10?.classList.add('hidden'); }
+    $('btn-cancel-chat-reply')?.addEventListener('click', clearChatReplyV10);
+    function setChatReplyV10(msg){
+        if(!msg) return; activeChatReplyV10={id:msg.id,callsign:msg.callsign||'Operador',text:String(msg.text||msg.mediaName|| (msg.type==='image'?'Foto':'Vídeo')).slice(0,140)};
+        if(chatReplyAuthorV10) chatReplyAuthorV10.textContent=activeChatReplyV10.callsign;
+        if(chatReplyTextV10) chatReplyTextV10.textContent=activeChatReplyV10.text;
+        chatReplyPreviewV10?.classList.remove('hidden'); chatInput?.focus();
+    }
+
+    const renderMessagesBaseV10 = renderMessages;
+    renderMessages = function(messages, stickToBottom=true) {
+        renderMessagesBaseV10(messages, stickToBottom);
+        const byId=new Map((messages||[]).map(m=>[String(m.id),m]));
+        let lastDay='';
+        [...chatMessages.querySelectorAll('.chat-msg')].forEach((el,idx)=>{
+            const sorted=[...(messages||[])].sort((a,b)=>String(a.date||'').localeCompare(String(b.date||''))).slice(-200);
+            const msg=sorted[idx]; if(!msg) return;
+            el.dataset.messageId=msg.id;
+            const day=new Date(msg.date||Date.now()).toLocaleDateString('pt-BR',{day:'2-digit',month:'short',year:'numeric'});
+            if(day!==lastDay){ const sep=document.createElement('div');sep.className='chat-date-separator';sep.textContent=day;el.before(sep);lastDay=day; }
+            const content=el.querySelector('.chat-msg-content');
+            if(msg.replyTo && content){ const q=document.createElement('div');q.className='chat-reply-quoted';q.innerHTML=`<strong>${escapeHtml(msg.replyTo.callsign||'Operador')}</strong><span>${escapeHtml(msg.replyTo.text||'Mensagem')}</span>`;content.prepend(q); }
+            if(content && !content.querySelector('.chat-reply-action')){ const b=document.createElement('button');b.type='button';b.className='chat-reply-action';b.textContent='↩ Responder';b.addEventListener('click',()=>setChatReplyV10(msg));content.appendChild(b); }
+        });
+    };
+
+    const sendMessageBaseV10 = sendMessage;
+    sendMessage = async function() {
+        const text=chatInput.value.trim();
+        if(!activeChatReplyV10) return sendMessageBaseV10();
+        if(!text || !currentUser) return;
+        const mentionData=extractMentions(text);
+        const message={id:generateId(),userId:currentUser.id,callsign:currentUser.callsign,text,mentions:mentionData.ids,mentionCallsigns:mentionData.callsigns,date:new Date().toISOString(),replyTo:{...activeChatReplyV10}};
+        hideMentionSuggestions(); chatInput.value=''; btnSendMsg.disabled=true;
+        try { if(window.AsgardCloud?.addMessage) await window.AsgardCloud.addMessage(message); else { const messages=getStore(DB_MESSAGES)||[];messages.push(message);setStore(DB_MESSAGES,messages);refreshChat(); } clearChatReplyV10(); }
+        catch(err){ console.error('[Chat reply]',err);chatInput.value=text;showToast('Não foi possível enviar a resposta.','error'); }
+        finally{ btnSendMsg.disabled=false;chatInput.focus(); }
+    };
+    // Existing event listeners call the binding by reference captured earlier, so add a capture listener
+    // that handles reply sends before the legacy click handler can execute.
+    btnSendMsg?.addEventListener('click', e=>{ if(activeChatReplyV10){ e.stopImmediatePropagation(); sendMessage(); } }, true);
+    chatInput?.addEventListener('keydown', e=>{ if(activeChatReplyV10 && e.key==='Enter' && !e.shiftKey){ e.preventDefault();e.stopImmediatePropagation();sendMessage(); } }, true);
+
+    // Notification drawer: enrich with explicit unread counter label and retain fast deep-links.
+    const notificationPanel = document.querySelector('.notification-panel-header');
+    if(notificationPanel && !notificationPanel.querySelector('.notification-v10-note')){
+        const n=document.createElement('small');n.className='notification-v10-note';n.textContent='Menções, conquistas, avisos e operações em um só lugar.';notificationPanel.querySelector('div')?.appendChild(n);
+    }
+
+    // Lightweight performance hygiene: avoid unnecessary work while the app is hidden.
+    document.addEventListener('visibilitychange',()=>{
+        if(document.hidden){ chatEmojiPicker?.classList.add('hidden'); hideMentionSuggestions(); }
+        else if(currentUser){ scheduleSyncedViewRefresh('visibility'); }
+    });
 
     // ===== INIT =====
     async function init() {
@@ -3841,6 +4206,33 @@
 
 
     // Re-render active views when another device changes cloud data.
+    // Firestore can deliver several initial snapshots almost simultaneously. Grouping
+    // those UI renders prevents repeated heavy innerHTML rebuilds during login/navigation.
+    let syncRenderTimer = null;
+    const pendingSyncKeys = new Set();
+    function scheduleSyncedViewRefresh(key) {
+        if (key) pendingSyncKeys.add(key);
+        if (syncRenderTimer) return;
+        syncRenderTimer = setTimeout(() => {
+            syncRenderTimer = null;
+            const keys = new Set(pendingSyncKeys); pendingSyncKeys.clear();
+            if (!currentUser) return;
+            renderNotificationCenterV2();
+            const active = document.querySelector('.page:not(.hidden)');
+            if (!active) return;
+            const id = active.id || '';
+            if (id === 'page-dashboard') { refreshDashboard(); refreshDashboardV2(); }
+            if (id === 'page-profile') { refreshProfile(); renderProfileStatsV2((getViewedProfileUser() || currentUser).id); }
+            if (id === 'page-members') refreshMembers();
+            if (id === 'page-arsenal') refreshArsenal();
+            if (id === 'page-achievements') refreshAchievements();
+            if (id === 'page-chat' && !keys.has(DB_MESSAGES)) refreshChat();
+            if (id === 'page-games') refreshGames();
+            if (id === 'page-loja') { refreshProducts(); renderMyOrdersV2(); }
+            if (id === 'page-vendas' && currentUser.role === 'admin') { refreshOrderStats(); refreshOrders(); }
+            if (id === 'page-contribuicao') refreshContribuicao();
+        }, 70);
+    }
     window.addEventListener('asgard:sync', (event) => {
         if (!currentUser) return;
         const key = event.detail?.key;
@@ -3849,30 +4241,10 @@
             currentUser = (getStore(DB_USERS) || []).find(u => u.id === currentUser.id) || currentUser;
             updateUIForRole(); updateTopbar();
             updateAchievementNotificationBadge();
-            // O listener em tempo real de profiles dispara em todos os dispositivos.
-            // Atualiza imediatamente qualquer tela que exiba presença.
-            refreshPresenceViews();
             setTimeout(maybeShowAchievementNotification, 120);
         }
-        if (key === DB_ACHIEVEMENTS || key === DB_ACHIEVEMENT_AWARDS) {
-            updateAchievementNotificationBadge();
-        }
-        renderNotificationCenterV2();
-        const active = document.querySelector('.page:not(.hidden)');
-        if (!active) return;
-        const id = active.id || '';
-        if (id === 'page-dashboard') { refreshDashboard(); refreshDashboardV2(); }
-        if (id === 'page-profile') { refreshProfile(); renderProfileStatsV2((getViewedProfileUser() || currentUser).id); }
-        if (id === 'page-members') refreshMembers();
-        if (id === 'page-arsenal') refreshArsenal();
-        if (id === 'page-achievements') refreshAchievements();
-        if (id === 'page-chat') refreshChat();
-        if (id === 'page-games') refreshGames();
-        if (id === 'page-calendar') refreshCalendarV2();
-        if (id === 'page-loja') { refreshProducts(); renderMyOrdersV2(); }
-        if (id === 'page-admin' && currentUser.role === 'admin') refreshAdminPanelV2();
-        if (id === 'page-vendas' && currentUser.role === 'admin') { refreshOrderStats(); refreshOrders(); }
-        if (id === 'page-contribuicao') refreshContribuicao();
+        if (key === DB_ACHIEVEMENTS || key === DB_ACHIEVEMENT_AWARDS) updateAchievementNotificationBadge();
+        scheduleSyncedViewRefresh(key);
     });
     window.addEventListener('asgard:cloud-error', (e) => {
         console.error(e.detail);
