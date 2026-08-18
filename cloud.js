@@ -6,7 +6,7 @@ import {
 } from 'https://www.gstatic.com/firebasejs/12.17.1/firebase-auth.js';
 import {
   getFirestore, collection, doc, getDoc, getDocs, setDoc, deleteDoc, writeBatch,
-  onSnapshot, runTransaction, serverTimestamp, query, where
+  onSnapshot, runTransaction, serverTimestamp, query, where, orderBy, limit
 } from 'https://www.gstatic.com/firebasejs/12.17.1/firebase-firestore.js';
 
 const cache = new Map();
@@ -106,6 +106,10 @@ function collectionSource(colName, role) {
   if (colName === 'orders' && role !== 'admin') {
     return query(collection(db, 'orders'), where('compradorId', '==', auth.currentUser.uid));
   }
+  // Performance: keep high-volume realtime feeds bounded. Firestore remains source of truth,
+  // while the client only subscribes to the recent window needed by the UI.
+  if (colName === 'messages') return query(collection(db, colName), orderBy('date', 'desc'), limit(200));
+  if (colName === 'activities') return query(collection(db, colName), orderBy('date', 'desc'), limit(80));
   return collection(db, colName);
 }
 function contributionSource(role) {
@@ -565,6 +569,31 @@ async function removeAchievement(achievementId) {
   return true;
 }
 
+
+async function appendActivity(text, type = 'general', meta = {}) {
+  const me = auth?.currentUser;
+  if (!me) return false;
+  const value = String(text || '').trim().slice(0, 250);
+  if (!value) return false;
+  const profileSnap = await getDoc(doc(db, 'profiles', me.uid));
+  const profile = profileSnap.exists() ? profileSnap.data() || {} : {};
+  const now = new Date().toISOString();
+  const id = `${Date.now()}_${me.uid}_${Math.random().toString(36).slice(2,7)}`;
+  const allowedType = ['general','auth','member','achievement','game','store','order','contribution','admin'].includes(String(type)) ? String(type) : 'general';
+  const payload = cleanFirestoreObject({
+    id,
+    text:value,
+    type:allowedType,
+    date:now,
+    actorUid:me.uid,
+    actorCallsign:String(profile.callsign || meta.actorCallsign || 'Operador').slice(0,40),
+    entityId:meta?.entityId ? String(meta.entityId).slice(0,120) : '',
+    entityType:meta?.entityType ? String(meta.entityType).slice(0,40) : ''
+  });
+  await setDoc(doc(db, 'activities', id), payload, { merge:false });
+  return payload;
+}
+
 async function removeSession() {
   if (auth) await signOut(auth);
   localStorage.removeItem('asgard_session');
@@ -593,5 +622,6 @@ window.AsgardCloud = {
   createAnnouncement, updateAnnouncement, removeAnnouncement,
   createProduct, updateProduct, removeProduct,
   createAchievement, updateAchievement, setAchievementRecipients, markAchievementNotificationRead, removeAchievement,
+  appendActivity,
   isOnline: () => initialized
 };

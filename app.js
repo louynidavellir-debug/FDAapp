@@ -857,13 +857,18 @@
             announcements.innerHTML = '<p class="empty-state">Sem avisos</p>';
         }
 
-        // Recent activity
+        // Feed de atividade em tempo real
         if (activities.length > 0) {
-            recentActivity.innerHTML = activities.slice(-5).reverse().map(a =>
-                `<div style="padding:6px 0;border-bottom:1px solid rgba(255,255,255,0.04);font-size:0.85rem;color:var(--text-secondary)">⚡ ${a.text}<br><span style="font-size:0.7rem;color:var(--text-dim)">${formatDateTime(a.date)}</span></div>`
-            ).join('');
+            const activityIcon = { achievement:'🏆', game:'🎯', store:'🛒', order:'📦', contribution:'💳', admin:'🛡️', auth:'🟢', member:'👤', general:'⚡' };
+            recentActivity.innerHTML = activities.slice().sort((a,b)=>new Date(b.date||0)-new Date(a.date||0)).slice(0,12).map(a => {
+                const icon = activityIcon[a.type] || activityIcon[inferActivityType(a.text)] || '⚡';
+                return `<article class="activity-feed-item activity-${escapeHtml(a.type || 'general')}">
+                    <span class="activity-feed-icon">${icon}</span>
+                    <div class="activity-feed-copy"><strong>${escapeHtml(a.text || '')}</strong><small>${formatDateTime(a.date)}</small></div>
+                </article>`;
+            }).join('');
         } else {
-            recentActivity.innerHTML = '<p class="empty-state">Sem atividade</p>';
+            recentActivity.innerHTML = '<p class="empty-state">Sem atividade recente.</p>';
         }
     }
 
@@ -3577,12 +3582,33 @@
     if (comprovanteViewModal) comprovanteViewModal.addEventListener('click', function(e) { if (e.target === comprovanteViewModal) comprovanteViewModal.classList.add('hidden'); });
 
     // ===== ACTIVITY LOG =====
-    function addActivity(text) {
-        const activities = getStore(DB_ACTIVITY) || [];
-        activities.push({ text: text, date: new Date().toISOString() });
-        // Keep last 50
-        if (activities.length > 50) activities.splice(0, activities.length - 50);
-        setStore(DB_ACTIVITY, activities);
+    function inferActivityType(text) {
+        const t = String(text || '').toLowerCase();
+        if (/conquist|insígnia|conquista/.test(t)) return 'achievement';
+        if (/jogo|operação|presença|check-in/.test(t)) return 'game';
+        if (/produto|loja/.test(t)) return 'store';
+        if (/pedido/.test(t)) return 'order';
+        if (/contribui|mensalidade|pagamento|comprovante/.test(t)) return 'contribution';
+        if (/admin|promoveu|rebaixou|removeu/.test(t)) return 'admin';
+        if (/entrou online|saiu|registrou/.test(t)) return 'auth';
+        return 'general';
+    }
+
+    function addActivity(text, type = null, meta = {}) {
+        const entry = {
+            id: generateId(), text: String(text || '').trim(),
+            type: type || inferActivityType(text), date: new Date().toISOString(),
+            actorUid: currentUser?.id || '', actorCallsign: currentUser?.callsign || ''
+        };
+        if (!entry.text) return;
+        // Optimistic feed: show immediately without rewriting the entire collection.
+        const activities = (getStore(DB_ACTIVITY) || []).filter(a => a && a.id !== entry.id);
+        activities.push(entry);
+        if (activities.length > 80) activities.splice(0, activities.length - 80);
+        try { localStorage.setItem(DB_ACTIVITY, JSON.stringify(activities)); } catch (_) {}
+        if (window.AsgardCloud?.appendActivity) {
+            window.AsgardCloud.appendActivity(entry.text, entry.type, meta).catch(err => console.warn('Activity feed write skipped:', err));
+        }
     }
 
     // ===== PWA INSTALL =====

@@ -97,8 +97,16 @@ service cloud.firestore {
 
     match /activities/{id} {
       allow read: if signedIn();
-      allow create: if signedIn();
-      allow update, delete: if isAdmin();
+      // Cada usuário só pode registrar atividade em seu próprio nome. Isso evita
+      // falsificação de autoria no feed e mantém o histórico imutável.
+      allow create: if signedIn()
+                    && request.resource.data.actorUid == request.auth.uid
+                    && request.resource.data.text is string
+                    && request.resource.data.text.size() > 0
+                    && request.resource.data.text.size() <= 250
+                    && request.resource.data.type in ['general','auth','member','achievement','game','store','order','contribution','admin'];
+      allow update: if false;
+      allow delete: if isAdmin();
     }
 
     match /settings/contributions {
