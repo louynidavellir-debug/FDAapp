@@ -1,0 +1,21 @@
+FILHOS DE ASGARD — PACOTE DE MELHORIAS
+
+Implementado:
+- Central de notificações no sino do topo
+- Dashboard ampliado com visão rápida e atalhos
+- Perfil com XP, nível, estatísticas e histórico de operações
+- Operações podem ser concluídas/reabertas pelo ADMIN; check-ins de operações concluídas geram XP
+- Calendário operacional sincronizado automaticamente com Jogos
+- Histórico Meus Pedidos dentro da Loja
+- Painel Administrativo centralizado
+- Indicador de conexão/reconexão
+- Regras do Firestore revisadas; criação de pedidos exige status Pendente
+- Presença online em tempo real preservada
+
+PROGRESSÃO:
++50 XP por operação concluída com check-in
++100 XP por conquista recebida
+1 nível a cada 250 XP
+
+FIREBASE:
+Publique o firestore.rules deste pacote para aplicar a revisão de segurança dos pedidos.

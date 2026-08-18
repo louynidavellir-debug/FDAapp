@@ -89,7 +89,9 @@ service cloud.firestore {
 
     match /orders/{id} {
       allow read: if isAdmin() || (signedIn() && resource.data.compradorId == request.auth.uid);
-      allow create: if signedIn() && request.resource.data.compradorId == request.auth.uid;
+      allow create: if signedIn()
+                    && request.resource.data.compradorId == request.auth.uid
+                    && request.resource.data.status == 'Pendente';
       allow update, delete: if isAdmin();
     }
 

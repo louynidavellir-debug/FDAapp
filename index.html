@@ -139,6 +139,10 @@
                     <span class="nav-icon">🎯</span>
                     <span class="nav-label">Jogos</span>
                 </a>
+                <a href="#" class="nav-item" data-page="calendar">
+                    <span class="nav-icon">📅</span>
+                    <span>Calendário</span>
+                </a>
                 <a href="#" class="nav-item" data-page="contribuicao">
                     <span class="nav-icon">🛡️</span>
                     <span class="nav-label">Contribuição</span>
@@ -151,6 +155,10 @@
                     <span class="nav-icon">🛒</span>
                     <span class="nav-label">Loja</span>
                     <span class="nav-badge hidden" id="cart-badge">0</span>
+                </a>
+                <a href="#" class="nav-item admin-only hidden" data-page="admin">
+                    <span class="nav-icon">🛡️</span>
+                    <span>Painel Admin</span>
                 </a>
                 <a href="#" class="nav-item admin-only hidden" data-page="vendas">
                     <span class="nav-icon">💰</span>
@@ -174,9 +182,13 @@
             <header class="topbar">
                 <button id="btn-menu" class="btn-menu">☰</button>
                 <h1 id="page-title" class="topbar-title">Dashboard</h1>
-                <div class="topbar-user">
-                    <span id="topbar-callsign" class="topbar-callsign"></span>
-                    <span id="topbar-role" class="role-badge"></span>
+                <div class="topbar-actions">
+                    <span id="connection-status" class="connection-status online" title="Status da conexão"><span class="connection-dot"></span><span class="connection-label">Online</span></span>
+                    <button type="button" id="notification-bell" class="notification-bell" aria-label="Notificações" title="Notificações">🔔<span id="notification-count" class="notification-count hidden">0</span></button>
+                    <div class="topbar-user">
+                        <span id="topbar-callsign" class="topbar-callsign"></span>
+                        <span id="topbar-role" class="role-badge"></span>
+                    </div>
                 </div>
             </header>
 
@@ -232,6 +244,24 @@
                         </div>
                     </div>
 
+                    <div class="dash-card dash-card-accent">
+                        <div class="dash-card-header"><span class="dash-icon">🧭</span><h3>Visão Rápida</h3></div>
+                        <div class="dash-card-body" id="dashboard-quick-overview"><p class="empty-state">Carregando...</p></div>
+                    </div>
+                    <div class="dash-card">
+                        <div class="dash-card-header"><span class="dash-icon">🏆</span><h3>Conquistas Recentes</h3></div>
+                        <div class="dash-card-body" id="dashboard-recent-achievements"><p class="empty-state">Sem conquistas recentes</p></div>
+                    </div>
+                    <div class="dash-card">
+                        <div class="dash-card-header"><span class="dash-icon">⚡</span><h3>Acesso Rápido</h3></div>
+                        <div class="dash-card-body dashboard-shortcuts">
+                            <button class="btn-secondary" data-quick-page="chat">💬 Chat</button>
+                            <button class="btn-secondary" data-quick-page="games">🎯 Jogos</button>
+                            <button class="btn-secondary" data-quick-page="calendar">📅 Calendário</button>
+                            <button class="btn-secondary" data-quick-page="achievements">🏆 Conquistas</button>
+                        </div>
+                    </div>
+
                     <div class="dash-card">
                         <div class="dash-card-header">
                             <span class="dash-icon">📊</span>
@@ -281,6 +311,17 @@
                                 <label>Membro desde:</label>
                                 <span id="profile-since"></span>
                             </div>
+                        </div>
+                        <div class="operator-progress-panel">
+                            <div class="operator-level-row"><div><span class="operator-level-label">NÍVEL</span><strong id="profile-level">1</strong></div><div class="operator-xp"><strong id="profile-xp">0 XP</strong><span id="profile-xp-next">250 XP para o próximo nível</span></div></div>
+                            <div class="operator-xp-track"><span id="profile-xp-bar"></span></div>
+                            <div class="operator-stat-grid">
+                                <div><strong id="profile-ops-count">0</strong><span>Operações</span></div>
+                                <div><strong id="profile-attendance-rate">0%</strong><span>Presença</span></div>
+                                <div><strong id="profile-badges-count">0</strong><span>Insígnias</span></div>
+                                <div><strong id="profile-confirmed-count">0</strong><span>Confirmações</span></div>
+                            </div>
+                            <div class="operator-history"><h3>Histórico de Operações</h3><div id="profile-operation-history"><p class="empty-state">Nenhuma operação concluída.</p></div></div>
                         </div>
                         <div class="profile-equipment">
                             <h3 class="equipment-title">Equipamentos</h3>
@@ -816,6 +857,34 @@
                         </div>
                     </div>
                 </div>
+                <div class="my-orders-panel">
+                    <div class="section-heading-row"><div><div class="settings-kicker">COMPRAS</div><h2>Meus Pedidos</h2></div><button type="button" id="btn-refresh-my-orders" class="btn-secondary">Atualizar</button></div>
+                    <div id="my-orders-list" class="my-orders-list"><p class="empty-state">Nenhum pedido registrado.</p></div>
+                </div>
+            </section>
+
+            <!-- CALENDÁRIO -->
+            <section id="page-calendar" class="page hidden">
+                <div class="feature-page-header"><div><div class="settings-kicker">AGENDA DA EQUIPE</div><h2>Calendário Operacional</h2><p>Os jogos criados pelo ADMIN aparecem aqui automaticamente.</p></div><div class="feature-header-icon">📅</div></div>
+                <div id="calendar-summary" class="calendar-summary"></div>
+                <div id="calendar-list" class="calendar-list"><p class="empty-state">Nenhum evento agendado.</p></div>
+            </section>
+
+            <!-- PAINEL ADMIN -->
+            <section id="page-admin" class="page hidden">
+                <div class="feature-page-header"><div><div class="settings-kicker">ADMINISTRAÇÃO</div><h2>Painel Administrativo</h2><p>Central de gerenciamento do Filhos de Asgard.</p></div><div class="feature-header-icon">🛡️</div></div>
+                <div id="admin-overview" class="admin-overview-grid"></div>
+                <div class="admin-tools-grid">
+                    <button class="admin-tool-card" data-admin-page="members"><span>👥</span><strong>Membros</strong><small>Perfis e operadores</small></button>
+                    <button class="admin-tool-card" data-admin-page="games"><span>🎯</span><strong>Jogos</strong><small>Partidas e check-in</small></button>
+                    <button class="admin-tool-card" data-admin-page="achievements"><span>🏆</span><strong>Conquistas</strong><small>Insígnias e concluintes</small></button>
+                    <button class="admin-tool-card" data-admin-page="contribuicao"><span>💰</span><strong>Contribuições</strong><small>Status de pagamentos</small></button>
+                    <button class="admin-tool-card" data-admin-page="loja"><span>🛒</span><strong>Loja</strong><small>Catálogo de produtos</small></button>
+                    <button class="admin-tool-card" data-admin-page="vendas"><span>📦</span><strong>Pedidos</strong><small>Vendas e entregas</small></button>
+                    <button class="admin-tool-card" data-admin-page="dashboard"><span>📢</span><strong>Avisos</strong><small>Comunicados da equipe</small></button>
+                    <button class="admin-tool-card" data-admin-page="calendar"><span>📅</span><strong>Calendário</strong><small>Agenda operacional</small></button>
+                </div>
+                <div class="admin-audit-box"><h3>🔐 Segurança</h3><p>As ações administrativas são protegidas tanto na interface quanto pelas regras do Firestore. Operadores comuns mantêm acesso somente às funções permitidas.</p></div>
             </section>
 
             <!-- VENDAS (ADMIN) -->
@@ -902,6 +971,15 @@
         </div>
     </div>
 
+
+    <div id="notification-drawer" class="notification-drawer hidden" aria-hidden="true">
+        <div class="notification-drawer-backdrop" data-close-notifications></div>
+        <aside class="notification-panel">
+            <div class="notification-panel-header"><div><div class="settings-kicker">CENTRAL</div><h2>Notificações</h2></div><button type="button" class="notification-close" data-close-notifications>✕</button></div>
+            <div class="notification-panel-actions"><button id="btn-mark-all-notifications" class="btn-secondary">Marcar todas como lidas</button></div>
+            <div id="notification-list" class="notification-list"><p class="empty-state">Nenhuma notificação.</p></div>
+        </aside>
+    </div>
 
     <!-- SPECIAL ACHIEVEMENT NOTIFICATION -->
     <div id="achievement-unlocked-modal" class="modal hidden achievement-unlocked-modal">

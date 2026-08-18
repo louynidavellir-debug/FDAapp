@@ -1,0 +1,16 @@
+FILHOS DE ASGARD — RELATÓRIO DE VERIFICAÇÃO
+
+Verificações estáticas realizadas nesta versão:
+[OK] JavaScript app.js sem erro de sintaxe (node --check)
+[OK] Service Worker sem erro de sintaxe
+[OK] IDs HTML sem duplicações
+[OK] Sidebar e páginas correspondentes: Dashboard, Perfil, Membros, Arsenal, Conquistas, Chat, Jogos, Calendário, Contribuição, Configurações, Loja, Painel Admin e Vendas
+[OK] Central de notificações adicionada ao topo
+[OK] Histórico Meus Pedidos adicionado à Loja
+[OK] Calendário deriva diretamente dos Jogos (criar/editar/excluir sincroniza automaticamente)
+[OK] Progressão derivada de check-ins em operações concluídas e conquistas
+[OK] Painel Admin protegido pela função de role e classes admin-only
+[OK] Firestore rules revisadas para impedir criação de pedido já marcado como pago/entregue
+[OK] Presença em tempo real mantida
+
+Observação: testes reais de leitura/gravação dependem das credenciais e dados do projeto Firebase em produção.

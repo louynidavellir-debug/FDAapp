@@ -533,11 +533,12 @@
         if (!currentUser) return;
         // Recalcula o status usando lastSeen para que todos vejam a mudança
         // mesmo quando um dispositivo fecha abruptamente e não consegue gravar offline.
+        renderNotificationCenterV2();
         const active = document.querySelector('.page:not(.hidden)');
         const id = active?.id || '';
-        if (id === 'page-dashboard') refreshDashboard();
+        if (id === 'page-dashboard') { refreshDashboard(); refreshDashboardV2(); }
         if (id === 'page-members') refreshMembers();
-        if (id === 'page-profile') refreshProfile();
+        if (id === 'page-profile') { refreshProfile(); renderProfileStatsV2((getViewedProfileUser() || currentUser).id); }
         if (id === 'page-chat') refreshChat();
     }
 
@@ -672,6 +673,7 @@
             startPresenceUiSync();
             startChatPoll();
             updateAchievementNotificationBadge();
+            renderNotificationCenterV2(); updateConnectionUiV2();
             setTimeout(maybeShowAchievementNotification, 350);
         }, 600);
     }
@@ -718,21 +720,24 @@
             achievements: 'Conquistas',
             chat: 'Chat',
             games: 'Jogos',
+            calendar: 'Calendário',
             loja: 'Loja',
             contribuicao: 'Contribuição',
             configuracoes: 'Configurações',
+            admin: 'Painel Admin',
             vendas: 'Vendas'
         };
         pageTitle.textContent = titles[page] || 'Dashboard';
 
         // Refresh page data
-        if (page === 'dashboard') refreshDashboard();
+        if (page === 'dashboard') { refreshDashboard(); refreshDashboardV2(); }
         if (page === 'profile') {
             const viewedUser = getViewedProfileUser();
             pageTitle.textContent = viewedProfileUserId && viewedUser && viewedUser.id !== currentUser.id
                 ? `Perfil • ${viewedUser.callsign}`
                 : 'Meu Perfil';
             refreshProfile();
+            renderProfileStatsV2((getViewedProfileUser() || currentUser).id);
         }
         if (page === 'members') refreshMembers();
         if (page === 'arsenal') refreshArsenal();
@@ -743,7 +748,9 @@
             markChatAsRead().catch(err => console.error('[Chat read]', err));
         }
         if (page === 'games') refreshGames();
-        if (page === 'loja') refreshProducts();
+        if (page === 'calendar') refreshCalendarV2();
+        if (page === 'loja') { refreshProducts(); renderMyOrdersV2(); }
+        if (page === 'admin') refreshAdminPanelV2();
         if (page === 'vendas') { refreshOrderStats(); refreshOrders(); }
         if (page === 'contribuicao') refreshContribuicao();
 
@@ -1122,6 +1129,7 @@
                 placeholder.classList.remove('hidden');
             }
         });
+        renderProfileStatsV2(profileUser.id);
     }
 
     const btnBackMembers = $('btn-back-members');
@@ -1749,7 +1757,8 @@
             achievementMembersModal.classList.add('hidden');
             showToast('Insígnias concedidas e salvas!', 'success');
             refreshAchievements();
-            const active = document.querySelector('.page:not(.hidden)');
+            renderNotificationCenterV2();
+        const active = document.querySelector('.page:not(.hidden)');
             if (active?.id === 'page-profile') refreshProfile();
         } catch (err) {
             console.error(err);
@@ -2244,6 +2253,7 @@
             return `
                 <div class="game-card ${isPast ? 'opacity:0.6' : ''}">
                     <div class="game-card-header">
+                        ${g.completed ? '<span class="game-completed-badge">✓ OPERAÇÃO CONCLUÍDA</span>' : ''}
                         <div>
                             <span class="game-type-badge ${g.type}">${g.type.toUpperCase()}</span>
                             <div class="game-title" style="margin-top:6px">${escapeHtml(g.title)}</div>
@@ -2269,6 +2279,7 @@
                             </button>
                         ` : ''}
                         ${currentUser.role === 'admin' ? `
+                            <button class="btn-secondary complete-game-btn" data-id="${g.id}">${g.completed ? 'Reabrir' : 'Concluir Operação'}</button>
                             <button class="btn-secondary edit-game-btn" data-id="${g.id}">Editar</button>
                             <button class="btn-danger delete-game-btn" data-id="${g.id}">Excluir</button>
                         ` : ''}
@@ -2280,6 +2291,10 @@
         // Event listeners
         gamesList.querySelectorAll('.confirm-game-btn').forEach(btn => {
             btn.addEventListener('click', () => toggleConfirmGame(btn.dataset.id));
+        });
+
+        gamesList.querySelectorAll('.complete-game-btn').forEach(btn => {
+            btn.addEventListener('click', () => toggleGameCompletedV2(btn.dataset.id));
         });
 
         gamesList.querySelectorAll('.edit-game-btn').forEach(btn => {
@@ -3640,6 +3655,142 @@
     window.matchMedia('(display-mode: standalone)').addEventListener?.('change', updateInstallPwaUI);
     updateInstallPwaUI();
 
+
+    // ===== EXPERIENCE V2: NOTIFICAÇÕES, CALENDÁRIO, PROGRESSÃO, ADMIN E CONEXÃO =====
+    const notificationBellV2 = $('notification-bell');
+    const notificationCountV2 = $('notification-count');
+    const notificationDrawerV2 = $('notification-drawer');
+    const notificationListV2 = $('notification-list');
+    const btnMarkAllNotificationsV2 = $('btn-mark-all-notifications');
+    const connectionStatusV2 = $('connection-status');
+    let cloudHasRecentErrorV2 = false;
+
+    function parseTimeV2(v) { const t = new Date(v || 0).getTime(); return Number.isFinite(t) ? t : 0; }
+    function getNotificationReadAtV2() { return parseTimeV2(currentUser?.notificationReadAt); }
+    function getNotificationsV2() {
+        if (!currentUser) return [];
+        const items = [];
+        const cutoff = Date.now() - 30 * 24 * 60 * 60 * 1000;
+        (getStore(DB_MESSAGES) || []).forEach(m => {
+            if (m.userId !== currentUser.id && (m.mentions || []).map(String).includes(String(currentUser.id))) {
+                const ts = parseTimeV2(m.date); if (ts >= cutoff) items.push({ id:`chat:${m.id}`, type:'mention', icon:'💬', title:`${m.callsign || 'Operador'} marcou você`, body:m.text || 'Nova menção no Chat', ts, page:'chat' });
+            }
+        });
+        (currentUser.achievementNotifications || []).forEach(n => {
+            const ts = parseTimeV2(n.awardedAt || n.createdAt); if (ts >= cutoff) items.push({ id:`achievement:${n.id}`, type:'achievement', icon:'🏆', title:n.title || 'Nova conquista', body:n.description || 'Você recebeu uma nova insígnia.', ts, page:'achievements' });
+        });
+        (getStore(DB_ANNOUNCEMENTS) || []).forEach(a => {
+            const ts = parseTimeV2(a.createdAt || a.date); if (ts >= cutoff) items.push({ id:`announcement:${a.id}`, type:'announcement', icon:'📢', title:'Novo aviso da equipe', body:a.text || a.message || '', ts, page:'dashboard' });
+        });
+        (getStore(DB_GAMES) || []).forEach(g => {
+            const ts = parseTimeV2(g.updatedAt || g.createdAt); if (ts >= cutoff) items.push({ id:`game:${g.id}:${g.updatedAt || g.createdAt || ''}`, type:'game', icon:'🎯', title:g.completed ? 'Operação concluída' : 'Partida atualizada', body:`${g.title || 'Jogo'} • ${formatDate(g.date)}`, ts, page:'games' });
+        });
+        (getStore(DB_ORDERS) || []).filter(o => o.compradorId === currentUser.id).forEach(o => {
+            const ts = parseTimeV2(o.updatedAt || o.createdAt); if (ts >= cutoff) items.push({ id:`order:${o.id}:${o.status}:${o.updatedAt || ''}`, type:'order', icon:'📦', title:`Pedido ${o.status || 'atualizado'}`, body:`#${String(o.id||'').slice(0,8).toUpperCase()} • R$ ${Number(o.total||0).toFixed(2).replace('.',',')}`, ts, page:'loja' });
+        });
+        return items.sort((a,b)=>b.ts-a.ts).slice(0,40);
+    }
+    function renderNotificationCenterV2() {
+        const list = getNotificationsV2(); const readAt = getNotificationReadAtV2();
+        const unread = list.filter(n => n.ts > readAt).length;
+        if (notificationCountV2) { notificationCountV2.textContent = unread > 99 ? '99+' : String(unread); notificationCountV2.classList.toggle('hidden', unread === 0); }
+        if (!notificationListV2) return;
+        notificationListV2.innerHTML = list.length ? list.map(n => `<button class="notification-item ${n.ts > readAt ? 'unread' : ''}" data-notification-page="${n.page}"><span class="notification-item-icon">${n.icon}</span><span class="notification-item-copy"><strong>${escapeHtml(n.title)}</strong><span>${escapeHtml(n.body)}</span><small>${new Date(n.ts).toLocaleString('pt-BR')}</small></span></button>`).join('') : '<p class="empty-state">Nenhuma notificação recente.</p>';
+        notificationListV2.querySelectorAll('[data-notification-page]').forEach(btn => btn.addEventListener('click', () => { closeNotificationDrawerV2(); navigateTo(btn.dataset.notificationPage); }));
+    }
+    function openNotificationDrawerV2() { renderNotificationCenterV2(); notificationDrawerV2?.classList.remove('hidden'); notificationDrawerV2?.setAttribute('aria-hidden','false'); }
+    function closeNotificationDrawerV2() { notificationDrawerV2?.classList.add('hidden'); notificationDrawerV2?.setAttribute('aria-hidden','true'); }
+    async function markAllNotificationsReadV2() {
+        if (!currentUser) return;
+        const now = new Date().toISOString(); currentUser.notificationReadAt = now;
+        const users = getStore(DB_USERS) || []; const me = users.find(u=>u.id===currentUser.id); if (me) me.notificationReadAt = now;
+        setStore(DB_USERS, users); renderNotificationCenterV2(); showToast('Notificações marcadas como lidas.', 'success');
+    }
+    notificationBellV2?.addEventListener('click', openNotificationDrawerV2);
+    notificationDrawerV2?.querySelectorAll('[data-close-notifications]').forEach(el => el.addEventListener('click', closeNotificationDrawerV2));
+    btnMarkAllNotificationsV2?.addEventListener('click', markAllNotificationsReadV2);
+
+    function getOperatorStatsV2(userId) {
+        const games = getStore(DB_GAMES) || [];
+        const completed = games.filter(g => g.completed);
+        const attended = completed.filter(g => (g.checkedIn || []).includes(userId));
+        const confirmed = games.filter(g => (g.confirmed || []).includes(userId));
+        const awards = (getStore(DB_ACHIEVEMENT_AWARDS) || []).filter(a => String(a.userId) === String(userId));
+        const xp = attended.length * 50 + awards.length * 100;
+        const level = Math.floor(xp / 250) + 1;
+        const inLevel = xp % 250;
+        const attendanceBase = completed.filter(g => (g.confirmed || []).includes(userId)).length;
+        const rate = attendanceBase ? Math.round((attended.filter(g => (g.confirmed || []).includes(userId)).length / attendanceBase) * 100) : 0;
+        return { games, completed, attended, confirmed, awards, xp, level, inLevel, rate };
+    }
+    function renderProfileStatsV2(userId) {
+        const s = getOperatorStatsV2(userId);
+        if ($('profile-level')) $('profile-level').textContent = s.level;
+        if ($('profile-xp')) $('profile-xp').textContent = `${s.xp} XP`;
+        if ($('profile-xp-next')) $('profile-xp-next').textContent = `${250 - s.inLevel} XP para o próximo nível`;
+        if ($('profile-xp-bar')) $('profile-xp-bar').style.width = `${(s.inLevel / 250) * 100}%`;
+        if ($('profile-ops-count')) $('profile-ops-count').textContent = s.attended.length;
+        if ($('profile-attendance-rate')) $('profile-attendance-rate').textContent = `${s.rate}%`;
+        if ($('profile-badges-count')) $('profile-badges-count').textContent = s.awards.length;
+        if ($('profile-confirmed-count')) $('profile-confirmed-count').textContent = s.confirmed.length;
+        const hist = $('profile-operation-history');
+        if (hist) hist.innerHTML = s.attended.length ? s.attended.slice().sort((a,b)=>String(b.date).localeCompare(String(a.date))).slice(0,8).map(g=>`<div class="operation-history-item"><div><strong>${escapeHtml(g.title || 'Operação')}</strong><span>${formatDate(g.date)} • ${escapeHtml(g.location || 'Local não informado')}</span></div><span class="operation-history-xp">+50 XP</span></div>`).join('') : '<p class="empty-state">Nenhuma operação concluída.</p>';
+    }
+
+    function toggleGameCompletedV2(gameId) {
+        if (currentUser?.role !== 'admin') return;
+        const games = getStore(DB_GAMES) || []; const game = games.find(g=>g.id===gameId); if (!game) return;
+        game.completed = !game.completed; game.completedAt = game.completed ? new Date().toISOString() : null; game.updatedAt = new Date().toISOString();
+        setStore(DB_GAMES, games); addActivity(`${currentUser.callsign} ${game.completed ? 'concluiu' : 'reabriu'} a operação ${game.title}`); showToast(game.completed ? 'Operação concluída. XP e estatísticas atualizados.' : 'Operação reaberta.', 'success'); refreshGames();
+    }
+
+    function refreshCalendarV2() {
+        const el = $('calendar-list'), summary = $('calendar-summary'); if (!el) return;
+        const games = (getStore(DB_GAMES) || []).slice().sort((a,b)=>String(a.date).localeCompare(String(b.date)) || String(a.time||'').localeCompare(String(b.time||'')));
+        const upcoming = games.filter(g => !g.completed && new Date(`${g.date}T${g.time || '23:59'}`) >= new Date());
+        if (summary) summary.innerHTML = `<div><strong>${upcoming.length}</strong><span>Próximos</span></div><div><strong>${games.filter(g=>g.completed).length}</strong><span>Concluídos</span></div><div><strong>${games.length}</strong><span>Total</span></div>`;
+        el.innerHTML = games.length ? games.map(g=>`<article class="calendar-event ${g.completed ? 'completed' : ''}"><div class="calendar-date-box"><strong>${String(g.date||'').slice(8,10) || '--'}</strong><span>${new Date((g.date||'2000-01-01')+'T12:00:00').toLocaleDateString('pt-BR',{month:'short'}).replace('.','')}</span></div><div class="calendar-event-copy"><div><span class="game-type-badge ${g.type}">${escapeHtml((g.type||'jogo').toUpperCase())}</span>${g.completed ? '<span class="calendar-done">CONCLUÍDO</span>' : ''}</div><h3>${escapeHtml(g.title || 'Evento')}</h3><p>⏰ ${escapeHtml(g.time || '—')} &nbsp; 📍 ${escapeHtml(g.location || '—')}</p><small>${(g.confirmed||[]).length} confirmados • ${(g.checkedIn||[]).length} check-ins</small></div><button class="btn-secondary calendar-open-game" data-id="${g.id}">Ver em Jogos</button></article>`).join('') : '<p class="empty-state">Nenhum evento agendado.</p>';
+        el.querySelectorAll('.calendar-open-game').forEach(b=>b.addEventListener('click',()=>navigateTo('games')));
+    }
+
+    function renderMyOrdersV2() {
+        const el = $('my-orders-list'); if (!el || !currentUser) return;
+        const orders = (getStore(DB_ORDERS) || []).filter(o => o.compradorId === currentUser.id).sort((a,b)=>parseTimeV2(b.createdAt)-parseTimeV2(a.createdAt));
+        el.innerHTML = orders.length ? orders.map(o=>`<article class="my-order-card"><div class="my-order-head"><strong>#${String(o.id||'').slice(0,8).toUpperCase()}</strong><span class="vendas-order-status-badge status-${o.status}">${escapeHtml(o.status || 'Pendente')}</span></div><div class="my-order-items">${(o.items||o.itens||[]).map(i=>`${escapeHtml(i.nome || 'Item')} × ${Number(i.qtd||1)}`).join(' • ')}</div><div class="my-order-foot"><span>${new Date(o.createdAt||Date.now()).toLocaleString('pt-BR')}</span><strong>R$ ${Number(o.total||0).toFixed(2).replace('.',',')}</strong></div></article>`).join('') : '<p class="empty-state">Você ainda não realizou pedidos.</p>';
+    }
+    $('btn-refresh-my-orders')?.addEventListener('click', renderMyOrdersV2);
+
+    function refreshDashboardV2() {
+        const quick = $('dashboard-quick-overview'), ach = $('dashboard-recent-achievements');
+        const games = getStore(DB_GAMES) || [], users = getStore(DB_USERS) || [], anns = getStore(DB_ANNOUNCEMENTS) || [];
+        const next = games.filter(g=>!g.completed && new Date(`${g.date}T${g.time||'23:59'}`)>=new Date()).sort((a,b)=>String(a.date+a.time).localeCompare(String(b.date+b.time)))[0];
+        const online = users.filter(isUserOnline).length;
+        if (quick) quick.innerHTML = `<div class="quick-metric"><strong>${online}</strong><span>online agora</span></div><div class="quick-line"><span>Próxima operação</span><strong>${next ? escapeHtml(next.title) : 'Nenhuma'}</strong></div><div class="quick-line"><span>Confirmados</span><strong>${next ? (next.confirmed||[]).length : 0}</strong></div><div class="quick-line"><span>Último aviso</span><strong>${anns.length ? escapeHtml(String((anns.slice().sort((a,b)=>parseTimeV2(b.createdAt)-parseTimeV2(a.createdAt))[0].text)||'').slice(0,45)) : 'Sem avisos'}</strong></div>`;
+        const awards = (getStore(DB_ACHIEVEMENT_AWARDS)||[]).slice().sort((a,b)=>parseTimeV2(b.awardedAt||b.createdAt)-parseTimeV2(a.awardedAt||a.createdAt)).slice(0,4);
+        const achievements = getStore(DB_ACHIEVEMENTS)||[];
+        if (ach) ach.innerHTML = awards.length ? awards.map(a=>{ const u=users.find(x=>x.id===a.userId), c=achievements.find(x=>x.id===a.achievementId); return `<div class="recent-achievement-row"><span>🏅</span><div><strong>${escapeHtml(u?.callsign||'Operador')}</strong><small>${escapeHtml(c?.title||'Conquista')}</small></div></div>`; }).join('') : '<p class="empty-state">Sem conquistas recentes.</p>';
+        renderNotificationCenterV2();
+    }
+    document.querySelectorAll('[data-quick-page]').forEach(b=>b.addEventListener('click',()=>navigateTo(b.dataset.quickPage)));
+
+    function refreshAdminPanelV2() {
+        if (currentUser?.role !== 'admin') { navigateTo('dashboard'); return; }
+        const el=$('admin-overview'); if(!el) return;
+        const users=getStore(DB_USERS)||[], games=getStore(DB_GAMES)||[], products=getStore(DB_PRODUCTS)||[], orders=getStore(DB_ORDERS)||[], awards=getStore(DB_ACHIEVEMENT_AWARDS)||[];
+        el.innerHTML = `<div class="admin-overview-card"><span>👥</span><strong>${users.length}</strong><small>Membros</small></div><div class="admin-overview-card"><span>🟢</span><strong>${users.filter(isUserOnline).length}</strong><small>Online</small></div><div class="admin-overview-card"><span>🎯</span><strong>${games.filter(g=>!g.completed).length}</strong><small>Operações abertas</small></div><div class="admin-overview-card"><span>🏆</span><strong>${awards.length}</strong><small>Insígnias concedidas</small></div><div class="admin-overview-card"><span>🛒</span><strong>${products.length}</strong><small>Produtos</small></div><div class="admin-overview-card"><span>📦</span><strong>${orders.filter(o=>o.status==='Pendente').length}</strong><small>Pedidos pendentes</small></div>`;
+    }
+    document.querySelectorAll('[data-admin-page]').forEach(b=>b.addEventListener('click',()=>navigateTo(b.dataset.adminPage)));
+
+    function updateConnectionUiV2() {
+        if (!connectionStatusV2) return;
+        const offline = !navigator.onLine;
+        connectionStatusV2.className = `connection-status ${offline ? 'offline' : cloudHasRecentErrorV2 ? 'warning' : 'online'}`;
+        const label=connectionStatusV2.querySelector('.connection-label'); if(label) label.textContent = offline ? 'Sem conexão' : cloudHasRecentErrorV2 ? 'Reconectando' : 'Online';
+    }
+    window.addEventListener('online',()=>{ cloudHasRecentErrorV2=false; updateConnectionUiV2(); showToast('Conexão restabelecida. Sincronizando...', 'success'); });
+    window.addEventListener('offline',()=>{ updateConnectionUiV2(); showToast('Sem conexão — alterações podem aguardar sincronização.', 'info'); });
+    updateConnectionUiV2();
+
     // ===== INIT =====
     async function init() {
         createParticles();
@@ -3680,22 +3831,27 @@
         if (key === DB_ACHIEVEMENTS || key === DB_ACHIEVEMENT_AWARDS) {
             updateAchievementNotificationBadge();
         }
+        renderNotificationCenterV2();
         const active = document.querySelector('.page:not(.hidden)');
         if (!active) return;
         const id = active.id || '';
-        if (id === 'page-dashboard') refreshDashboard();
-        if (id === 'page-profile') refreshProfile();
+        if (id === 'page-dashboard') { refreshDashboard(); refreshDashboardV2(); }
+        if (id === 'page-profile') { refreshProfile(); renderProfileStatsV2((getViewedProfileUser() || currentUser).id); }
         if (id === 'page-members') refreshMembers();
         if (id === 'page-arsenal') refreshArsenal();
         if (id === 'page-achievements') refreshAchievements();
         if (id === 'page-chat') refreshChat();
         if (id === 'page-games') refreshGames();
-        if (id === 'page-loja') refreshProducts();
+        if (id === 'page-calendar') refreshCalendarV2();
+        if (id === 'page-loja') { refreshProducts(); renderMyOrdersV2(); }
+        if (id === 'page-admin' && currentUser.role === 'admin') refreshAdminPanelV2();
         if (id === 'page-vendas' && currentUser.role === 'admin') { refreshOrderStats(); refreshOrders(); }
         if (id === 'page-contribuicao') refreshContribuicao();
     });
     window.addEventListener('asgard:cloud-error', (e) => {
         console.error(e.detail);
+        cloudHasRecentErrorV2 = true; updateConnectionUiV2();
+        setTimeout(()=>{ cloudHasRecentErrorV2=false; updateConnectionUiV2(); }, 8000);
         showToast('Não foi possível sincronizar uma alteração com o servidor.', 'error');
     });
     // Register service worker
