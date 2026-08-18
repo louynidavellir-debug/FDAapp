@@ -489,7 +489,9 @@
     // O heartbeat evita status preso em "online" se o navegador/app for encerrado abruptamente.
     const PRESENCE_HEARTBEAT_MS = 20000;
     const PRESENCE_STALE_MS = 55000;
+    const PRESENCE_UI_REFRESH_MS = 5000;
     let presenceHeartbeat = null;
+    let presenceUiTimer = null;
 
     function isUserOnline(user) {
         if (!user || user.online !== true || !user.lastSeen) return false;
@@ -524,6 +526,29 @@
     function stopPresenceTracking(markOffline = true) {
         if (presenceHeartbeat) { clearInterval(presenceHeartbeat); presenceHeartbeat = null; }
         if (markOffline && currentUser) pushPresence(false);
+    }
+
+
+    function refreshPresenceViews() {
+        if (!currentUser) return;
+        // Recalcula o status usando lastSeen para que todos vejam a mudança
+        // mesmo quando um dispositivo fecha abruptamente e não consegue gravar offline.
+        const active = document.querySelector('.page:not(.hidden)');
+        const id = active?.id || '';
+        if (id === 'page-dashboard') refreshDashboard();
+        if (id === 'page-members') refreshMembers();
+        if (id === 'page-profile') refreshProfile();
+        if (id === 'page-chat') refreshChat();
+    }
+
+    function startPresenceUiSync() {
+        stopPresenceUiSync();
+        refreshPresenceViews();
+        presenceUiTimer = setInterval(refreshPresenceViews, PRESENCE_UI_REFRESH_MS);
+    }
+
+    function stopPresenceUiSync() {
+        if (presenceUiTimer) { clearInterval(presenceUiTimer); presenceUiTimer = null; }
     }
 
     document.addEventListener('visibilitychange', () => {
@@ -644,6 +669,7 @@
             updateTopbar();
             navigateTo('dashboard');
             startPresenceTracking();
+            startPresenceUiSync();
             startChatPoll();
             updateAchievementNotificationBadge();
             setTimeout(maybeShowAchievementNotification, 350);
@@ -752,6 +778,7 @@
 
     // ===== LOGOUT =====
     btnLogout.addEventListener('click', async () => {
+        stopPresenceUiSync();
         stopPresenceTracking(false);
         await pushPresence(false);
         addActivity(`${currentUser.callsign} saiu`);
@@ -3645,6 +3672,9 @@
             currentUser = (getStore(DB_USERS) || []).find(u => u.id === currentUser.id) || currentUser;
             updateUIForRole(); updateTopbar();
             updateAchievementNotificationBadge();
+            // O listener em tempo real de profiles dispara em todos os dispositivos.
+            // Atualiza imediatamente qualquer tela que exiba presença.
+            refreshPresenceViews();
             setTimeout(maybeShowAchievementNotification, 120);
         }
         if (key === DB_ACHIEVEMENTS || key === DB_ACHIEVEMENT_AWARDS) {

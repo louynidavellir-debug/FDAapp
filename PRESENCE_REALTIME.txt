@@ -1,0 +1,7 @@
+PRESENÇA EM TEMPO REAL
+
+- O Firestore escuta a coleção profiles em tempo real para todos os usuários autenticados.
+- Entradas, saídas e heartbeats atualizam o status em todos os dispositivos conectados.
+- Dashboard, Membros, Perfil e Chat são atualizados imediatamente ao receber mudança de presença.
+- Um relógio local de 5 segundos recalcula lastSeen para remover status online preso após fechamento abrupto.
+- Online = app aberto e visível + heartbeat recente.
