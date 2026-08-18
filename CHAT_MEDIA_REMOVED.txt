@@ -1,0 +1,3 @@
+Chat: envio de fotos e vídeos removido.
+O chat permanece com mensagens de texto, emojis, respostas e @menções.
+A dependência do Firebase Storage usada exclusivamente pelo envio de mídia também foi removida.
