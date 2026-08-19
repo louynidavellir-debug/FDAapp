@@ -666,8 +666,12 @@ async function createGame(game) {
   if (!me) throw new Error('Sessão expirada.');
   if (await currentRole() !== 'admin') throw new Error('Somente o ADMIN pode criar jogos.');
   const id = String(game?.id || `${Date.now()}_${Math.random().toString(36).slice(2,8)}`);
+  // Participação é ilimitada. Campos legados de capacidade são descartados para
+  // impedir que versões antigas do app reintroduzam um teto de participantes.
+  const gameData = { ...game };
+  ['maxPlayers','maxParticipants','playerLimit','participantLimit','capacity','vagas','maxOperadores'].forEach(k => delete gameData[k]);
   const payload = cleanFirestoreObject({
-    ...game,
+    ...gameData,
     id,
     createdBy: me.uid,
     confirmed: Array.isArray(game?.confirmed) ? game.confirmed : [],
@@ -689,6 +693,8 @@ async function updateGame(gameId, patch) {
   if (!id) throw new Error('Jogo inválido.');
   const safe = { ...patch };
   delete safe.id; delete safe.createdBy; delete safe.confirmed; delete safe.checkedIn; delete safe.completed;
+  // Não existe capacidade máxima por jogo/operação.
+  ['maxPlayers','maxParticipants','playerLimit','participantLimit','capacity','vagas','maxOperadores'].forEach(k => delete safe[k]);
   const ref = doc(db, 'games', id);
   const currentSnap = await getDoc(ref);
   if (!currentSnap.exists()) throw new Error('Jogo não encontrado.');

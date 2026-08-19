@@ -2505,7 +2505,7 @@
                         <span class="game-meta-item"><span class="meta-icon">📍</span> ${escapeHtml(g.location || '—')}</span>
                     </div>
                     ${g.description ? `<div class="game-description">${escapeHtml(g.description)}</div>` : ''}
-                    <div class="game-confirmed-count">✅ ${confirmedCount} confirmados · <span class="checkedin-count">🏁 ${checkedInCount} check-in</span></div>
+                    <div class="game-confirmed-count">✅ ${confirmedCount} confirmados · <span class="checkedin-count">🏁 ${checkedInCount} check-in</span> · <span class="game-unlimited-badge">∞ Sem limite de operadores</span></div>
                     ${confirmedCount > 0 ? `
                         <div class="game-confirmed-list">
                             <div class="confirmed-list-header">Operadores confirmados</div>

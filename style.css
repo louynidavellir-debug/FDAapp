@@ -3634,3 +3634,6 @@ body {
   border-color: rgba(255,59,59,.78) !important;
   color: #ff8a8a !important;
 }
+
+/* Jogos não possuem limite de participantes. */
+.game-unlimited-badge{color:var(--cyan,#00e5ff);font-size:.72rem;font-weight:700;white-space:nowrap}
