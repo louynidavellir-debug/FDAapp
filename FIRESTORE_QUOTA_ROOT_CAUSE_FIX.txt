@@ -1,0 +1,18 @@
+CORREÇÃO DA CAUSA RAIZ - QUOTA EXCEEDED
+
+Diagnóstico:
+- A confirmação de presença não possui limite de 4 operadores.
+- O erro resource-exhausted / quota exceeded vem da cota de gravações do Firestore.
+- O sistema de presença online fazia heartbeat a cada 20 segundos por operador.
+- Isso gerava milhares de gravações por operador/dia e podia esgotar a cota do projeto.
+
+Correções:
+- heartbeat de presença reduzido de 20 s para 4 min;
+- mudança para offline/online por visibilitychange continua imediata;
+- eventos duplicados pagehide/beforeunload são deduplicados;
+- atualização visual local continua sem gravar no Firestore;
+- jogo continua sem limite de participantes;
+- mensagem específica para resource-exhausted adicionada.
+
+IMPORTANTE:
+Se a cota do Firebase já estiver esgotada no momento do deploy, nenhuma alteração de código pode fazer uma nova gravação passar até a cota do projeto voltar a estar disponível ou o plano/cota ser ampliado. A correção evita que o problema volte a ser causado pelo heartbeat excessivo.

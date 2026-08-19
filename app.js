@@ -498,11 +498,13 @@
     // ===== PRESENÇA ONLINE =====
     // Um operador só é considerado online enquanto o app estiver realmente aberto/visível.
     // O heartbeat evita status preso em "online" se o navegador/app for encerrado abruptamente.
-    const PRESENCE_HEARTBEAT_MS = 20000;
-    const PRESENCE_STALE_MS = 55000;
-    const PRESENCE_UI_REFRESH_MS = 5000;
+    const PRESENCE_HEARTBEAT_MS = 4 * 60 * 1000;
+    const PRESENCE_STALE_MS = 6 * 60 * 1000;
+    const PRESENCE_UI_REFRESH_MS = 15000;
     let presenceHeartbeat = null;
     let presenceUiTimer = null;
+    let lastPresenceSentState = null;
+    let lastPresenceSentAt = 0;
 
     function isUserOnline(user) {
         if (!user || user.online !== true || !user.lastSeen) return false;
@@ -510,10 +512,20 @@
         return Number.isFinite(seen) && (Date.now() - seen) <= PRESENCE_STALE_MS;
     }
 
-    async function pushPresence(isOnline) {
+    async function pushPresence(isOnline, force = false) {
         if (!currentUser || !window.AsgardCloud?.updatePresence) return;
+        const desired = Boolean(isOnline);
+        const now = Date.now();
+        // Presence used to write every 20 s, which can consume Firestore's daily
+        // write quota very quickly with several operators online. Keep immediate
+        // enter/leave updates, but throttle repeated heartbeats and duplicate
+        // pagehide/beforeunload events.
+        const minGap = desired ? PRESENCE_HEARTBEAT_MS - 5000 : 10000;
+        if (!force && lastPresenceSentState === desired && (now - lastPresenceSentAt) < minGap) return;
         try {
-            const result = await window.AsgardCloud.updatePresence(isOnline);
+            const result = await window.AsgardCloud.updatePresence(desired);
+            lastPresenceSentState = desired;
+            lastPresenceSentAt = now;
             if (result) {
                 currentUser.online = result.online;
                 currentUser.lastSeen = result.lastSeen;
@@ -2584,7 +2596,13 @@
                 setStore(DB_GAMES, getStore(DB_GAMES) || []);
             }
         } catch (err) {
-            showToast(err?.message || 'Não foi possível atualizar sua presença.', 'error');
+            const code = String(err?.code || '').toLowerCase();
+            const message = String(err?.message || '');
+            if (code.includes('resource-exhausted') || /quota\s*(exceeded|excedida|esgotada)/i.test(message)) {
+                showToast('A cota de gravações do Firebase está temporariamente esgotada. A confirmação ficará disponível quando a cota do projeto for renovada.', 'error');
+            } else {
+                showToast(message || 'Não foi possível atualizar sua presença.', 'error');
+            }
         }
     }
 
