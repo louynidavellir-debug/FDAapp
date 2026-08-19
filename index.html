@@ -296,7 +296,7 @@
             <!-- MY PROFILE -->
             <section id="page-profile" class="page hidden">
                 <div class="profile-container">
-                    <div class="profile-card">
+                    <div class="profile-card" id="profile-card" data-profile-bg="asgard">
                         <div class="profile-avatar-wrapper" id="profile-avatar-wrapper">
                             <div class="profile-avatar" id="profile-avatar">
                                 <svg viewBox="0 0 80 80" id="avatar-svg">
@@ -405,6 +405,13 @@
                                 <label>Função</label>
                                 <input type="text" id="edit-funcao" placeholder="Ex: Sniper, Assalto, Suporte...">
                             </div>
+                            <div class="profile-background-setting">
+                                <div class="profile-background-setting-copy">
+                                    <strong>Plano de fundo do perfil</strong>
+                                    <span>Escolha um visual para deixar seu perfil mais individual.</span>
+                                </div>
+                                <button type="button" class="btn-secondary" id="btn-change-profile-bg">Mudar plano de fundo</button>
+                            </div>
                             <div class="equipment-fields">
                                 <h3 class="equipment-title">Equipamentos</h3>
                                 <div class="edit-equipment-row">
@@ -450,6 +457,32 @@
                             <div class="modal-actions">
                                 <button class="btn-primary" id="btn-save-profile">Salvar</button>
                                 <button class="btn-secondary" id="btn-cancel-profile">Cancelar</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Profile Background Gallery -->
+                    <div id="profile-background-modal" class="modal hidden">
+                        <div class="modal-content profile-background-modal-content">
+                            <div class="profile-background-modal-head">
+                                <div>
+                                    <span class="eyebrow">PERSONALIZAÇÃO</span>
+                                    <h2>Plano de fundo do perfil</h2>
+                                    <p>Escolha um tema. Outros operadores verão este plano de fundo ao abrir seu perfil.</p>
+                                </div>
+                                <button type="button" class="modal-close-icon" id="btn-close-profile-bg" aria-label="Fechar">×</button>
+                            </div>
+                            <div id="profile-background-gallery" class="profile-background-gallery" role="radiogroup" aria-label="Planos de fundo disponíveis"></div>
+                            <div class="profile-background-preview-wrap">
+                                <span>Prévia</span>
+                                <div id="profile-background-preview" class="profile-background-preview" data-profile-bg="asgard">
+                                    <div class="profile-background-preview-avatar"></div>
+                                    <div class="profile-background-preview-lines"><strong>CALLSIGN</strong><small>OPERADOR • FILHOS DE ASGARD</small></div>
+                                </div>
+                            </div>
+                            <div class="modal-actions">
+                                <button class="btn-primary" id="btn-apply-profile-bg">Aplicar plano de fundo</button>
+                                <button class="btn-secondary" id="btn-cancel-profile-bg">Cancelar</button>
                             </div>
                         </div>
                     </div>

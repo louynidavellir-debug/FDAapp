@@ -173,12 +173,37 @@
     const btnEditProfile = $('btn-edit-profile');
     const btnSaveProfile = $('btn-save-profile');
     const btnCancelProfile = $('btn-cancel-profile');
+    const profileCard = $('profile-card');
+    const btnChangeProfileBg = $('btn-change-profile-bg');
+    const profileBackgroundModal = $('profile-background-modal');
+    const profileBackgroundGallery = $('profile-background-gallery');
+    const profileBackgroundPreview = $('profile-background-preview');
+    const btnApplyProfileBg = $('btn-apply-profile-bg');
+    const btnCancelProfileBg = $('btn-cancel-profile-bg');
+    const btnCloseProfileBg = $('btn-close-profile-bg');
+
+    const PROFILE_BACKGROUNDS = [
+        { id:'asgard', name:'Asgard', subtitle:'Ciano tático', icon:'ᚨ' },
+        { id:'nidavellir', name:'Nidavellir', subtitle:'Forja dos anões', icon:'⚒' },
+        { id:'niflheim', name:'Niflheim', subtitle:'Gelo e névoa', icon:'❄' },
+        { id:'muspelheim', name:'Muspelheim', subtitle:'Fogo e cinzas', icon:'🔥' },
+        { id:'yggdrasil', name:'Yggdrasil', subtitle:'Raízes do mundo', icon:'ᛉ' },
+        { id:'bifrost', name:'Bifrost', subtitle:'Ponte dos reinos', icon:'◈' },
+        { id:'valhalla', name:'Valhalla', subtitle:'Salão dos guerreiros', icon:'⚔' },
+        { id:'raven', name:'Corvos de Odin', subtitle:'Sombras e runas', icon:'ᚱ' }
+    ];
+    const PROFILE_BACKGROUND_IDS = new Set(PROFILE_BACKGROUNDS.map(bg => bg.id));
+    function normalizeProfileBackground(value) {
+        return PROFILE_BACKGROUND_IDS.has(String(value || '')) ? String(value) : 'asgard';
+    }
 
     // Temp storage for photos being edited (base64)
     let pendingAvatar = null;
     let pendingFotoPrimaria = null;
     let pendingFotoSecundaria = null;
     let pendingFotoLoadout = null;
+    let pendingProfileBackground = null;
+    let galleryProfileBackground = 'asgard';
 
     // Members
     const membersList = $('members-list');
@@ -1204,6 +1229,7 @@
         profileSecundaria.textContent = profileUser.secundaria || '—';
         profileLoadout.textContent = profileUser.loadout || '—';
         profileSince.textContent = formatDate(profileUser.createdAt);
+        if (profileCard) profileCard.dataset.profileBg = normalizeProfileBackground(profileUser.profileBackground);
         renderProfileAchievements(profileUser.id);
 
         // Editing/upload controls are only available on the signed-in user's own profile.
@@ -1264,6 +1290,8 @@
         pendingFotoPrimaria = null;
         pendingFotoSecundaria = null;
         pendingFotoLoadout = null;
+        pendingProfileBackground = normalizeProfileBackground(currentUser.profileBackground);
+        galleryProfileBackground = pendingProfileBackground;
         // Show existing equipment photo previews
         if (currentUser.fotoPrimaria) {
             editPhotoPrimariaPreview.src = currentUser.fotoPrimaria;
@@ -1286,7 +1314,47 @@
         editProfileModal.classList.remove('hidden');
     });
 
+    function renderProfileBackgroundGallery() {
+        if (!profileBackgroundGallery) return;
+        profileBackgroundGallery.innerHTML = PROFILE_BACKGROUNDS.map(bg => `
+            <button type="button" class="profile-background-option ${galleryProfileBackground === bg.id ? 'selected' : ''}" data-bg-id="${bg.id}" role="radio" aria-checked="${galleryProfileBackground === bg.id}">
+                <span class="profile-background-thumb" data-profile-bg="${bg.id}"><b>${bg.icon}</b></span>
+                <span class="profile-background-option-copy"><strong>${escapeHtml(bg.name)}</strong><small>${escapeHtml(bg.subtitle)}</small></span>
+                <span class="profile-background-check">✓</span>
+            </button>`).join('');
+        profileBackgroundGallery.querySelectorAll('[data-bg-id]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                galleryProfileBackground = normalizeProfileBackground(btn.dataset.bgId);
+                if (profileBackgroundPreview) profileBackgroundPreview.dataset.profileBg = galleryProfileBackground;
+                renderProfileBackgroundGallery();
+            });
+        });
+        if (profileBackgroundPreview) profileBackgroundPreview.dataset.profileBg = galleryProfileBackground;
+    }
+
+    function openProfileBackgroundGallery() {
+        galleryProfileBackground = normalizeProfileBackground(pendingProfileBackground || currentUser?.profileBackground);
+        renderProfileBackgroundGallery();
+        profileBackgroundModal?.classList.remove('hidden');
+    }
+
+    function closeProfileBackgroundGallery() {
+        profileBackgroundModal?.classList.add('hidden');
+    }
+
+    btnChangeProfileBg?.addEventListener('click', openProfileBackgroundGallery);
+    btnCancelProfileBg?.addEventListener('click', closeProfileBackgroundGallery);
+    btnCloseProfileBg?.addEventListener('click', closeProfileBackgroundGallery);
+    profileBackgroundModal?.addEventListener('click', (e) => { if (e.target === profileBackgroundModal) closeProfileBackgroundGallery(); });
+    btnApplyProfileBg?.addEventListener('click', () => {
+        pendingProfileBackground = normalizeProfileBackground(galleryProfileBackground);
+        closeProfileBackgroundGallery();
+        showToast('Plano de fundo selecionado. Salve o perfil para confirmar.', 'success');
+    });
+
     btnCancelProfile.addEventListener('click', () => {
+        pendingProfileBackground = null;
+        closeProfileBackgroundGallery();
         editProfileModal.classList.add('hidden');
     });
 
@@ -1311,11 +1379,13 @@
             if (pendingFotoPrimaria !== null) user.fotoPrimaria = pendingFotoPrimaria;
             if (pendingFotoSecundaria !== null) user.fotoSecundaria = pendingFotoSecundaria;
             if (pendingFotoLoadout !== null) user.fotoLoadout = pendingFotoLoadout;
+            if (pendingProfileBackground !== null) user.profileBackground = normalizeProfileBackground(pendingProfileBackground);
             setStore(DB_USERS, users);
             currentUser = user;
             pendingFotoPrimaria = null;
             pendingFotoSecundaria = null;
             pendingFotoLoadout = null;
+            pendingProfileBackground = null;
             refreshProfile();
             updateTopbar();
             showToast('Perfil atualizado!', 'success');
