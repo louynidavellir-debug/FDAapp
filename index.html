@@ -165,9 +165,9 @@
                     <span class="nav-label">Loja</span>
                     <span class="nav-badge hidden" id="cart-badge">0</span>
                 </a>
-                <a href="#" class="nav-item admin-only hidden" data-page="vendas">
-                    <span class="nav-icon">💰</span>
-                    <span class="nav-label">Vendas</span>
+                <a href="#" class="nav-item admin-only hidden" data-page="admin">
+                    <span class="nav-icon">🛡️</span>
+                    <span class="nav-label">Painel Admin</span>
                 </a>
             </nav>
             <div class="sidebar-footer">
@@ -915,45 +915,75 @@
             </section>
 
             <!-- VENDAS (ADMIN) -->
-            <section id="page-vendas" class="page hidden">
-                <div class="vendas-header">
-                    <h2>Dashboard de Vendas</h2>
+            <section id="page-admin" class="page hidden">
+                <div class="admin-panel-header">
+                    <div>
+                        <div class="settings-kicker">COMANDO</div>
+                        <h2>Painel de Controle</h2>
+                        <p>Ferramentas administrativas reunidas em um único lugar.</p>
+                    </div>
+                    <div class="admin-panel-shield">🛡️</div>
                 </div>
-                <div class="vendas-stats" id="vendas-stats">
-                    <div class="vendas-stat-card">
-                        <div class="vendas-stat-icon">📦</div>
-                        <div class="vendas-stat-number" id="vendas-total-pedidos">0</div>
-                        <div class="vendas-stat-label">Total Pedidos</div>
+                <div class="admin-panel-tabs" role="tablist">
+                    <button class="admin-tab active" data-admin-tab="overview">Visão geral</button>
+                    <button class="admin-tab" data-admin-tab="sales">Vendas</button>
+                    <button class="admin-tab" data-admin-tab="history">Histórico de partidas</button>
+                    <button class="admin-tab" data-admin-tab="audit">Histórico administrativo</button>
+                    <button class="admin-tab" data-admin-tab="diagnostics">Diagnóstico</button>
+                </div>
+
+                <div class="admin-tab-panel" data-admin-panel="overview">
+                    <div class="admin-overview-grid">
+                        <article class="admin-overview-card"><span>👥</span><strong id="admin-total-members">0</strong><small>Operadores</small></article>
+                        <article class="admin-overview-card"><span>🎯</span><strong id="admin-open-games">0</strong><small>Operações abertas</small></article>
+                        <article class="admin-overview-card"><span>🏁</span><strong id="admin-completed-games">0</strong><small>Operações concluídas</small></article>
+                        <article class="admin-overview-card"><span>📦</span><strong id="admin-pending-orders">0</strong><small>Pedidos pendentes</small></article>
                     </div>
-                    <div class="vendas-stat-card">
-                        <div class="vendas-stat-icon">💰</div>
-                        <div class="vendas-stat-number" id="vendas-receita">R$ 0</div>
-                        <div class="vendas-stat-label">Receita Total</div>
-                    </div>
-                    <div class="vendas-stat-card">
-                        <div class="vendas-stat-icon">⏳</div>
-                        <div class="vendas-stat-number" id="vendas-pendentes">0</div>
-                        <div class="vendas-stat-label">Pendentes</div>
-                    </div>
-                    <div class="vendas-stat-card">
-                        <div class="vendas-stat-icon">✅</div>
-                        <div class="vendas-stat-number" id="vendas-entregues">0</div>
-                        <div class="vendas-stat-label">Entregues</div>
+                    <div class="admin-quick-actions">
+                        <button class="btn-primary" id="admin-go-games">Gerenciar Jogos</button>
+                        <button class="btn-secondary" id="admin-go-achievements">Gerenciar Conquistas</button>
+                        <button class="btn-secondary" id="admin-go-members">Gerenciar Membros</button>
+                        <button class="btn-secondary" id="admin-go-contrib">Contribuições</button>
                     </div>
                 </div>
-                <div class="vendas-filters">
-                    <label>Filtrar por status:</label>
-                    <select id="vendas-filter-status">
-                        <option value="todos">Todos</option>
-                        <option value="Pendente">Pendente</option>
-                        <option value="Confirmado">Confirmado</option>
-                        <option value="Enviado">Enviado</option>
-                        <option value="Entregue">Entregue</option>
-                        <option value="Cancelado">Cancelado</option>
-                    </select>
+
+                <div class="admin-tab-panel hidden" data-admin-panel="sales">
+                    <div class="vendas-header"><h2>Vendas</h2></div>
+                    <div class="vendas-stats" id="vendas-stats">
+                        <div class="vendas-stat-card"><div class="vendas-stat-icon">📦</div><div class="vendas-stat-number" id="vendas-total-pedidos">0</div><div class="vendas-stat-label">Total Pedidos</div></div>
+                        <div class="vendas-stat-card"><div class="vendas-stat-icon">💰</div><div class="vendas-stat-number" id="vendas-receita">R$ 0</div><div class="vendas-stat-label">Receita Total</div></div>
+                        <div class="vendas-stat-card"><div class="vendas-stat-icon">⏳</div><div class="vendas-stat-number" id="vendas-pendentes">0</div><div class="vendas-stat-label">Pendentes</div></div>
+                        <div class="vendas-stat-card"><div class="vendas-stat-icon">✅</div><div class="vendas-stat-number" id="vendas-entregues">0</div><div class="vendas-stat-label">Entregues</div></div>
+                    </div>
+                    <div class="vendas-filters"><label>Filtrar por status:</label><select id="vendas-filter-status"><option value="todos">Todos</option><option value="Pendente">Pendente</option><option value="Confirmado">Confirmado</option><option value="Enviado">Enviado</option><option value="Entregue">Entregue</option><option value="Cancelado">Cancelado</option></select></div>
+                    <div class="vendas-orders-list" id="vendas-orders-list"><p class="empty-state">Nenhum pedido registrado.</p></div>
                 </div>
-                <div class="vendas-orders-list" id="vendas-orders-list">
-                    <p class="empty-state">Nenhum pedido registrado.</p>
+
+                <div class="admin-tab-panel hidden" data-admin-panel="history">
+                    <div class="admin-section-heading"><div><h2>Histórico de Partidas</h2><p>Operações concluídas e presença registrada.</p></div><input id="admin-history-search" class="admin-search" type="search" placeholder="Buscar operação..." /></div>
+                    <div id="admin-game-history" class="admin-history-list"><p class="empty-state">Nenhuma operação concluída.</p></div>
+                </div>
+
+                <div class="admin-tab-panel hidden" data-admin-panel="audit">
+                    <div class="admin-section-heading"><div><h2>Histórico Administrativo</h2><p>Registro das ações importantes realizadas no sistema.</p></div><button class="btn-secondary" id="admin-refresh-audit">Atualizar</button></div>
+                    <div id="admin-audit-list" class="admin-audit-list"><p class="empty-state">Nenhuma atividade registrada.</p></div>
+                </div>
+
+                <div class="admin-tab-panel hidden" data-admin-panel="diagnostics">
+                    <div class="admin-section-heading"><div><h2>Diagnóstico do Sistema</h2><p>Status do PWA, Firebase, cache e dados locais.</p></div><button class="btn-secondary" id="admin-refresh-diagnostics">Atualizar diagnóstico</button></div>
+                    <div class="diagnostic-grid">
+                        <article class="diagnostic-card"><span>🔥 Firebase</span><strong id="diag-firebase">Verificando...</strong></article>
+                        <article class="diagnostic-card"><span>🌐 Conexão</span><strong id="diag-network">Verificando...</strong></article>
+                        <article class="diagnostic-card"><span>📲 PWA</span><strong id="diag-pwa">Verificando...</strong></article>
+                        <article class="diagnostic-card"><span>🧰 Service Worker</span><strong id="diag-sw">Verificando...</strong></article>
+                        <article class="diagnostic-card"><span>🗃️ Cache</span><strong id="diag-cache">Verificando...</strong></article>
+                        <article class="diagnostic-card"><span>🏷️ Versão</span><strong id="diag-version">admin-panel-v1</strong></article>
+                    </div>
+                    <div class="diagnostic-actions">
+                        <button class="btn-primary" id="admin-force-update">Forçar atualização do app</button>
+                        <button class="btn-secondary" id="admin-clear-local-cache">Limpar cache local e recarregar</button>
+                    </div>
+                    <div id="diag-data-counts" class="diagnostic-counts"></div>
                 </div>
             </section>
         </main>

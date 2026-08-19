@@ -304,6 +304,13 @@
     const vendasFilterStatus = $('vendas-filter-status');
     const vendasOrdersList = $('vendas-orders-list');
 
+    // Painel Admin
+    const adminTabs = document.querySelectorAll('.admin-tab');
+    const adminPanels = document.querySelectorAll('.admin-tab-panel');
+    const adminGameHistory = $('admin-game-history');
+    const adminHistorySearch = $('admin-history-search');
+    const adminAuditList = $('admin-audit-list');
+
     // Contribuição
     const contribuicaoMonth = $('contribuicao-month');
     const contribuicaoValor = $('contribuicao-valor');
@@ -783,6 +790,7 @@
     let lastNavigationAt = 0;
     function navigateTo(page, forceRefresh = false) {
         if (currentUser?.role === 'guest' && page !== 'games') page = 'games';
+        if (page === 'admin' && currentUser?.role !== 'admin') page = 'dashboard';
         const now = performance.now();
         // Ignore accidental double taps on the same sidebar item. This also avoids
         // rebuilding large lists repeatedly on slower phones.
@@ -816,7 +824,7 @@
             loja: 'Loja',
             contribuicao: 'Contribuição',
             configuracoes: 'Configurações',
-            vendas: 'Vendas'
+            admin: 'Painel Admin'
         };
         pageTitle.textContent = titles[page] || 'Dashboard';
 
@@ -840,7 +848,7 @@
         }
         if (page === 'games') refreshGames();
         if (page === 'loja') { refreshProducts(); renderMyOrdersV2(); }
-        if (page === 'vendas') { refreshOrderStats(); refreshOrders(); }
+        if (page === 'admin') refreshAdminPanel();
         if (page === 'contribuicao') refreshContribuicao();
 
         // Close mobile sidebar
@@ -3380,6 +3388,113 @@
         vendasFilterStatus.addEventListener('change', () => refreshOrders());
     }
 
+    // ===== PAINEL ADMIN =====
+    function ensureAdminPanel() {
+        if (currentUser?.role !== 'admin') {
+            showToast('Acesso exclusivo do ADMIN.', 'error');
+            navigateTo('dashboard');
+            return false;
+        }
+        return true;
+    }
+
+    function setAdminTab(name) {
+        if (!ensureAdminPanel()) return;
+        adminTabs.forEach(btn => btn.classList.toggle('active', btn.dataset.adminTab === name));
+        adminPanels.forEach(panel => panel.classList.toggle('hidden', panel.dataset.adminPanel !== name));
+        if (name === 'sales') { refreshOrderStats(); refreshOrders(); }
+        if (name === 'history') renderAdminGameHistory();
+        if (name === 'audit') renderAdminAudit();
+        if (name === 'diagnostics') renderAdminDiagnostics();
+    }
+
+    function refreshAdminPanel() {
+        if (!ensureAdminPanel()) return;
+        const users = (getStore(DB_USERS) || []).filter(u => u.role !== 'guest');
+        const games = getStore(DB_GAMES) || [];
+        const orders = getStore(DB_ORDERS) || [];
+        if ($('admin-total-members')) $('admin-total-members').textContent = users.length;
+        if ($('admin-open-games')) $('admin-open-games').textContent = games.filter(g => !g.completed).length;
+        if ($('admin-completed-games')) $('admin-completed-games').textContent = games.filter(g => g.completed).length;
+        if ($('admin-pending-orders')) $('admin-pending-orders').textContent = orders.filter(o => o.status === 'Pendente').length;
+        const active = [...adminTabs].find(b => b.classList.contains('active'))?.dataset.adminTab || 'overview';
+        setAdminTab(active);
+    }
+
+    function renderAdminGameHistory() {
+        if (!adminGameHistory) return;
+        const q = String(adminHistorySearch?.value || '').trim().toLowerCase();
+        const users = getStore(DB_USERS) || [];
+        const guestConfirmations = getStore('asgard_guest_confirmations') || [];
+        const games = (getStore(DB_GAMES) || []).filter(g => g.completed)
+            .filter(g => !q || String(g.title || '').toLowerCase().includes(q) || String(g.location || '').toLowerCase().includes(q))
+            .sort((a,b) => String(b.date || '').localeCompare(String(a.date || '')));
+        if (!games.length) { adminGameHistory.innerHTML = '<p class="empty-state">Nenhuma operação concluída encontrada.</p>'; return; }
+        adminGameHistory.innerHTML = games.map(g => {
+            const confirmed = g.confirmed || [];
+            const checked = g.checkedIn || [];
+            const memberNames = checked.map(uid => users.find(u => String(u.id) === String(uid))?.callsign || users.find(u => String(u.id) === String(uid))?.name || 'Operador');
+            const guests = guestConfirmations.filter(x => String(x.gameId) === String(g.id) && x.checkedIn).map(x => x.name || 'Convidado');
+            const present = [...memberNames, ...guests];
+            return `<article class="admin-history-card"><div class="admin-history-card-head"><div><strong>${escapeHtml(g.title || 'Operação')}</strong><span>${formatDate(g.date)} • ${escapeHtml(g.location || 'Local não informado')}</span></div><span class="game-completed-badge">CONCLUÍDA</span></div><div class="admin-history-stats"><span>✅ ${confirmed.length} confirmados</span><span>🏁 ${checked.length + guests.length} presentes</span></div><div class="admin-history-members">${present.length ? present.map(n => `<span>${escapeHtml(n)}</span>`).join('') : '<small>Nenhum check-in registrado.</small>'}</div></article>`;
+        }).join('');
+    }
+
+    function renderAdminAudit() {
+        if (!adminAuditList) return;
+        const activities = (getStore(DB_ACTIVITY) || []).slice().sort((a,b) => new Date(b.date||0)-new Date(a.date||0));
+        const adminWords = /admin|pedido|conquista|check-in|jogo|operação|contribui|membro|aviso|produto|exclu|criou|editou|atualizado/i;
+        const filtered = activities.filter(a => adminWords.test(String(a.text || a.message || ''))).slice(0,80);
+        if (!filtered.length) { adminAuditList.innerHTML = '<p class="empty-state">Nenhuma ação administrativa registrada ainda.</p>'; return; }
+        adminAuditList.innerHTML = filtered.map(a => `<article class="admin-audit-item"><div class="admin-audit-icon">🛡️</div><div><strong>${escapeHtml(a.text || a.message || 'Ação administrativa')}</strong><small>${formatDateTime(a.date || a.createdAt)}</small></div></article>`).join('');
+    }
+
+    async function renderAdminDiagnostics() {
+        if (!ensureAdminPanel()) return;
+        const cfgOk = Boolean(window.ASGARD_FIREBASE_CONFIG?.projectId && window.ASGARD_FIREBASE_CONFIG?.apiKey);
+        if ($('diag-firebase')) $('diag-firebase').textContent = cfgOk ? 'Configurado' : 'Não configurado';
+        if ($('diag-network')) $('diag-network').textContent = navigator.onLine ? 'Online' : 'Offline';
+        if ($('diag-pwa')) $('diag-pwa').textContent = window.matchMedia?.('(display-mode: standalone)')?.matches ? 'Instalado' : 'Navegador';
+        if ($('diag-sw')) $('diag-sw').textContent = navigator.serviceWorker?.controller ? 'Ativo' : ('serviceWorker' in navigator ? 'Registrado / aguardando' : 'Indisponível');
+        if ($('diag-cache')) {
+            try { const keys = await caches.keys(); $('diag-cache').textContent = `${keys.length} cache(s)`; } catch (_) { $('diag-cache').textContent = 'Indisponível'; }
+        }
+        const counts = [
+            ['Membros', (getStore(DB_USERS)||[]).length], ['Jogos', (getStore(DB_GAMES)||[]).length],
+            ['Mensagens', (getStore(DB_MESSAGES)||[]).length], ['Conquistas', (getStore(DB_ACHIEVEMENTS)||[]).length],
+            ['Produtos', (getStore(DB_PRODUCTS)||[]).length], ['Pedidos', (getStore(DB_ORDERS)||[]).length]
+        ];
+        if ($('diag-data-counts')) $('diag-data-counts').innerHTML = counts.map(([n,v]) => `<span><strong>${v}</strong>${n}</span>`).join('');
+    }
+
+    adminTabs.forEach(btn => btn.addEventListener('click', () => setAdminTab(btn.dataset.adminTab)));
+    adminHistorySearch?.addEventListener('input', renderAdminGameHistory);
+    $('admin-refresh-audit')?.addEventListener('click', renderAdminAudit);
+    $('admin-refresh-diagnostics')?.addEventListener('click', renderAdminDiagnostics);
+    $('admin-go-games')?.addEventListener('click', () => navigateTo('games'));
+    $('admin-go-achievements')?.addEventListener('click', () => navigateTo('achievements'));
+    $('admin-go-members')?.addEventListener('click', () => navigateTo('members'));
+    $('admin-go-contrib')?.addEventListener('click', () => navigateTo('contribuicao'));
+    $('admin-force-update')?.addEventListener('click', async () => {
+        if (!ensureAdminPanel()) return;
+        try {
+            const reg = await navigator.serviceWorker?.getRegistration();
+            await reg?.update();
+            if (reg?.waiting) reg.waiting.postMessage({ type:'SKIP_WAITING' });
+            const keys = await caches.keys();
+            await Promise.all(keys.map(k => caches.delete(k)));
+            showToast('Atualização preparada. Recarregando...', 'success');
+            setTimeout(() => location.reload(true), 500);
+        } catch (err) { showToast('Não foi possível forçar a atualização.', 'error'); }
+    });
+    $('admin-clear-local-cache')?.addEventListener('click', async () => {
+        if (!ensureAdminPanel()) return;
+        if (!confirm('Limpar cache local do app e recarregar? Seus dados no Firebase não serão apagados.')) return;
+        try { const keys = await caches.keys(); await Promise.all(keys.map(k => caches.delete(k))); } catch (_) {}
+        ['asgard_messages','asgard_games','asgard_activity','asgard_products','asgard_orders'].forEach(k => localStorage.removeItem(k));
+        location.reload();
+    });
+
     // ===== CONTRIBUIÇÃO =====
     function getContribMonthKey() {
         const now = new Date();
@@ -4330,7 +4445,7 @@
             if (id === 'page-chat' && !keys.has(DB_MESSAGES)) refreshChat();
             if (id === 'page-games') refreshGames();
             if (id === 'page-loja') { refreshProducts(); renderMyOrdersV2(); }
-            if (id === 'page-vendas' && currentUser.role === 'admin') { refreshOrderStats(); refreshOrders(); }
+            if (id === 'page-admin' && currentUser.role === 'admin') refreshAdminPanel();
             if (id === 'page-contribuicao') refreshContribuicao();
         }, 70);
     }

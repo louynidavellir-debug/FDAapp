@@ -1,4 +1,4 @@
-const CACHE_NAME = 'asgard-v-presence-quota-root-fix-1-guest-v1';
+const CACHE_NAME = 'asgard-v-admin-panel-v1';
 const ASSETS = [
     './', './index.html', './style.css', './app.js', './cloud.js', './firebase-config.js',
     './manifest.json', './icons/icon-192-v17.png', './icons/icon-512-v17.png', './icons/logo-asgard.png'
@@ -63,3 +63,5 @@ self.addEventListener('notificationclick', event => {
         await clients.openWindow('./');
     })());
 });
+
+self.addEventListener('message', event => { if (event.data?.type === 'SKIP_WAITING') self.skipWaiting(); });
