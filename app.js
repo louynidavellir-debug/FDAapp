@@ -310,6 +310,11 @@
     const adminGameHistory = $('admin-game-history');
     const adminHistorySearch = $('admin-history-search');
     const adminAuditList = $('admin-audit-list');
+    const adminAlertList = $('admin-alert-list');
+    const adminAlertSummary = $('admin-alert-summary');
+    const adminAlertBadge = $('admin-alert-badge');
+    const adminAlertTabCount = $('admin-alert-tab-count');
+    let adminUpdateAvailable = false;
 
     // Contribuição
     const contribuicaoMonth = $('contribuicao-month');
@@ -3402,6 +3407,7 @@
         if (!ensureAdminPanel()) return;
         adminTabs.forEach(btn => btn.classList.toggle('active', btn.dataset.adminTab === name));
         adminPanels.forEach(panel => panel.classList.toggle('hidden', panel.dataset.adminPanel !== name));
+        if (name === 'alerts') renderAdminAlerts();
         if (name === 'sales') { refreshOrderStats(); refreshOrders(); }
         if (name === 'history') renderAdminGameHistory();
         if (name === 'audit') renderAdminAudit();
@@ -3417,8 +3423,82 @@
         if ($('admin-open-games')) $('admin-open-games').textContent = games.filter(g => !g.completed).length;
         if ($('admin-completed-games')) $('admin-completed-games').textContent = games.filter(g => g.completed).length;
         if ($('admin-pending-orders')) $('admin-pending-orders').textContent = orders.filter(o => o.status === 'Pendente').length;
+        updateAdminAlertBadge();
         const active = [...adminTabs].find(b => b.classList.contains('active'))?.dataset.adminTab || 'overview';
         setAdminTab(active);
+    }
+
+    function getAdminAlertData() {
+        const users = (getStore(DB_USERS) || []).filter(u => u.role !== 'guest');
+        const games = getStore(DB_GAMES) || [];
+        const orders = getStore(DB_ORDERS) || [];
+        const guestConfirmations = getStore('asgard_guest_confirmations') || [];
+        const contrib = getStore(DB_CONTRIBUTIONS) || {};
+        const now = new Date();
+        const monthKey = now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2,'0');
+        const month = contrib.months?.[monthKey] || {};
+        const overdue = users.filter(u => u.role !== 'admin' && month[u.id]?.status === 'Em Atraso');
+        const pendingOrders = orders.filter(o => o.status === 'Pendente');
+        const today = new Date(); today.setHours(23,59,59,999);
+        const needCheckin = games.filter(g => {
+            if (g.completed) return false;
+            const d = g.date ? new Date(String(g.date).length <= 10 ? `${g.date}T23:59:59` : g.date) : null;
+            if (!d || Number.isNaN(d.getTime()) || d > today) return false;
+            const confirmed = Array.isArray(g.confirmed) ? g.confirmed.length : 0;
+            const checked = Array.isArray(g.checkedIn) ? g.checkedIn.length : 0;
+            const guestConfirmed = guestConfirmations.filter(x => String(x.gameId) === String(g.id)).length;
+            const guestChecked = guestConfirmations.filter(x => String(x.gameId) === String(g.id) && x.checkedIn).length;
+            return (confirmed + guestConfirmed) > (checked + guestChecked);
+        });
+        const activeGameIds = new Set(games.filter(g => !g.completed).map(g => String(g.id)));
+        const guests = guestConfirmations.filter(x => activeGameIds.has(String(x.gameId)));
+        return { overdue, pendingOrders, needCheckin, guests, updateAvailable:adminUpdateAvailable };
+    }
+
+    function updateAdminAlertBadge() {
+        if (currentUser?.role !== 'admin') return;
+        const d = getAdminAlertData();
+        const total = d.overdue.length + d.pendingOrders.length + d.needCheckin.length + (d.updateAvailable ? 1 : 0);
+        [adminAlertBadge, adminAlertTabCount].forEach(el => {
+            if (!el) return;
+            el.textContent = total > 99 ? '99+' : String(total);
+            el.classList.toggle('hidden', total === 0);
+        });
+    }
+
+    async function checkAdminAppUpdate() {
+        if (!('serviceWorker' in navigator)) return false;
+        try {
+            const reg = await navigator.serviceWorker.getRegistration();
+            if (!reg) return false;
+            adminUpdateAvailable = Boolean(reg.waiting);
+            // update() is only run while the admin is looking at the panel; no polling.
+            await reg.update().catch(()=>{});
+            adminUpdateAvailable = Boolean(reg.waiting || (reg.installing && navigator.serviceWorker.controller));
+        } catch (_) { adminUpdateAvailable = false; }
+        updateAdminAlertBadge();
+        return adminUpdateAvailable;
+    }
+
+    async function renderAdminAlerts() {
+        if (!ensureAdminPanel() || !adminAlertList) return;
+        await checkAdminAppUpdate();
+        const d = getAdminAlertData();
+        const items = [];
+        if (d.overdue.length) items.push({ icon:'💳', type:'danger', count:d.overdue.length, title:`${d.overdue.length} contribuição(ões) em atraso`, body:'Revise os operadores em atraso na aba Contribuições.', action:'contribuicao' });
+        if (d.pendingOrders.length) items.push({ icon:'📦', type:'warning', count:d.pendingOrders.length, title:`${d.pendingOrders.length} pedido(s) pendente(s)`, body:'Existem pedidos aguardando análise ou confirmação.', tab:'sales' });
+        if (d.needCheckin.length) items.push({ icon:'🎯', type:'warning', count:d.needCheckin.length, title:`${d.needCheckin.length} operação(ões) precisam de check-in`, body:'A data já chegou e ainda existem confirmados sem presença registrada.', action:'games' });
+        if (d.guests.length) items.push({ icon:'👤', type:'info', count:d.guests.length, title:`${d.guests.length} convidado(s) confirmado(s)`, body:'Convidados atualmente presentes nas listas de operações abertas.', action:'games' });
+        if (d.updateAvailable) items.push({ icon:'⬆️', type:'info', count:1, title:'Nova versão do app disponível', body:'Há uma atualização do PWA pronta para ser aplicada.', tab:'diagnostics' });
+        if (adminAlertSummary) adminAlertSummary.innerHTML = [
+            ['Em atraso',d.overdue.length], ['Pedidos',d.pendingOrders.length], ['Check-in',d.needCheckin.length], ['Convidados',d.guests.length], ['Atualização',d.updateAvailable?'1':'0']
+        ].map(([n,v])=>`<article class="admin-alert-mini"><strong>${v}</strong><span>${n}</span></article>`).join('');
+        adminAlertList.innerHTML = items.length ? items.map((x,i)=>`<button type="button" class="admin-alert-card ${x.type}" data-alert-index="${i}"><span class="admin-alert-icon">${x.icon}</span><span class="admin-alert-copy"><strong>${escapeHtml(x.title)}</strong><small>${escapeHtml(x.body)}</small></span><span class="admin-alert-count">${x.count}</span></button>`).join('') : '<div class="admin-alert-ok"><strong>✓ Tudo em ordem</strong><span>Nenhuma pendência administrativa importante foi encontrada.</span></div>';
+        adminAlertList.querySelectorAll('[data-alert-index]').forEach(btn => btn.addEventListener('click', () => {
+            const x = items[Number(btn.dataset.alertIndex)]; if (!x) return;
+            if (x.tab) setAdminTab(x.tab); else if (x.action) navigateTo(x.action);
+        }));
+        updateAdminAlertBadge();
     }
 
     function renderAdminGameHistory() {
@@ -3464,11 +3544,13 @@
             ['Mensagens', (getStore(DB_MESSAGES)||[]).length], ['Conquistas', (getStore(DB_ACHIEVEMENTS)||[]).length],
             ['Produtos', (getStore(DB_PRODUCTS)||[]).length], ['Pedidos', (getStore(DB_ORDERS)||[]).length]
         ];
-        if ($('diag-data-counts')) $('diag-data-counts').innerHTML = counts.map(([n,v]) => `<span><strong>${v}</strong>${n}</span>`).join('');
+        if ($('diag-data-counts')) $('diag-data-counts').innerHTML = counts.map(([n,v]) => `<span><strong>${v}</strong>${n}</span>`).join('') + `<span><strong>200</strong>Chat máx.</span><span><strong>80</strong>Feed máx.</span><span><strong>4 min</strong>Heartbeat</span>`;
+        await checkAdminAppUpdate();
     }
 
     adminTabs.forEach(btn => btn.addEventListener('click', () => setAdminTab(btn.dataset.adminTab)));
     adminHistorySearch?.addEventListener('input', renderAdminGameHistory);
+    $('admin-refresh-alerts')?.addEventListener('click', renderAdminAlerts);
     $('admin-refresh-audit')?.addEventListener('click', renderAdminAudit);
     $('admin-refresh-diagnostics')?.addEventListener('click', renderAdminDiagnostics);
     $('admin-go-games')?.addEventListener('click', () => navigateTo('games'));
@@ -4460,17 +4542,31 @@
             setTimeout(maybeShowAchievementNotification, 120);
         }
         if (key === DB_ACHIEVEMENTS || key === DB_ACHIEVEMENT_AWARDS) updateAchievementNotificationBadge();
+        if (currentUser?.role === 'admin' && [DB_GAMES,DB_ORDERS,DB_CONTRIBUTIONS,'asgard_guest_confirmations'].includes(key)) updateAdminAlertBadge();
         scheduleSyncedViewRefresh(key);
     });
     window.addEventListener('asgard:cloud-error', (e) => {
         console.error(e.detail);
         cloudHasRecentErrorV2 = true; updateConnectionUiV2();
         setTimeout(()=>{ cloudHasRecentErrorV2=false; updateConnectionUiV2(); }, 8000);
-        showToast('Não foi possível sincronizar uma alteração com o servidor.', 'error');
+        const code = String(e.detail?.code || e.detail?.message || '').toLowerCase();
+        let msg = 'Não foi possível sincronizar uma alteração com o servidor.';
+        if (code.includes('resource-exhausted') || code.includes('quota')) msg = 'Cota do Firebase atingida. Aguarde a renovação da cota ou verifique o uso no console.';
+        else if (code.includes('permission-denied')) msg = 'Operação bloqueada pelas regras de segurança do Firebase.';
+        else if (code.includes('unavailable') || !navigator.onLine) msg = 'Sem conexão com o servidor. A tela será atualizada quando a conexão voltar.';
+        showToast(msg, 'error');
     });
     // Register service worker
     if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('sw.js').catch(() => {});
+        navigator.serviceWorker.register('sw.js').then(reg => {
+            if (reg.waiting && navigator.serviceWorker.controller) { adminUpdateAvailable = true; updateAdminAlertBadge(); }
+            reg.addEventListener('updatefound', () => {
+                const installing = reg.installing;
+                installing?.addEventListener('statechange', () => {
+                    if (installing.state === 'installed' && navigator.serviceWorker.controller) { adminUpdateAvailable = true; updateAdminAlertBadge(); }
+                });
+            });
+        }).catch(() => {});
         navigator.serviceWorker.addEventListener('message', event => {
             if (event.data?.type === 'OPEN_PAGE' && event.data?.page && currentUser) navigateTo(event.data.page);
         });

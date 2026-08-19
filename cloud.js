@@ -16,6 +16,9 @@ const cache = new Map();
 const remoteCache = new Map();
 const unsubs = [];
 let app = null, auth = null, db = null, storage = null, initialized = false, connected = false;
+let sessionRole = null;
+let contributionSettings = { valor:50, pixKey:'5579996427351' };
+let contributionMonths = {};
 
 const ARRAY_COLLECTIONS = {
   asgard_messages: 'messages',
@@ -90,8 +93,11 @@ async function readUsers() {
 async function currentRole() {
   const me = auth?.currentUser;
   if (!me) return null;
+  if (sessionRole) return sessionRole;
+  const local = (cache.get('asgard_users') || []).find(u => u?.id === me.uid)?.role;
+  if (local) return (sessionRole = local);
   const snap = await getDoc(doc(db, 'profiles', me.uid));
-  return snap.exists() ? snap.data()?.role || null : null;
+  return snap.exists() ? (sessionRole = (snap.data()?.role || null)) : null;
 }
 async function readMyProfile() {
   const me = auth?.currentUser;
@@ -125,9 +131,14 @@ function contributionSource(role) {
   }
   return collection(db, 'contributions');
 }
+function mirrorContributions() {
+  const value = { valor:Number(contributionSettings.valor ?? 50), pixKey:contributionSettings.pixKey || '5579996427351', months:contributionMonths || {} };
+  remoteCache.set('asgard_contributions', value);
+  mirror('asgard_contributions', value);
+}
 async function readContributions(role = null) {
   const settingsSnap = await getDoc(doc(db, 'settings', 'contributions'));
-  const settings = settingsSnap.exists() ? settingsSnap.data() : { valor: 50, pixKey: '5579996427351' };
+  contributionSettings = settingsSnap.exists() ? settingsSnap.data() : { valor:50, pixKey:'5579996427351' };
   const snap = await getDocs(contributionSource(role));
   const months = {};
   snap.forEach(d => {
@@ -137,10 +148,10 @@ async function readContributions(role = null) {
     const { monthKey, userId, ...entry } = r;
     months[monthKey][userId] = entry;
   });
-  const value = { valor: Number(settings.valor ?? 50), pixKey: settings.pixKey || '5579996427351', months };
-  remoteCache.set('asgard_contributions', value);
-  mirror('asgard_contributions', value);
+  contributionMonths = months;
+  mirrorContributions();
 }
+
 async function hydrate() {
   // Only the signed-in user's own profile is critical for login.
   // Every shared/optional collection is loaded independently so one Firestore
@@ -176,6 +187,7 @@ async function setupRealtime(roleHint = null) {
   // Reuse the role already obtained with the authenticated profile whenever possible.
   // This avoids an extra profile read during every login.
   const role = roleHint || await currentRole();
+  sessionRole = role || sessionRole;
   unsubs.push(onSnapshot(collection(db, 'profiles'), snap => {
     const rows = snap.docs.map(d => ({ id: d.id, ...d.data() }))
       .sort((a,b) => String(a.createdAt || '').localeCompare(String(b.createdAt || '')));
@@ -183,8 +195,25 @@ async function setupRealtime(roleHint = null) {
     mirror('asgard_users', rows);
   }, reportError));
   Object.entries(ARRAY_COLLECTIONS).forEach(([k,c]) => watchCollection(k,c,role));
-  unsubs.push(onSnapshot(doc(db, 'settings', 'contributions'), () => readContributions(role).catch(reportError), reportError));
-  unsubs.push(onSnapshot(contributionSource(role), () => readContributions(role).catch(reportError), reportError));
+  // Keep contributions fully realtime without re-querying the whole collection on every change.
+  // The old implementation reacted to each snapshot by calling getDocs() again, effectively
+  // doubling reads and increasing the risk of quota exhaustion.
+  unsubs.push(onSnapshot(doc(db, 'settings', 'contributions'), snap => {
+    contributionSettings = snap.exists() ? snap.data() : { valor:50, pixKey:'5579996427351' };
+    mirrorContributions();
+  }, reportError));
+  unsubs.push(onSnapshot(contributionSource(role), snap => {
+    const months = {};
+    snap.forEach(d => {
+      const r = d.data() || {};
+      if (!r.monthKey || !r.userId) return;
+      if (!months[r.monthKey]) months[r.monthKey] = {};
+      const { monthKey, userId, ...entry } = r;
+      months[monthKey][userId] = entry;
+    });
+    contributionMonths = months;
+    mirrorContributions();
+  }, reportError));
 }
 function reportError(err) {
   console.error('[Asgard Firebase]', err);
@@ -280,7 +309,7 @@ async function updateContribution(userId, monthKey, patch) {
   const base = existing.exists() ? existing.data() : { monthKey, userId, status:'Pendente', confirmedAt:null, comprovante:null };
   const payload = cleanFirestoreObject({ ...base, ...patch, monthKey, userId });
   await setDoc(ref, payload, { merge:true });
-  await readContributions(role);
+  if (!connected) await readContributions(role);
   return payload;
 }
 
@@ -391,7 +420,8 @@ async function connectSession() {
   // every collection with getDocs() and then fetched them again for onSnapshot(),
   // doubling initial reads and making login unnecessarily slow.
   const profile = await readMyProfile();
-  setupRealtime(profile?.role || null).catch(reportError);
+  sessionRole = profile?.role || null;
+  setupRealtime(sessionRole).catch(reportError);
   return profile;
 }
 async function connectGuestSession(guestName = '') {
@@ -401,11 +431,9 @@ async function connectGuestSession(guestName = '') {
   if (!safeName) throw new Error('Informe seu nome.');
   localStorage.setItem('asgard_guest_name', safeName);
 
-  // Convidado carrega somente Jogos + nomes de outros convidados confirmados.
-  await Promise.all([
-    readCollection('asgard_games', 'games', 'guest'),
-    readCollection('asgard_guest_confirmations', 'guest_confirmations', 'guest')
-  ]);
+  // Convidado assina somente Jogos + confirmações de convidados. Não fazemos getDocs()
+  // imediatamente antes dos listeners, evitando duplicar leituras no primeiro acesso.
+  sessionRole = 'guest';
   if (!connected) {
     connected = true;
     watchCollection('asgard_games', 'games', 'guest');
@@ -469,7 +497,7 @@ async function createAnnouncement(announcement) {
   });
   if (!payload.text) throw new Error('Digite o aviso.');
   await setDoc(doc(db, 'announcements', id), payload, { merge:false });
-  await readCollection('asgard_announcements', 'announcements', role);
+  if (!connected) await readCollection('asgard_announcements', 'announcements', role);
   return payload;
 }
 
@@ -482,7 +510,7 @@ async function updateAnnouncement(announcementId, patch) {
   const text = String(patch?.text || '').trim();
   if (!id || !text) throw new Error('Aviso inválido.');
   await setDoc(doc(db, 'announcements', id), cleanFirestoreObject({ text, updatedAt:new Date().toISOString(), updatedBy:me.uid }), { merge:true });
-  await readCollection('asgard_announcements', 'announcements', role);
+  if (!connected) await readCollection('asgard_announcements', 'announcements', role);
   return true;
 }
 
@@ -494,7 +522,7 @@ async function removeAnnouncement(announcementId) {
   const id = String(announcementId || '');
   if (!id) throw new Error('Aviso inválido.');
   await deleteDoc(doc(db, 'announcements', id));
-  await readCollection('asgard_announcements', 'announcements', role);
+  if (!connected) await readCollection('asgard_announcements', 'announcements', role);
   return true;
 }
 
@@ -506,7 +534,7 @@ async function createProduct(product) {
   const id = String(product?.id || `${Date.now()}_${me.uid}`);
   const payload = cleanFirestoreObject({ ...stripInternal(product || {}), id, createdBy: product?.createdBy || me.uid, createdAt: product?.createdAt || new Date().toISOString() });
   await setDoc(doc(db, 'products', id), payload, { merge:false });
-  await readCollection('asgard_products', 'products', role);
+  if (!connected) await readCollection('asgard_products', 'products', role);
   return payload;
 }
 
@@ -518,7 +546,7 @@ async function updateProduct(productId, patch) {
   const id = String(productId || '');
   if (!id) throw new Error('Produto inválido.');
   await setDoc(doc(db, 'products', id), cleanFirestoreObject({ ...patch, id, updatedAt:new Date().toISOString() }), { merge:true });
-  await readCollection('asgard_products', 'products', role);
+  if (!connected) await readCollection('asgard_products', 'products', role);
   return true;
 }
 
@@ -530,7 +558,7 @@ async function removeProduct(productId) {
   const id = String(productId || '');
   if (!id) throw new Error('Produto inválido.');
   await deleteDoc(doc(db, 'products', id));
-  await readCollection('asgard_products', 'products', role);
+  if (!connected) await readCollection('asgard_products', 'products', role);
   return true;
 }
 
@@ -549,7 +577,7 @@ async function createAchievement(achievement) {
     createdAt: achievement?.createdAt || new Date().toISOString()
   });
   await setDoc(doc(db, 'achievements', id), payload, { merge:false });
-  await readCollection('asgard_achievements', 'achievements', role);
+  if (!connected) await readCollection('asgard_achievements', 'achievements', role);
   return payload;
 }
 
@@ -562,7 +590,7 @@ async function updateAchievement(achievementId, patch) {
   if (!id) throw new Error('Conquista inválida.');
   const payload = cleanFirestoreObject({ ...stripInternal(patch || {}), id, updatedAt:new Date().toISOString() });
   await setDoc(doc(db, 'achievements', id), payload, { merge:true });
-  await readCollection('asgard_achievements', 'achievements', role);
+  if (!connected) await readCollection('asgard_achievements', 'achievements', role);
   return true;
 }
 
@@ -617,8 +645,8 @@ async function setAchievementRecipients(achievementId, userIds) {
   }
 
   await batch.commit();
-  await readCollection('asgard_achievements', 'achievements', role);
-  await readCollection('asgard_achievement_awards', 'achievement_awards', role);
+  if (!connected) await readCollection('asgard_achievements', 'achievements', role);
+  if (!connected) await readCollection('asgard_achievement_awards', 'achievement_awards', role);
   await readUsers();
   return { completedBy, newlyAwarded };
 }
@@ -652,8 +680,8 @@ async function removeAchievement(achievementId) {
   const awardsSnap = await getDocs(query(collection(db, 'achievement_awards'), where('achievementId', '==', id)));
   awardsSnap.forEach(d => batch.delete(d.ref));
   await batch.commit();
-  await readCollection('asgard_achievements', 'achievements', role);
-  await readCollection('asgard_achievement_awards', 'achievement_awards', role);
+  if (!connected) await readCollection('asgard_achievements', 'achievements', role);
+  if (!connected) await readCollection('asgard_achievement_awards', 'achievement_awards', role);
   return true;
 }
 

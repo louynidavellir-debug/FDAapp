@@ -1,4 +1,4 @@
-const CACHE_NAME = 'asgard-v-admin-panel-v1';
+const CACHE_NAME = 'asgard-v-final-audit-alerts-v1';
 const ASSETS = [
     './', './index.html', './style.css', './app.js', './cloud.js', './firebase-config.js',
     './manifest.json', './icons/icon-192-v17.png', './icons/icon-512-v17.png', './icons/logo-asgard.png'
@@ -6,7 +6,9 @@ const ASSETS = [
 
 self.addEventListener('install', event => {
     event.waitUntil(caches.open(CACHE_NAME).then(cache => cache.addAll(ASSETS)));
-    self.skipWaiting();
+    // Do not skipWaiting automatically. When an older worker controls the app, the new
+    // version remains waiting so the ADMIN can see "nova versão disponível" and choose
+    // when to apply it from the diagnostic panel.
 });
 
 self.addEventListener('activate', event => {
@@ -20,11 +22,13 @@ self.addEventListener('fetch', event => {
     const req = event.request;
     if (req.method !== 'GET') return;
     const url = new URL(req.url);
+
     // Firebase/CDN/API traffic is network-only. Never cache authenticated cloud responses.
     if (url.hostname.includes('firebase') || url.hostname.includes('googleapis.com') ||
         url.hostname.includes('gstatic.com') || url.hostname.includes('google.com') ||
         url.hostname.includes('jsdelivr.net')) return;
-    // Navigations stay network-first so a newly deployed index.html is discovered quickly.
+
+    // Navigations are network-first so newly deployed HTML is discovered immediately.
     if (req.mode === 'navigate') {
         event.respondWith(
             fetch(req).then(response => {
@@ -35,18 +39,29 @@ self.addEventListener('fetch', event => {
         return;
     }
 
-    // Same-origin static files use stale-while-revalidate: render immediately from cache,
-    // then refresh in the background. This substantially reduces repeated PWA startup time.
     if (url.origin === self.location.origin) {
+        // Firebase config must be network-first. Caching it stale can make a valid deployment
+        // look "Firebase não configurado" after an update.
+        if (url.pathname.endsWith('/firebase-config.js')) {
+            event.respondWith(
+                fetch(req).then(response => {
+                    if (response.ok) caches.open(CACHE_NAME).then(cache => cache.put(req, response.clone()));
+                    return response;
+                }).catch(() => caches.match(req))
+            );
+            return;
+        }
+
+        // Static same-origin assets use stale-while-revalidate for fast PWA startup.
         event.respondWith((async () => {
             const cached = await caches.match(req);
             const networkPromise = fetch(req).then(response => {
                 if (response.ok) caches.open(CACHE_NAME).then(cache => cache.put(req, response.clone()));
                 return response;
             }).catch(() => null);
-            return cached || await networkPromise || caches.match('./index.html');
+            if (cached) { event.waitUntil(networkPromise); return cached; }
+            return await networkPromise || new Response('Offline', { status:503, statusText:'Offline' });
         })());
-        return;
     }
 });
 
@@ -64,4 +79,6 @@ self.addEventListener('notificationclick', event => {
     })());
 });
 
-self.addEventListener('message', event => { if (event.data?.type === 'SKIP_WAITING') self.skipWaiting(); });
+self.addEventListener('message', event => {
+    if (event.data?.type === 'SKIP_WAITING') self.skipWaiting();
+});

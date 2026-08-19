@@ -1,0 +1,11 @@
+{
+  "duplicate_html_ids": [],
+  "missing_dollar_dom_refs": [],
+  "admin_alert_center_present": true,
+  "guest_realtime_no_initial_getdocs": true,
+  "contribution_snapshot_no_requery": true,
+  "chat_limit_200": true,
+  "activity_limit_80": true,
+  "firebase_config_network_first": true,
+  "sw_waiting_update_supported": true
+}

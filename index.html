@@ -168,6 +168,7 @@
                 <a href="#" class="nav-item admin-only hidden" data-page="admin">
                     <span class="nav-icon">🛡️</span>
                     <span class="nav-label">Painel Admin</span>
+                    <span class="nav-badge hidden" id="admin-alert-badge">0</span>
                 </a>
             </nav>
             <div class="sidebar-footer">
@@ -926,6 +927,7 @@
                 </div>
                 <div class="admin-panel-tabs" role="tablist">
                     <button class="admin-tab active" data-admin-tab="overview">Visão geral</button>
+                    <button class="admin-tab" data-admin-tab="alerts">Alertas <span id="admin-alert-tab-count" class="admin-tab-count hidden">0</span></button>
                     <button class="admin-tab" data-admin-tab="sales">Vendas</button>
                     <button class="admin-tab" data-admin-tab="history">Histórico de partidas</button>
                     <button class="admin-tab" data-admin-tab="audit">Histórico administrativo</button>
@@ -945,6 +947,13 @@
                         <button class="btn-secondary" id="admin-go-members">Gerenciar Membros</button>
                         <button class="btn-secondary" id="admin-go-contrib">Contribuições</button>
                     </div>
+                </div>
+
+
+                <div class="admin-tab-panel hidden" data-admin-panel="alerts">
+                    <div class="admin-section-heading"><div><h2>Centro de Alertas</h2><p>Pendências que precisam da atenção do comando.</p></div><button class="btn-secondary" id="admin-refresh-alerts">Atualizar</button></div>
+                    <div id="admin-alert-summary" class="admin-alert-summary"></div>
+                    <div id="admin-alert-list" class="admin-alert-list"><p class="empty-state">Verificando pendências...</p></div>
                 </div>
 
                 <div class="admin-tab-panel hidden" data-admin-panel="sales">
