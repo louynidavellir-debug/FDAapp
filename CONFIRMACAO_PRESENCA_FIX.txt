@@ -1,0 +1,11 @@
+CORRECAO - CONFIRMAR PRESENCA / QUOTA EXCEEDED
+
+- Removida a consulta extra de todas as partidas do operador ao confirmar presença.
+- Removido o controle auxiliar game_monthly_limits do fluxo de confirmação.
+- A confirmação agora usa apenas 1 leitura do jogo e 1 atualização atômica com arrayUnion/arrayRemove.
+- Não existe limite de participantes por partida.
+- Mantido bloqueio de cancelamento após check-in.
+- Regras do Firestore simplificadas para reduzir leituras internas e evitar dependências de quota mensal.
+
+IMPORTANTE:
+Publique o firestore.rules deste pacote no Firebase Console.

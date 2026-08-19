@@ -5,8 +5,8 @@ import {
   signInWithEmailAndPassword, signOut, onAuthStateChanged, deleteUser
 } from 'https://www.gstatic.com/firebasejs/12.17.1/firebase-auth.js';
 import {
-  getFirestore, collection, doc, getDoc, getDocs, setDoc, deleteDoc, writeBatch,
-  onSnapshot, runTransaction, serverTimestamp, query, where, orderBy, limit
+  getFirestore, collection, doc, getDoc, getDocs, setDoc, deleteDoc, writeBatch, updateDoc,
+  arrayUnion, arrayRemove, onSnapshot, runTransaction, serverTimestamp, query, where, orderBy, limit
 } from 'https://www.gstatic.com/firebasejs/12.17.1/firebase-firestore.js';
 import {
   getStorage, ref as storageRef, uploadBytesResumable, getDownloadURL
@@ -715,16 +715,7 @@ async function removeGame(gameId) {
   const me = auth?.currentUser;
   if (!me) throw new Error('Sessão expirada.');
   if (await currentRole() !== 'admin') throw new Error('Somente o ADMIN pode excluir jogos.');
-  const id = String(gameId || '');
-  const gameRef = doc(db, 'games', id);
-  const snap = await getDoc(gameRef);
-  const game = snap.exists() ? (snap.data() || {}) : {};
-  const monthKey = operationMonthKey(game);
-  const confirmed = Array.isArray(game.confirmed) ? game.confirmed : [];
-  const batch = writeBatch(db);
-  batch.delete(gameRef);
-  if (monthKey) confirmed.forEach(uid => batch.delete(doc(db, 'game_monthly_limits', `${monthKey}_${uid}`)));
-  await batch.commit();
+  await deleteDoc(doc(db, 'games', String(gameId || '')));
   return true;
 }
 
@@ -740,62 +731,33 @@ async function toggleGameConfirmation(gameId) {
   const id = String(gameId || '');
   const ref = doc(db, 'games', id);
 
-  // Compatibility check for confirmations created before the monthly quota feature.
-  // We only need the operator's own confirmations and filter them by operation month.
-  let existingConfirmedGames = [];
-  try {
-    const mine = await getDocs(query(collection(db, 'games'), where('confirmed', 'array-contains', me.uid)));
-    existingConfirmedGames = mine.docs.map(d => ({ id:d.id, ...d.data() }));
-  } catch (err) {
-    console.warn('[Games quota] Could not pre-read previous confirmations', err);
+  // Apenas 1 leitura do jogo + 1 gravação atômica. Não existe limite de
+  // participantes por operação, e não consultamos outras partidas ao confirmar.
+  const snap = await getDoc(ref);
+  if (!snap.exists()) throw new Error('Jogo não encontrado.');
+  const game = snap.data() || {};
+  if (game.completed === true) throw new Error('Esta operação já foi concluída.');
+
+  const confirmed = Array.isArray(game.confirmed) ? game.confirmed : [];
+  const checkedIn = Array.isArray(game.checkedIn) ? game.checkedIn : [];
+  const alreadyConfirmed = confirmed.includes(me.uid);
+
+  if (alreadyConfirmed) {
+    if (checkedIn.includes(me.uid)) {
+      throw new Error('Seu check-in já foi realizado. Solicite ao ADMIN para alterar a presença.');
+    }
+    await updateDoc(ref, {
+      confirmed: arrayRemove(me.uid),
+      updatedAt: new Date().toISOString()
+    });
+    return false;
   }
 
-  return await runTransaction(db, async tx => {
-    const snap = await tx.get(ref);
-    if (!snap.exists()) throw new Error('Jogo não encontrado.');
-    const game = snap.data() || {};
-    if (game.completed === true) throw new Error('Esta operação já foi concluída.');
-
-    const monthKey = operationMonthKey(game);
-    if (!monthKey) throw new Error('A operação não possui uma data mensal válida.');
-    const contribRef = doc(db, 'contributions', `${monthKey}_${me.uid}`);
-    const quotaRef = doc(db, 'game_monthly_limits', `${monthKey}_${me.uid}`);
-    const contribSnap = await tx.get(contribRef);
-    const quotaSnap = await tx.get(quotaRef);
-
-    const contribution = contribSnap.exists() ? (contribSnap.data() || {}) : {};
-    const isLate = contribution.status === 'Em Atraso';
-    const confirmed = Array.isArray(game.confirmed) ? [...game.confirmed] : [];
-    const checkedIn = Array.isArray(game.checkedIn) ? [...game.checkedIn] : [];
-    const idx = confirmed.indexOf(me.uid);
-    let confirmedNow;
-
-    if (idx >= 0) {
-      if (checkedIn.includes(me.uid)) throw new Error('Seu check-in já foi realizado. Solicite ao ADMIN para alterar a presença.');
-      confirmed.splice(idx, 1);
-      confirmedNow = false;
-      if (quotaSnap.exists() && String(quotaSnap.data()?.gameId || '') === id) tx.delete(quotaRef);
-    } else {
-      if (isLate) {
-        const previous = existingConfirmedGames.find(g => g.id !== id && operationMonthKey(g) === monthKey);
-        const quotaGameId = quotaSnap.exists() ? String(quotaSnap.data()?.gameId || '') : '';
-        if ((quotaGameId && quotaGameId !== id) || previous) {
-          throw new Error('Sua contribuição está Em Atraso. Você pode confirmar presença em apenas 1 operação por mês.');
-        }
-        tx.set(quotaRef, {
-          userId: me.uid,
-          monthKey,
-          gameId: id,
-          updatedAt: new Date().toISOString()
-        }, { merge:true });
-      }
-      confirmed.push(me.uid);
-      confirmedNow = true;
-    }
-
-    tx.update(ref, { confirmed, updatedAt:new Date().toISOString() });
-    return confirmedNow;
+  await updateDoc(ref, {
+    confirmed: arrayUnion(me.uid),
+    updatedAt: new Date().toISOString()
   });
+  return true;
 }
 
 async function setGameCheckin(gameId, userId) {

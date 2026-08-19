@@ -2515,9 +2515,8 @@
                     <div class="game-actions">
                         ${!g.completed ? `
                             ${(() => {
-                                const quotaBlocked = !isConfirmed && lateUserHasAnotherGameThisMonth(g);
-                                return `<button class="btn-secondary confirm-game-btn" data-id="${g.id}" ${isConfirmed ? 'style="border-color:var(--success);color:var(--success)"' : ''} ${quotaBlocked ? 'disabled title="Contribuição Em Atraso: limite de 1 operação por mês"' : ''}>
-                                    ${isConfirmed ? '✓ Confirmado' : (quotaBlocked ? 'Limite mensal atingido' : 'Confirmar Presença')}
+                                return `<button class="btn-secondary confirm-game-btn" data-id="${g.id}" ${isConfirmed ? 'style="border-color:var(--success);color:var(--success)"' : ''}>
+                                    ${isConfirmed ? '✓ Confirmado' : 'Confirmar Presença'}
                                 </button>`;
                             })()}
                         ` : ''}
@@ -2553,39 +2552,10 @@
         });
     }
 
-    function gameMonthKey(game) {
-        const match = String(game?.date || '').match(/^(\d{4}-\d{2})/);
-        return match ? match[1] : null;
-    }
-
-    function currentUserContributionStatusForGame(game) {
-        if (!currentUser) return 'Pendente';
-        const monthKey = gameMonthKey(game);
-        if (!monthKey) return 'Pendente';
-        const data = getContribData();
-        return data?.months?.[monthKey]?.[currentUser.id]?.status || 'Pendente';
-    }
-
-    function lateUserHasAnotherGameThisMonth(game) {
-        if (!currentUser || currentUserContributionStatusForGame(game) !== 'Em Atraso') return false;
-        const monthKey = gameMonthKey(game);
-        return (getStore(DB_GAMES) || []).some(other =>
-            other.id !== game.id &&
-            gameMonthKey(other) === monthKey &&
-            Array.isArray(other.confirmed) &&
-            other.confirmed.includes(currentUser.id)
-        );
-    }
-
     async function toggleConfirmGame(gameId) {
         const game = (getStore(DB_GAMES) || []).find(g => g.id === gameId);
         if (!game) return;
         if (game.completed) { showToast('Esta operação já foi concluída.', 'info'); return; }
-        const alreadyConfirmed = Array.isArray(game.confirmed) && game.confirmed.includes(currentUser.id);
-        if (!alreadyConfirmed && lateUserHasAnotherGameThisMonth(game)) {
-            showToast('Contribuição Em Atraso: limite de 1 operação confirmada por mês atingido.', 'error');
-            return;
-        }
         try {
             if (window.AsgardCloud?.toggleGameConfirmation) {
                 const confirmedNow = await window.AsgardCloud.toggleGameConfirmation(gameId);
