@@ -3637,3 +3637,11 @@ body {
 
 /* Jogos não possuem limite de participantes. */
 .game-unlimited-badge{color:var(--cyan,#00e5ff);font-size:.72rem;font-weight:700;white-space:nowrap}
+
+
+/* ===== ACESSO COMO CONVIDADO ===== */
+.btn-guest-entry { width:100%; margin-top:10px; }
+.guest-access-note { margin:-4px 0 18px; color:var(--text-muted,#9aa7b2); font-size:.9rem; line-height:1.45; }
+.role-badge.guest { border-color:#8b98a5; color:#cbd5df; background:rgba(139,152,165,.12); }
+.guest-confirmed-badge { display:inline-flex; align-items:center; gap:5px; margin-left:6px; padding:2px 7px; border-radius:999px; border:1px solid rgba(255,255,255,.16); color:#b9c4cf; font-size:.68rem; letter-spacing:.05em; text-transform:uppercase; }
+body.guest-mode .topbar-actions #notification-bell { display:none !important; }

@@ -2,7 +2,7 @@
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/12.17.1/firebase-app.js';
 import {
   getAuth, setPersistence, browserLocalPersistence, createUserWithEmailAndPassword,
-  signInWithEmailAndPassword, signOut, onAuthStateChanged, deleteUser
+  signInWithEmailAndPassword, signInAnonymously, signOut, onAuthStateChanged, deleteUser
 } from 'https://www.gstatic.com/firebasejs/12.17.1/firebase-auth.js';
 import {
   getFirestore, collection, doc, getDoc, getDocs, setDoc, deleteDoc, writeBatch, updateDoc,
@@ -25,7 +25,8 @@ const ARRAY_COLLECTIONS = {
   asgard_activity: 'activities',
   asgard_announcements: 'announcements',
   asgard_products: 'products',
-  asgard_orders: 'orders'
+  asgard_orders: 'orders',
+  asgard_guest_confirmations: 'guest_confirmations'
 };
 
 function cfg() { return window.ASGARD_FIREBASE_CONFIG || {}; }
@@ -106,6 +107,9 @@ async function readMyProfile() {
   return profile;
 }
 function collectionSource(colName, role) {
+  if (colName === 'guest_confirmations' && auth?.currentUser?.isAnonymous) {
+    return collection(db, colName);
+  }
   if (colName === 'orders' && role !== 'admin') {
     return query(collection(db, 'orders'), where('compradorId', '==', auth.currentUser.uid));
   }
@@ -390,6 +394,33 @@ async function connectSession() {
   setupRealtime(profile?.role || null).catch(reportError);
   return profile;
 }
+async function connectGuestSession(guestName = '') {
+  const me = auth?.currentUser;
+  if (!me || !me.isAnonymous) throw new Error('Sessão de convidado inválida.');
+  const safeName = String(guestName || localStorage.getItem('asgard_guest_name') || '').trim().slice(0,60);
+  if (!safeName) throw new Error('Informe seu nome.');
+  localStorage.setItem('asgard_guest_name', safeName);
+
+  // Convidado carrega somente Jogos + nomes de outros convidados confirmados.
+  await Promise.all([
+    readCollection('asgard_games', 'games', 'guest'),
+    readCollection('asgard_guest_confirmations', 'guest_confirmations', 'guest')
+  ]);
+  if (!connected) {
+    connected = true;
+    watchCollection('asgard_games', 'games', 'guest');
+    watchCollection('asgard_guest_confirmations', 'guest_confirmations', 'guest');
+  }
+  return { id:me.uid, name:safeName, callsign:safeName, role:'guest', isGuest:true };
+}
+async function signInGuest(name) {
+  const safeName = String(name || '').trim().replace(/\s+/g,' ').slice(0,60);
+  if (safeName.length < 2) throw new Error('Informe um nome válido.');
+  const cred = await signInAnonymously(auth);
+  localStorage.setItem('asgard_guest_name', safeName);
+  return { user:cred.user, profile:await connectGuestSession(safeName) };
+}
+
 async function signIn(callsign, password) {
   const cred = await signInWithEmailAndPassword(auth, callsignEmail(callsign), password);
   return cred.user;
@@ -715,7 +746,12 @@ async function removeGame(gameId) {
   const me = auth?.currentUser;
   if (!me) throw new Error('Sessão expirada.');
   if (await currentRole() !== 'admin') throw new Error('Somente o ADMIN pode excluir jogos.');
-  await deleteDoc(doc(db, 'games', String(gameId || '')));
+  const id = String(gameId || '');
+  const guestSnap = await getDocs(query(collection(db,'guest_confirmations'), where('gameId','==',id)));
+  const batch = writeBatch(db);
+  guestSnap.forEach(d => batch.delete(d.ref));
+  batch.delete(doc(db, 'games', id));
+  await batch.commit();
   return true;
 }
 
@@ -725,38 +761,54 @@ function operationMonthKey(game) {
   return m ? m[1] : null;
 }
 
-async function toggleGameConfirmation(gameId) {
+async function toggleGameConfirmation(gameId, guestName = '') {
   const me = auth?.currentUser;
   if (!me) throw new Error('Sessão expirada.');
   const id = String(gameId || '');
   const ref = doc(db, 'games', id);
 
-  // Apenas 1 leitura do jogo + 1 gravação atômica. Não existe limite de
-  // participantes por operação, e não consultamos outras partidas ao confirmar.
+  if (me.isAnonymous) {
+    const safeName = String(guestName || localStorage.getItem('asgard_guest_name') || '').trim().replace(/\s+/g,' ').slice(0,60);
+    if (safeName.length < 2) throw new Error('Nome de convidado inválido.');
+    const guestRef = doc(db, 'guest_confirmations', `${id}_${me.uid}`);
+    return await runTransaction(db, async tx => {
+      const snap = await tx.get(ref);
+      if (!snap.exists()) throw new Error('Jogo não encontrado.');
+      const game = snap.data() || {};
+      if (game.completed === true) throw new Error('Esta operação já foi concluída.');
+      const confirmed = Array.isArray(game.confirmed) ? [...game.confirmed] : [];
+      const checkedIn = Array.isArray(game.checkedIn) ? [...game.checkedIn] : [];
+      const idx = confirmed.indexOf(me.uid);
+      if (idx >= 0) {
+        if (checkedIn.includes(me.uid)) throw new Error('Seu check-in já foi realizado. Solicite ao ADMIN para alterar a presença.');
+        confirmed.splice(idx,1);
+        tx.update(ref, { confirmed, updatedAt:new Date().toISOString() });
+        tx.delete(guestRef);
+        return false;
+      }
+      confirmed.push(me.uid);
+      tx.update(ref, { confirmed, updatedAt:new Date().toISOString() });
+      tx.set(guestRef, {
+        id:`${id}_${me.uid}`, gameId:id, userId:me.uid, name:safeName,
+        createdAt:new Date().toISOString()
+      }, { merge:false });
+      return true;
+    });
+  }
+
   const snap = await getDoc(ref);
   if (!snap.exists()) throw new Error('Jogo não encontrado.');
   const game = snap.data() || {};
   if (game.completed === true) throw new Error('Esta operação já foi concluída.');
-
   const confirmed = Array.isArray(game.confirmed) ? game.confirmed : [];
   const checkedIn = Array.isArray(game.checkedIn) ? game.checkedIn : [];
   const alreadyConfirmed = confirmed.includes(me.uid);
-
   if (alreadyConfirmed) {
-    if (checkedIn.includes(me.uid)) {
-      throw new Error('Seu check-in já foi realizado. Solicite ao ADMIN para alterar a presença.');
-    }
-    await updateDoc(ref, {
-      confirmed: arrayRemove(me.uid),
-      updatedAt: new Date().toISOString()
-    });
+    if (checkedIn.includes(me.uid)) throw new Error('Seu check-in já foi realizado. Solicite ao ADMIN para alterar a presença.');
+    await updateDoc(ref, { confirmed:arrayRemove(me.uid), updatedAt:new Date().toISOString() });
     return false;
   }
-
-  await updateDoc(ref, {
-    confirmed: arrayUnion(me.uid),
-    updatedAt: new Date().toISOString()
-  });
+  await updateDoc(ref, { confirmed:arrayUnion(me.uid), updatedAt:new Date().toISOString() });
   return true;
 }
 
@@ -832,8 +884,8 @@ function set(key, value) {
 }
 
 window.AsgardCloud = {
-  init, connectSession, readMyProfile, get, set, hasConfig, removeSession,
-  signIn, register, getCurrentUser, waitForAuth, updatePresence, addMessage, uploadChatMedia, updateChatLastRead, updateContribution,
+  init, connectSession, connectGuestSession, readMyProfile, get, set, hasConfig, removeSession,
+  signIn, signInGuest, register, getCurrentUser, waitForAuth, updatePresence, addMessage, uploadChatMedia, updateChatLastRead, updateContribution,
   createAnnouncement, updateAnnouncement, removeAnnouncement,
   createProduct, updateProduct, removeProduct,
   createAchievement, updateAchievement, setAchievementRecipients, markAchievementNotificationRead, removeAchievement, updateFeaturedAchievements,

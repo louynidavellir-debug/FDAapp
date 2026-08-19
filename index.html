@@ -60,7 +60,20 @@
                     </div>
                 </div>
                 <button class="btn-primary" id="btn-login">ENTRAR</button>
+                <button class="btn-secondary btn-guest-entry" id="show-guest" type="button">ENTRAR COMO CONVIDADO</button>
                 <p class="auth-switch">Não tem conta? <a href="#" id="show-register">Registre-se</a></p>
+            </div>
+
+            <!-- GUEST FORM -->
+            <div id="guest-form" class="auth-form hidden">
+                <h2>ENTRAR COMO CONVIDADO</h2>
+                <p class="guest-access-note">Acesso temporário somente à aba Jogos para confirmar presença.</p>
+                <div class="input-group">
+                    <label for="guest-name">SEU NOME</label>
+                    <input type="text" id="guest-name" maxlength="60" placeholder="Digite seu nome..." autocomplete="name">
+                </div>
+                <button class="btn-primary" id="btn-guest-login" type="button">CONTINUAR COMO CONVIDADO</button>
+                <p class="auth-switch"><a href="#" id="show-login-from-guest">Voltar ao login</a></p>
             </div>
 
             <!-- REGISTER FORM -->

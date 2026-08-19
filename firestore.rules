@@ -2,28 +2,28 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     function signedIn() { return request.auth != null; }
+    function isGuestAuth() { return signedIn() && request.auth.token.firebase.sign_in_provider == 'anonymous'; }
+    function isOperatorAuth() { return signedIn() && !isGuestAuth(); }
     function profile() { return get(/databases/$(database)/documents/profiles/$(request.auth.uid)); }
-    function isAdmin() { return signedIn() && profile().data.role == 'admin'; }
-    function isOwner(uid) { return signedIn() && request.auth.uid == uid; }
+    function isAdmin() { return isOperatorAuth() && profile().data.role == 'admin'; }
+    function isOwner(uid) { return isOperatorAuth() && request.auth.uid == uid; }
 
     match /system/bootstrap {
-      allow read: if signedIn();
-      allow create: if signedIn()
+      allow read: if isOperatorAuth();
+      allow create: if isOperatorAuth()
                     && !exists(/databases/$(database)/documents/system/bootstrap)
                     && request.resource.data.ownerUid == request.auth.uid;
       allow update, delete: if false;
     }
 
     match /profiles/{uid} {
-      allow read: if signedIn();
+      allow read: if isOperatorAuth();
       allow create: if isOwner(uid)
                     && request.resource.data.id == uid
                     && request.resource.data.callsign is string
-                    && (
-                      (request.resource.data.role == 'operador') ||
-                      (request.resource.data.role == 'admin'
-                       && getAfter(/databases/$(database)/documents/system/bootstrap).data.ownerUid == uid)
-                    );
+                    && ((request.resource.data.role == 'operador') ||
+                        (request.resource.data.role == 'admin'
+                         && getAfter(/databases/$(database)/documents/system/bootstrap).data.ownerUid == uid));
       allow update: if isAdmin() ||
                     (isOwner(uid)
                      && request.resource.data.id == resource.data.id
@@ -33,88 +33,68 @@ service cloud.firestore {
     }
 
     match /messages/{id} {
-      allow read: if signedIn();
-      allow create: if signedIn()
+      allow read: if isOperatorAuth();
+      allow create: if isOperatorAuth()
                     && request.resource.data.userId == request.auth.uid
                     && request.resource.data.callsign == profile().data.callsign
                     && request.resource.data.text is string
                     && request.resource.data.text.size() <= 2000
                     && request.resource.data.mentions is list
                     && request.resource.data.mentionCallsigns is list
-                    && (
-                      request.resource.data.text.size() > 0 ||
-                      (request.resource.data.mediaUrl is string
-                        && request.resource.data.mediaUrl.size() > 0
-                        && request.resource.data.type in ['image', 'video'])
-                    );
+                    && (request.resource.data.text.size() > 0 ||
+                        (request.resource.data.mediaUrl is string
+                         && request.resource.data.mediaUrl.size() > 0
+                         && request.resource.data.type in ['image','video']));
       allow update: if isAdmin();
-      allow delete: if isAdmin() || (signedIn() && resource.data.userId == request.auth.uid);
+      allow delete: if isAdmin() || (isOperatorAuth() && resource.data.userId == request.auth.uid);
     }
 
     match /games/{id} {
       allow read: if signedIn();
       allow create, delete: if isAdmin();
-      // ADMIN may edit the game and perform check-in. Operators can only add/remove
-      // their own UID from the confirmation list; they can never change checkedIn.
       allow update: if isAdmin() ||
         (signedIn()
           && resource.data.completed != true
-          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['confirmed', 'updatedAt'])
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['confirmed','updatedAt'])
           && request.resource.data.checkedIn == resource.data.checkedIn
-          && (
-            (
-              request.resource.data.confirmed.size() == resource.data.confirmed.size() + 1
-              && request.resource.data.confirmed.hasAll(resource.data.confirmed)
-              && request.resource.data.confirmed.hasAny([request.auth.uid])
-              && !resource.data.confirmed.hasAny([request.auth.uid])
-            ) ||
-            (
-              request.resource.data.confirmed.size() + 1 == resource.data.confirmed.size()
-              && resource.data.confirmed.hasAll(request.resource.data.confirmed)
-              && resource.data.confirmed.hasAny([request.auth.uid])
-              && !request.resource.data.confirmed.hasAny([request.auth.uid])
-              && !resource.data.checkedIn.hasAny([request.auth.uid])
-            )
-          )
-        );
+          && ((request.resource.data.confirmed.size() == resource.data.confirmed.size() + 1
+               && request.resource.data.confirmed.hasAll(resource.data.confirmed)
+               && request.resource.data.confirmed.hasAny([request.auth.uid])
+               && !resource.data.confirmed.hasAny([request.auth.uid]))
+              ||
+              (request.resource.data.confirmed.size() + 1 == resource.data.confirmed.size()
+               && resource.data.confirmed.hasAll(request.resource.data.confirmed)
+               && resource.data.confirmed.hasAny([request.auth.uid])
+               && !request.resource.data.confirmed.hasAny([request.auth.uid])
+               && !resource.data.checkedIn.hasAny([request.auth.uid]))));
     }
 
-
-    match /achievements/{id} {
-      // Everyone signed in can view the achievement gallery and awarded badges.
-      // Only ADMIN can create/edit/delete achievements or select who completed them.
+    match /guest_confirmations/{id} {
       allow read: if signedIn();
-      allow write: if isAdmin();
+      allow create: if isGuestAuth()
+                    && request.resource.data.userId == request.auth.uid
+                    && request.resource.data.gameId is string
+                    && request.resource.data.name is string
+                    && request.resource.data.name.size() >= 2
+                    && request.resource.data.name.size() <= 60;
+      allow update: if false;
+      allow delete: if isAdmin() || (isGuestAuth() && resource.data.userId == request.auth.uid);
     }
 
-    match /achievement_awards/{id} {
-      allow read: if signedIn();
-      allow write: if isAdmin();
-    }
-
-    match /announcements/{id} {
-      allow read: if signedIn();
-      allow write: if isAdmin();
-    }
-
-    match /products/{id} {
-      allow read: if signedIn();
-      allow write: if isAdmin();
-    }
+    match /achievements/{id} { allow read: if isOperatorAuth(); allow write: if isAdmin(); }
+    match /achievement_awards/{id} { allow read: if isOperatorAuth(); allow write: if isAdmin(); }
+    match /announcements/{id} { allow read: if isOperatorAuth(); allow write: if isAdmin(); }
+    match /products/{id} { allow read: if isOperatorAuth(); allow write: if isAdmin(); }
 
     match /orders/{id} {
-      allow read: if isAdmin() || (signedIn() && resource.data.compradorId == request.auth.uid);
-      allow create: if signedIn()
-                    && request.resource.data.compradorId == request.auth.uid
-                    && request.resource.data.status == 'Pendente';
+      allow read: if isAdmin() || (isOperatorAuth() && resource.data.compradorId == request.auth.uid);
+      allow create: if isOperatorAuth() && request.resource.data.compradorId == request.auth.uid && request.resource.data.status == 'Pendente';
       allow update, delete: if isAdmin();
     }
 
     match /activities/{id} {
-      allow read: if signedIn();
-      // Cada usuário só pode registrar atividade em seu próprio nome. Isso evita
-      // falsificação de autoria no feed e mantém o histórico imutável.
-      allow create: if signedIn()
+      allow read: if isOperatorAuth();
+      allow create: if isOperatorAuth()
                     && request.resource.data.actorUid == request.auth.uid
                     && request.resource.data.text is string
                     && request.resource.data.text.size() > 0
@@ -124,24 +104,17 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
-    match /settings/contributions {
-      allow read: if signedIn();
-      allow write: if isAdmin();
-    }
+    match /settings/contributions { allow read: if isOperatorAuth(); allow write: if isAdmin(); }
 
     match /contributions/{id} {
-      // Contribution/payment status is private: ADMIN can read all records;
-      // operators can read only their own record. Client queries are scoped
-      // by userId to match this rule.
-      allow read: if isAdmin() ||
-                  (signedIn() && resource.data.userId == request.auth.uid);
+      allow read: if isAdmin() || (isOperatorAuth() && resource.data.userId == request.auth.uid);
       allow create: if isAdmin() ||
-                    (signedIn()
+                    (isOperatorAuth()
                      && request.resource.data.userId == request.auth.uid
                      && request.resource.data.status == 'Pendente'
                      && id == request.resource.data.monthKey + '_' + request.auth.uid);
       allow update: if isAdmin() ||
-                    (signedIn()
+                    (isOperatorAuth()
                      && resource.data.userId == request.auth.uid
                      && request.resource.data.userId == resource.data.userId
                      && request.resource.data.monthKey == resource.data.monthKey

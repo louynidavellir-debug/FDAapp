@@ -93,6 +93,7 @@
     // Auth
     const loginForm = $('login-form');
     const registerForm = $('register-form');
+    const guestForm = $('guest-form');
     const loginCallsign = $('login-callsign');
     const loginPin = $('login-pin');
     const regCallsign = $('reg-callsign');
@@ -101,6 +102,10 @@
     const regPinConfirm = $('reg-pin-confirm');
     const btnLogin = $('btn-login');
     const btnRegister = $('btn-register');
+    const btnGuestLogin = $('btn-guest-login');
+    const guestName = $('guest-name');
+    const showGuest = $('show-guest');
+    const showLoginFromGuest = $('show-login-from-guest');
     const showRegister = $('show-register');
     const showLogin = $('show-login');
     const authMessage = $('auth-message');
@@ -475,6 +480,7 @@
 
     // ===== AUTH LOGIC =====
     function toggleAuthForm(showRegisterForm) {
+        guestForm?.classList.add('hidden');
         if (showRegisterForm) {
             loginForm.classList.add('hidden');
             registerForm.classList.remove('hidden');
@@ -493,6 +499,39 @@
     showLogin.addEventListener('click', (e) => {
         e.preventDefault();
         toggleAuthForm(false);
+    });
+
+    showGuest?.addEventListener('click', () => {
+        loginForm.classList.add('hidden');
+        registerForm.classList.add('hidden');
+        guestForm.classList.remove('hidden');
+        authMessage.classList.add('hidden');
+        setTimeout(() => guestName?.focus(), 50);
+    });
+
+    showLoginFromGuest?.addEventListener('click', (e) => {
+        e.preventDefault();
+        toggleAuthForm(false);
+    });
+
+    btnGuestLogin?.addEventListener('click', async () => {
+        const name = guestName.value.trim().replace(/\s+/g, ' ');
+        if (name.length < 2) { showAuthMessage('Informe seu nome'); return; }
+        if (!window.AsgardCloud?.hasConfig()) { showAuthMessage('Firebase não configurado.'); return; }
+        btnGuestLogin.disabled = true;
+        try {
+            const result = await window.AsgardCloud.signInGuest(name);
+            currentUser = result.profile;
+            showToast(`Bem-vindo, ${currentUser.name}!`, 'success');
+            enterApp();
+        } catch (err) {
+            console.error(err);
+            const code = String(err?.code || '');
+            const msg = code.includes('operation-not-allowed')
+                ? 'Acesso de convidado ainda não foi ativado no Firebase Authentication.'
+                : (err?.message || 'Não foi possível entrar como convidado.');
+            showAuthMessage(msg);
+        } finally { btnGuestLogin.disabled = false; }
     });
 
     // ===== PRESENÇA ONLINE =====
@@ -668,16 +707,26 @@
         try {
             const authUser = await window.AsgardCloud.waitForAuth();
             if (authUser) {
-                await window.AsgardCloud.connectSession();
-                const users = getStore(DB_USERS) || [];
-                const user = users.find(u => u.id === authUser.uid);
-                if (user) {
-                    currentUser = user;
-                    await pushPresence(true);
-                    enterApp();
-                    return;
+                if (authUser.isAnonymous) {
+                    const savedGuestName = localStorage.getItem('asgard_guest_name') || '';
+                    if (savedGuestName) {
+                        currentUser = await window.AsgardCloud.connectGuestSession(savedGuestName);
+                        enterApp();
+                        return;
+                    }
+                    await window.AsgardCloud.removeSession();
+                } else {
+                    await window.AsgardCloud.connectSession();
+                    const users = getStore(DB_USERS) || [];
+                    const user = users.find(u => u.id === authUser.uid);
+                    if (user) {
+                        currentUser = user;
+                        await pushPresence(true);
+                        enterApp();
+                        return;
+                    }
+                    await window.AsgardCloud.removeSession();
                 }
-                await window.AsgardCloud.removeSession();
             }
         } catch (err) { console.error(err); }
         splashScreen.classList.add('fade-out');
@@ -691,32 +740,41 @@
             showScreen('app-screen');
             updateUIForRole();
             updateTopbar();
-            navigateTo('dashboard');
-            startPresenceTracking();
-            startPresenceUiSync();
-            startChatPoll();
-            updateAchievementNotificationBadge();
-            renderNotificationCenterV2(); updateConnectionUiV2();
-            setTimeout(maybeShowAchievementNotification, 350);
+            if (currentUser?.role === 'guest') {
+                navigateTo('games');
+                updateConnectionUiV2();
+            } else {
+                navigateTo('dashboard');
+                startPresenceTracking();
+                startPresenceUiSync();
+                startChatPoll();
+                updateAchievementNotificationBadge();
+                renderNotificationCenterV2(); updateConnectionUiV2();
+                setTimeout(maybeShowAchievementNotification, 350);
+            }
         }, 600);
     }
 
     // ===== UPDATE UI FOR ROLE =====
     function updateUIForRole() {
+        const isGuest = currentUser?.role === 'guest';
+        document.body.classList.toggle('guest-mode', isGuest);
+        navItems.forEach(item => {
+            if (isGuest) item.classList.toggle('hidden', item.dataset.page !== 'games');
+            else if (!item.classList.contains('admin-only')) item.classList.remove('hidden');
+        });
         const adminElements = document.querySelectorAll('.admin-only');
         adminElements.forEach(el => {
-            if (currentUser.role === 'admin') {
-                el.classList.remove('hidden');
-            } else {
-                el.classList.add('hidden');
-            }
+            if (currentUser.role === 'admin') el.classList.remove('hidden');
+            else el.classList.add('hidden');
         });
+        if ($('notification-bell')) $('notification-bell').classList.toggle('hidden', isGuest);
     }
 
     // ===== TOPBAR =====
     function updateTopbar() {
-        topbarCallsign.textContent = currentUser.callsign;
-        topbarRole.textContent = currentUser.role === 'admin' ? 'ADMIN' : 'OPERADOR';
+        topbarCallsign.textContent = currentUser.callsign || currentUser.name || 'Convidado';
+        topbarRole.textContent = currentUser.role === 'admin' ? 'ADMIN' : currentUser.role === 'guest' ? 'CONVIDADO' : 'OPERADOR';
         topbarRole.className = `role-badge ${currentUser.role}`;
     }
 
@@ -724,6 +782,7 @@
     let activePageName = '';
     let lastNavigationAt = 0;
     function navigateTo(page, forceRefresh = false) {
+        if (currentUser?.role === 'guest' && page !== 'games') page = 'games';
         const now = performance.now();
         // Ignore accidental double taps on the same sidebar item. This also avoids
         // rebuilding large lists repeatedly on slower phones.
@@ -815,12 +874,17 @@
 
     // ===== LOGOUT =====
     btnLogout.addEventListener('click', async () => {
+        const wasGuest = currentUser?.role === 'guest';
         stopPresenceUiSync();
         stopPresenceTracking(false);
-        await pushPresence(false);
-        addActivity(`${currentUser.callsign} saiu`);
+        if (!wasGuest) {
+            await pushPresence(false);
+            addActivity(`${currentUser.callsign} saiu`);
+        }
         await window.AsgardCloud?.removeSession();
+        if (wasGuest) localStorage.removeItem('asgard_guest_name');
         currentUser = null;
+        document.body.classList.remove('guest-mode');
         stopChatPoll();
 
         loginCallsign.value = '';
@@ -2483,16 +2547,19 @@
             const isConfirmed = confirmedIds.includes(currentUser.id);
 
             // Build confirmed members list
+            const guestConfirmations = getStore('asgard_guest_confirmations') || [];
             const confirmedMembers = confirmedIds.map(uid => {
                 const u = allUsers.find(u => u.id === uid);
+                const guest = guestConfirmations.find(x => String(x.gameId) === String(g.id) && String(x.userId) === String(uid));
                 const isCheckedIn = checkedInIds.includes(uid);
-                const callsign = u ? u.callsign : '?';
+                const callsign = u ? u.callsign : (guest?.name || 'Convidado');
                 const name = u ? u.name : '';
+                const isGuestEntry = !u && !!guest;
                 const isAdmin = currentUser.role === 'admin';
                 return `
                     <div class="confirmed-member ${isCheckedIn ? 'checked-in' : ''}">
                         <div class="confirmed-member-info">
-                            <span class="confirmed-member-callsign">${escapeHtml(callsign)}</span>
+                            <span class="confirmed-member-callsign">${escapeHtml(callsign)}${isGuestEntry ? '<span class="guest-confirmed-badge">Convidado</span>' : ''}</span>
                             ${name ? `<span class="confirmed-member-name">${escapeHtml(name)}</span>` : ''}
                         </div>
                         <div class="confirmed-member-status">
@@ -2570,9 +2637,9 @@
         if (game.completed) { showToast('Esta operação já foi concluída.', 'info'); return; }
         try {
             if (window.AsgardCloud?.toggleGameConfirmation) {
-                const confirmedNow = await window.AsgardCloud.toggleGameConfirmation(gameId);
+                const confirmedNow = await window.AsgardCloud.toggleGameConfirmation(gameId, currentUser.role === 'guest' ? currentUser.name : '');
                 if (confirmedNow) {
-                    addActivity(`${currentUser.callsign} confirmou presença em ${game.title}`);
+                    if (currentUser.role !== 'guest') addActivity(`${currentUser.callsign} confirmou presença em ${game.title}`);
                     showToast('Presença confirmada!', 'success');
                 } else {
                     showToast('Presença cancelada', 'info');
