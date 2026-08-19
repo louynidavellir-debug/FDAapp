@@ -214,6 +214,7 @@
     const achievementUnlockedModal = $('achievement-unlocked-modal');
     const achievementUnlockedBadge = $('achievement-unlocked-badge');
     const achievementUnlockedTitle = $('achievement-unlocked-title');
+    const achievementUnlockedRarity = $('achievement-unlocked-rarity');
     const achievementUnlockedDescription = $('achievement-unlocked-description');
     const btnViewAchievement = $('btn-view-achievement');
     const btnCloseAchievementUnlocked = $('btn-close-achievement-unlocked');
@@ -1482,29 +1483,68 @@
         })).catch(() => {});
     }
 
+    const ACHIEVEMENT_RARITY_META = {
+        comum: { label:'COMUM' },
+        incomum: { label:'INCOMUM' },
+        rara: { label:'RARA' },
+        epica: { label:'ÉPICA' },
+        lendaria: { label:'LENDÁRIA' }
+    };
+
+    function achievementAnimationSeenKey(notificationId) {
+        return `asgard_achievement_animation_seen_${currentUser?.id || 'anon'}_${notificationId || ''}`;
+    }
+
+    function seedAchievementParticles() {
+        const host = achievementUnlockedModal?.querySelector('.achievement-unlocked-particles');
+        if (!host) return;
+        host.innerHTML = '';
+        const total = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ? 0 : 28;
+        for (let i = 0; i < total; i++) {
+            const p = document.createElement('i');
+            const angle = (Math.PI * 2 * i / total) + ((i % 3) * .11);
+            const distance = 110 + (i % 6) * 24;
+            p.style.setProperty('--tx', `${Math.cos(angle) * distance}px`);
+            p.style.setProperty('--ty', `${Math.sin(angle) * distance}px`);
+            p.style.setProperty('--delay', `${(i % 8) * 28}ms`);
+            p.style.setProperty('--size', `${2 + (i % 4)}px`);
+            host.appendChild(p);
+        }
+    }
+
     function maybeShowAchievementNotification() {
         updateAchievementNotificationBadge();
         if (!currentUser || achievementNotificationBusy || !achievementUnlockedModal?.classList.contains('hidden')) return;
         const unread = getUnreadAchievementNotifications();
         if (!unread.length) return;
-        const n = unread[0];
+        const n = unread.find(item => !localStorage.getItem(achievementAnimationSeenKey(item.id)));
+        if (!n) return;
         activeAchievementNotification = n;
         const achievement = (getStore(DB_ACHIEVEMENTS) || []).find(a => a.id === n.achievementId);
         const title = achievement?.title || n.title || 'Nova conquista';
         const description = achievement?.description || n.description || 'Você recebeu uma nova insígnia.';
         const badge = achievement?.badge || '';
+        const rarity = String(achievement?.rarity || n.rarity || 'comum').toLowerCase();
+        const rarityMeta = ACHIEVEMENT_RARITY_META[rarity] || ACHIEVEMENT_RARITY_META.comum;
         achievementUnlockedTitle.textContent = title;
+        if (achievementUnlockedRarity) achievementUnlockedRarity.textContent = rarityMeta.label;
         achievementUnlockedDescription.textContent = description;
         achievementUnlockedBadge.innerHTML = badge
             ? `<img src="${badge}" alt="Insígnia ${escapeHtml(title)}">`
             : '<span>🏅</span>';
+        achievementUnlockedModal.dataset.rarity = rarity in ACHIEVEMENT_RARITY_META ? rarity : 'comum';
         n.title = title;
         n.description = description;
+        localStorage.setItem(achievementAnimationSeenKey(n.id), new Date().toISOString());
+        seedAchievementParticles();
         achievementUnlockedModal.classList.remove('hidden');
+        achievementUnlockedModal.classList.remove('achievement-animation-restart');
+        void achievementUnlockedModal.offsetWidth;
+        achievementUnlockedModal.classList.add('achievement-animation-restart');
         showAchievementSystemNotification(n);
     }
 
-    async function markActiveAchievementNotificationRead(openAchievements = false) {
+    async function markActiveAchievementNotificationRead(targetPage = null) {
         const n = activeAchievementNotification;
         if (!n || achievementNotificationBusy) return;
         achievementNotificationBusy = true;
@@ -1524,18 +1564,24 @@
             console.error('[Achievement notification]', err);
         } finally {
             achievementUnlockedModal?.classList.add('hidden');
+            achievementUnlockedModal?.classList.remove('achievement-animation-restart');
             activeAchievementNotification = null;
             achievementNotificationBusy = false;
             updateAchievementNotificationBadge();
-            if (openAchievements) navigateTo('achievements');
+            if (targetPage === 'profile') {
+                viewedProfileUserId = null;
+                navigateTo('profile');
+            } else if (targetPage === 'achievements') {
+                navigateTo('achievements');
+            }
             setTimeout(maybeShowAchievementNotification, 180);
         }
     }
 
-    if (btnCloseAchievementUnlocked) btnCloseAchievementUnlocked.addEventListener('click', () => markActiveAchievementNotificationRead(false));
-    if (btnViewAchievement) btnViewAchievement.addEventListener('click', () => markActiveAchievementNotificationRead(true));
+    if (btnCloseAchievementUnlocked) btnCloseAchievementUnlocked.addEventListener('click', () => markActiveAchievementNotificationRead(null));
+    if (btnViewAchievement) btnViewAchievement.addEventListener('click', () => markActiveAchievementNotificationRead('profile'));
     if (achievementUnlockedModal) achievementUnlockedModal.addEventListener('click', e => {
-        if (e.target === achievementUnlockedModal) markActiveAchievementNotificationRead(false);
+        if (e.target === achievementUnlockedModal) markActiveAchievementNotificationRead(null);
     });
 
     function getAchievementBadgeMarkup(achievement, className = '') {

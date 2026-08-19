@@ -996,16 +996,23 @@
     </div>
 
     <!-- SPECIAL ACHIEVEMENT NOTIFICATION -->
-    <div id="achievement-unlocked-modal" class="modal hidden achievement-unlocked-modal">
+    <div id="achievement-unlocked-modal" class="modal hidden achievement-unlocked-modal" data-rarity="comum" aria-live="assertive">
+        <div class="achievement-unlocked-scene" aria-hidden="true">
+            <div class="achievement-unlocked-flare"></div>
+            <div class="achievement-unlocked-ring ring-one"></div>
+            <div class="achievement-unlocked-ring ring-two"></div>
+            <div class="achievement-unlocked-particles"></div>
+        </div>
         <div class="modal-content achievement-unlocked-content">
             <div class="achievement-unlocked-glow"></div>
-            <div class="achievement-unlocked-kicker">🏆 NOVA CONQUISTA DESBLOQUEADA</div>
+            <div class="achievement-unlocked-kicker">CONQUISTA DESBLOQUEADA</div>
             <div id="achievement-unlocked-badge" class="achievement-unlocked-badge"><span>🏅</span></div>
             <h2 id="achievement-unlocked-title">Nova conquista</h2>
+            <div id="achievement-unlocked-rarity" class="achievement-unlocked-rarity">COMUM</div>
             <p id="achievement-unlocked-description"></p>
             <div class="modal-actions achievement-unlocked-actions">
-                <button class="btn-primary" id="btn-view-achievement">Ver conquistas</button>
-                <button class="btn-secondary" id="btn-close-achievement-unlocked">Entendi</button>
+                <button class="btn-primary" id="btn-view-achievement">Ver no perfil</button>
+                <button class="btn-secondary" id="btn-close-achievement-unlocked">Fechar</button>
             </div>
         </div>
     </div>
