@@ -195,10 +195,15 @@
 
         // Fundos de recompensa: liberados automaticamente quando a conquista vinculada é recebida.
         { id:'reward-lobo-asgard', name:'Lobo de Asgard', subtitle:'Recompensa de conquista', icon:'🐺', category:'achievement', unlockTitle:'Lobo de Asgard' },
+        { id:'reward-berserker', name:'Berserker', subtitle:'Recompensa de conquista', icon:'🪓', category:'achievement', unlockTitle:'Berserker' },
         { id:'reward-cacador-noturno', name:'Caçador Noturno', subtitle:'Recompensa de conquista', icon:'🌑', category:'achievement', unlockTitle:'Caçador Noturno' },
+        { id:'reward-guardiao-dos-caidos', name:'Guardião dos Caídos', subtitle:'Recompensa de conquista', icon:'🛡', category:'achievement', unlockTitle:'Guardião dos Caídos' },
         { id:'reward-ceifador', name:'Ceifador', subtitle:'Recompensa de conquista', icon:'☠', category:'achievement', unlockTitle:'Ceifador' },
         { id:'reward-olho-odin', name:'Olho de Odin', subtitle:'Recompensa de conquista', icon:'◉', category:'achievement', unlockTitle:'Olho de Odin' },
         { id:'reward-100-baixas', name:'100 Baixas', subtitle:'Recompensa de conquista', icon:'🏅', category:'achievement', unlockTitle:'100 Baixas' },
+        { id:'reward-50-operacoes', name:'50 Operações', subtitle:'Recompensa de conquista', icon:'⚔', category:'achievement', unlockTitle:'50 Operações' },
+        { id:'reward-25-operacoes', name:'25 Operações', subtitle:'Recompensa de conquista', icon:'🛡', category:'achievement', unlockTitle:'25 Operações' },
+        { id:'reward-voz-de-asgard', name:'Voz de Asgard', subtitle:'Recompensa de conquista', icon:'📻', category:'achievement', unlockTitle:'Voz de Asgard' },
         { id:'reward-primeira-vitoria', name:'Primeira Vitória', subtitle:'Recompensa de conquista', icon:'🏆', category:'achievement', unlockTitle:'Primeira Vitoria' },
         { id:'reward-veterano-asgard', name:'Veterano de Asgard', subtitle:'Recompensa de conquista', icon:'⚔', category:'achievement', unlockTitle:'Veterano de Asgard' }
     ];

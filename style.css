@@ -4050,6 +4050,13 @@ body::before{
 .profile-card[data-profile-bg="reward-primeira-vitoria"],.profile-background-thumb[data-profile-bg="reward-primeira-vitoria"],.profile-background-preview[data-profile-bg="reward-primeira-vitoria"]{background-image:linear-gradient(180deg,rgba(0,6,8,.04),rgba(0,4,6,.29)),url('./assets/profile-backgrounds/primeira-vitoria.webp')!important;background-size:cover!important;background-position:center top!important}
 .profile-card[data-profile-bg="reward-veterano-asgard"],.profile-background-thumb[data-profile-bg="reward-veterano-asgard"],.profile-background-preview[data-profile-bg="reward-veterano-asgard"]{background-image:linear-gradient(180deg,rgba(4,4,4,.04),rgba(2,2,2,.31)),url('./assets/profile-backgrounds/veterano-de-asgard.webp')!important;background-size:cover!important;background-position:center top!important}
 
+
+.profile-card[data-profile-bg="reward-berserker"],.profile-background-thumb[data-profile-bg="reward-berserker"],.profile-background-preview[data-profile-bg="reward-berserker"]{background-image:linear-gradient(180deg,rgba(8,0,0,.04),rgba(4,0,0,.28)),url('./assets/profile-backgrounds/berserker.webp')!important;background-size:cover!important;background-position:center top!important}
+.profile-card[data-profile-bg="reward-guardiao-dos-caidos"],.profile-background-thumb[data-profile-bg="reward-guardiao-dos-caidos"],.profile-background-preview[data-profile-bg="reward-guardiao-dos-caidos"]{background-image:linear-gradient(180deg,rgba(8,0,0,.04),rgba(4,0,0,.28)),url('./assets/profile-backgrounds/guardiao-dos-caidos.webp')!important;background-size:cover!important;background-position:center top!important}
+.profile-card[data-profile-bg="reward-50-operacoes"],.profile-background-thumb[data-profile-bg="reward-50-operacoes"],.profile-background-preview[data-profile-bg="reward-50-operacoes"]{background-image:linear-gradient(180deg,rgba(3,0,8,.04),rgba(2,0,5,.29)),url('./assets/profile-backgrounds/50-operacoes.webp')!important;background-size:cover!important;background-position:center top!important}
+.profile-card[data-profile-bg="reward-25-operacoes"],.profile-background-thumb[data-profile-bg="reward-25-operacoes"],.profile-background-preview[data-profile-bg="reward-25-operacoes"]{background-image:linear-gradient(180deg,rgba(3,0,8,.04),rgba(2,0,5,.29)),url('./assets/profile-backgrounds/25-operacoes.webp')!important;background-size:cover!important;background-position:center top!important}
+.profile-card[data-profile-bg="reward-voz-de-asgard"],.profile-background-thumb[data-profile-bg="reward-voz-de-asgard"],.profile-background-preview[data-profile-bg="reward-voz-de-asgard"]{background-image:linear-gradient(180deg,rgba(3,0,8,.04),rgba(2,0,5,.29)),url('./assets/profile-backgrounds/voz-de-asgard.webp')!important;background-size:cover!important;background-position:center top!important}
+
 .profile-card[data-profile-bg^="reward-"]::after{background:linear-gradient(180deg,rgba(2,7,10,.16),rgba(2,7,10,.42) 46%,rgba(2,7,10,.76))}
 .profile-card[data-profile-bg^="reward-"] .profile-details,.profile-card[data-profile-bg^="reward-"] .operator-progress-panel,.profile-card[data-profile-bg^="reward-"] .profile-equipment,.profile-card[data-profile-bg^="reward-"] .profile-achievements-panel{background:rgba(3,8,11,.70)!important;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
 
@@ -4057,4 +4064,260 @@ body::before{
     .profile-background-setting{align-items:stretch;flex-direction:column}.profile-background-setting .btn-secondary{width:100%}
     .profile-background-gallery{grid-template-columns:1fr;max-height:49vh}.profile-background-option{grid-template-columns:86px 1fr 24px}
     .profile-background-thumb{height:58px}.profile-background-preview{height:92px;padding:14px}
+}
+
+/* ========================================================================== 
+   CROSS-PLATFORM RESPONSIVE PASS v7 — MOBILE • TABLET • DESKTOP
+   Preserves app logic and improves layout, touch ergonomics and readability.
+   ========================================================================== */
+:root{
+  --content-max: 1560px;
+  --page-pad-x: clamp(14px, 2.2vw, 34px);
+  --page-pad-y: clamp(14px, 2vw, 28px);
+  --touch-min: 44px;
+}
+html{
+  -webkit-text-size-adjust:100%;
+  text-size-adjust:100%;
+  background:var(--bg-primary);
+}
+body{
+  overscroll-behavior:none;
+  min-width:320px;
+}
+button,input,select,textarea{font:inherit}
+button,.nav-item,.filter-btn,.admin-tab,.profile-background-option{-webkit-tap-highlight-color:transparent}
+
+/* App shell / safe areas */
+#app-screen{
+  width:100%;
+  height:100dvh;
+  min-height:100svh;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+#main-content{min-width:0;min-height:0}
+.topbar{
+  flex:0 0 var(--topbar-height);
+  padding-left:max(18px,env(safe-area-inset-left));
+  padding-right:max(18px,env(safe-area-inset-right));
+}
+.page{
+  min-width:0;
+  padding:var(--page-pad-y) var(--page-pad-x) max(30px,env(safe-area-inset-bottom));
+  scroll-padding-bottom:32px;
+  overscroll-behavior-y:contain;
+}
+.page>*{max-width:var(--content-max);margin-left:auto;margin-right:auto}
+.page>.modal,.page>.toast,.page>.sidebar-overlay{max-width:none}
+
+/* Desktop navigation: calm, readable, scroll-safe */
+.sidebar{width:clamp(228px,17vw,272px);flex:0 0 clamp(228px,17vw,272px)}
+.sidebar-nav{overflow-y:auto;overflow-x:hidden;min-height:0;padding-bottom:14px}
+.nav-item{min-height:44px;padding:10px 14px;gap:10px}
+.nav-label{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.topbar-actions{min-width:0;display:flex;align-items:center;gap:8px}
+.topbar-user{min-width:0}
+.topbar-callsign{max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* Fluid content grids */
+.dashboard-grid{grid-template-columns:repeat(12,minmax(0,1fr));gap:clamp(12px,1.4vw,18px)}
+.dashboard-grid>.dash-card{min-width:0}
+.games-list,.members-list,.admin-history-list,.admin-audit-list{min-width:0}
+.product-grid{grid-template-columns:repeat(auto-fit,minmax(min(100%,250px),1fr));gap:clamp(12px,1.5vw,18px)}
+.arsenal-gallery{grid-template-columns:repeat(auto-fit,minmax(min(100%,230px),1fr));gap:clamp(11px,1.4vw,17px)}
+.achievements-grid{grid-template-columns:repeat(auto-fit,minmax(min(100%,270px),1fr));gap:clamp(12px,1.4vw,18px)}
+.admin-overview-grid{grid-template-columns:repeat(auto-fit,minmax(180px,1fr))}
+.diagnostic-grid{grid-template-columns:repeat(auto-fit,minmax(210px,1fr))}
+
+/* Forms and controls */
+.input-group input,.input-group select,.input-group textarea,.admin-search,.arsenal-tools input,.arsenal-tools select{
+  max-width:100%;
+}
+.btn-primary,.btn-secondary,.btn-danger,.btn-logout,.filter-btn,.admin-tab{
+  min-height:var(--touch-min);
+}
+button:disabled,.btn-primary:disabled,.btn-secondary:disabled,.btn-danger:disabled{
+  cursor:not-allowed!important;
+  opacity:.48!important;
+  transform:none!important;
+  box-shadow:none!important;
+}
+
+/* Cards: prevent overflow from long names / metadata */
+.game-card,.member-card,.achievement-card,.arsenal-card,.profile-card,.admin-history-card,.admin-audit-item{min-width:0}
+.game-title,.member-info,.achievement-card-body,.arsenal-card-body,.profile-details{min-width:0}
+.game-title,.profile-callsign,.achievement-card-body h3{overflow-wrap:anywhere}
+.game-meta{flex-wrap:wrap;row-gap:7px}
+.game-actions{flex-wrap:wrap}
+.game-actions>*{max-width:100%}
+
+/* Profile scales without becoming excessively wide */
+.profile-container{width:min(100%,1080px);margin-inline:auto}
+.profile-card{width:100%;max-width:1080px;margin-inline:auto}
+.profile-card[data-profile-bg]{background-attachment:scroll!important;background-position:center top!important}
+.profile-background-modal-content{width:min(94vw,880px)!important}
+.profile-background-gallery{grid-template-columns:repeat(2,minmax(0,1fr))}
+.profile-background-option{min-width:0}
+.profile-background-option-copy{min-width:0}
+.profile-background-option-copy strong,.profile-background-option-copy small{overflow-wrap:anywhere}
+
+/* Chat takes available viewport and remains usable with virtual keyboards */
+.chat-container{
+  height:calc(100dvh - var(--topbar-height) - (var(--page-pad-y) * 2));
+  min-height:420px;
+  max-height:900px;
+}
+.chat-messages{min-height:0;overscroll-behavior:contain}
+.chat-input-area{padding-bottom:max(10px,env(safe-area-inset-bottom))}
+.chat-msg-content{max-width:min(78%,720px)}
+
+/* Modals: desktop centered, mobile safe and scrollable */
+.modal{padding:max(12px,env(safe-area-inset-top)) max(12px,env(safe-area-inset-right)) max(12px,env(safe-area-inset-bottom)) max(12px,env(safe-area-inset-left));overflow:auto}
+.modal-content{width:min(92vw,640px);max-height:min(88dvh,900px);overflow:auto;margin:auto}
+.modal-actions{position:sticky;bottom:-1px;padding-top:12px;background:linear-gradient(180deg,transparent 0,#09151b 24%)}
+
+/* Tablet / compact desktop */
+@media (min-width:769px) and (max-width:1180px){
+  :root{--sidebar-width:224px;--page-pad-x:20px}
+  .sidebar{width:224px;flex-basis:224px}
+  .sidebar-header{padding:16px 12px}
+  .sidebar-header h2{letter-spacing:2.4px;font-size:.76rem}
+  .nav-item{padding:10px 11px;font-size:.88rem}
+  .nav-icon{width:24px;font-size:1.08rem}
+  .dashboard-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .dashboard-grid>.dash-card{grid-column:auto!important}
+  .admin-overview-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .diagnostic-counts{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .profile-background-gallery{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+
+/* Mobile / phone */
+@media (max-width:768px){
+  :root{--topbar-height:58px;--page-pad-x:12px;--page-pad-y:13px}
+  #app-screen{display:block}
+  #main-content{width:100%;height:100%;min-height:0}
+  .sidebar{
+    width:min(86vw,304px);height:100dvh;flex-basis:auto;
+    padding-left:env(safe-area-inset-left,0px);
+    padding-bottom:env(safe-area-inset-bottom,0px);
+  }
+  .sidebar-header{padding-top:max(16px,env(safe-area-inset-top))}
+  .sidebar-nav{padding:10px 9px 16px}
+  .nav-item{min-height:48px;border-radius:11px;padding:11px 13px}
+  .btn-logout{min-height:48px}
+  .topbar{position:sticky;top:0;z-index:170;height:var(--topbar-height);min-height:var(--topbar-height);gap:9px;padding-left:max(9px,env(safe-area-inset-left));padding-right:max(9px,env(safe-area-inset-right));backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
+  .btn-menu{width:44px;height:44px;display:grid;place-items:center;flex:0 0 44px;border-radius:11px}
+  .topbar-title{font-size:clamp(.76rem,3.5vw,.9rem);letter-spacing:1.1px;max-width:none;min-width:0}
+  .topbar-callsign{display:none}
+  .role-badge{font-size:.56rem;letter-spacing:1px;padding:3px 7px}
+  .page{height:calc(100dvh - var(--topbar-height));padding-bottom:max(26px,env(safe-area-inset-bottom))}
+  .page>*{width:100%}
+
+  .dashboard-grid{grid-template-columns:1fr!important}
+  .dashboard-grid>.dash-card{grid-column:1!important;width:100%}
+  .dashboard-operator-hero{grid-template-columns:1fr!important}
+  .stat-row{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+  .stat-item{min-width:0}
+
+  .games-header,.loja-header,.achievements-header,.arsenal-header,.contribuicao-header,.admin-section-heading{align-items:stretch!important}
+  .games-filter,.admin-panel-tabs{margin-left:-2px;margin-right:-2px;padding-left:2px;padding-right:2px;scroll-snap-type:x proximity}
+  .filter-btn,.admin-tab{scroll-snap-align:start;flex:0 0 auto}
+  .game-card{padding:14px!important}
+  .game-card-header{align-items:flex-start;gap:9px;flex-wrap:wrap}
+  .game-meta{display:grid;grid-template-columns:1fr;gap:6px}
+  .game-actions{display:grid!important;grid-template-columns:1fr!important;gap:8px;width:100%}
+  .game-actions button,.game-actions .btn-primary,.game-actions .btn-secondary,.game-actions .btn-danger{width:100%;min-height:46px}
+  .game-confirmed-list{max-height:240px;overflow:auto}
+
+  .product-grid,.achievements-grid,.arsenal-gallery{grid-template-columns:1fr!important}
+  .arsenal-tools{display:grid!important;grid-template-columns:1fr!important;gap:8px;width:100%}
+  .arsenal-tools input,.arsenal-tools select{width:100%!important;min-height:46px}
+
+  .profile-container,.profile-card{max-width:100%}
+  .profile-card{padding:16px!important;border-radius:17px!important}
+  .profile-avatar-wrapper{margin-inline:auto}
+  .profile-callsign{font-size:clamp(1.35rem,7vw,1.8rem)!important;letter-spacing:1.7px!important}
+  .profile-row{grid-template-columns:1fr!important;gap:3px!important;align-items:start!important}
+  .profile-actions{display:grid;grid-template-columns:1fr;gap:8px}
+  .profile-actions button{width:100%;min-height:46px}
+  .profile-achievements-list{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+  .profile-badge{width:100%;min-width:0}
+
+  .profile-background-modal-content{width:calc(100vw - 16px)!important;max-height:92dvh!important}
+  .profile-background-gallery{grid-template-columns:1fr!important;max-height:54dvh}
+  .profile-background-option{grid-template-columns:82px minmax(0,1fr) 24px!important;gap:9px}
+  .profile-background-thumb{width:82px;height:58px}
+  .profile-background-preview{height:96px;padding:12px}
+
+  .admin-panel-header{align-items:flex-start!important;gap:12px}
+  .admin-overview-grid,.diagnostic-grid{grid-template-columns:1fr 1fr!important}
+  .admin-quick-actions,.diagnostic-actions{display:grid;grid-template-columns:1fr;gap:8px}
+  .admin-quick-actions button,.diagnostic-actions button{width:100%}
+  .admin-history-card-head{flex-direction:column;gap:5px}
+  .admin-history-stats{gap:8px}
+  .diagnostic-counts{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+
+  .contribuicao-info,.contribuicao-stats{grid-template-columns:1fr!important}
+  .contribuicao-member-card{padding:12px!important}
+  .contribuicao-member-top,.contribuicao-member-bottom{gap:9px;flex-wrap:wrap}
+  .contribuicao-status-select{width:100%;min-height:44px}
+
+  .chat-container{height:calc(100dvh - var(--topbar-height) - 26px);min-height:0;max-height:none;border-radius:14px!important}
+  .chat-msg-content{max-width:86%}
+  .chat-msg-avatar{width:30px;height:30px;flex:0 0 30px}
+  .chat-input-area{gap:7px;padding-left:9px!important;padding-right:9px!important}
+  .chat-input-area input{min-width:0;height:46px}
+  .btn-send{width:46px;height:46px;flex:0 0 46px}
+
+  .modal{align-items:flex-end!important;padding:0!important}
+  .modal-content{width:100%!important;max-width:none!important;max-height:92dvh!important;margin:auto 0 0!important;border-radius:20px 20px 0 0!important;padding-bottom:max(16px,env(safe-area-inset-bottom))!important}
+  .modal-actions{display:grid!important;grid-template-columns:1fr!important;gap:8px;bottom:calc(-1 * env(safe-area-inset-bottom,0px))}
+  .modal-actions button{width:100%;min-height:46px}
+  .toast{width:min(calc(100vw - 24px),440px);bottom:max(14px,env(safe-area-inset-bottom))}
+}
+
+/* Narrow phones */
+@media (max-width:420px){
+  :root{--page-pad-x:9px}
+  .topbar{gap:6px}
+  .topbar-actions{gap:4px}
+  .role-badge{display:none}
+  .stat-row{grid-template-columns:1fr 1fr}
+  .admin-overview-grid{grid-template-columns:1fr!important}
+  .diagnostic-counts{grid-template-columns:1fr 1fr!important}
+  .profile-achievements-list{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .profile-background-option{grid-template-columns:72px minmax(0,1fr) 22px!important;padding:7px}
+  .profile-background-thumb{width:72px;height:54px}
+  .achievement-badge-wrap{height:175px}
+  .achievement-badge-image{width:135px;height:135px}
+}
+
+/* Landscape phones: maximize useful height */
+@media (max-height:520px) and (orientation:landscape) and (max-width:950px){
+  :root{--topbar-height:52px;--page-pad-y:8px}
+  .topbar{min-height:52px;height:52px}
+  .page{height:calc(100dvh - 52px);padding-top:8px;padding-bottom:10px}
+  .sidebar{width:min(72vw,286px)}
+  .sidebar-header{padding:8px 12px}.sidebar-header .brand-logo,.mini-shield{width:36px!important}.sidebar-header h2{margin-top:3px}
+  .nav-item{min-height:42px;padding:8px 12px}
+  .chat-container{height:calc(100dvh - 52px - 16px)}
+  .modal-content{max-height:96dvh!important}
+  .profile-background-gallery{max-height:58dvh}
+}
+
+/* Large desktop / ultrawide: avoid stretched cards */
+@media (min-width:1500px){
+  :root{--content-max:1680px;--page-pad-x:38px}
+  .dashboard-grid{gap:20px}
+  .games-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+  .game-card{height:100%}
+  .product-grid{grid-template-columns:repeat(auto-fit,minmax(270px,1fr))}
+  .arsenal-gallery{grid-template-columns:repeat(auto-fit,minmax(250px,1fr))}
+}
+
+/* Keyboard / accessibility polish */
+:focus-visible{outline:2px solid rgba(39,229,247,.85);outline-offset:2px}
+@media (hover:none){
+  .dash-card:hover,.game-card:hover,.member-card:hover,.achievement-card:hover,.arsenal-card:hover,.store-product-card:hover,.admin-overview-card:hover,.admin-history-card:hover,.admin-alert-card:hover,.profile-background-option:hover{transform:none!important}
 }
