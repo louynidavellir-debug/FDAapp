@@ -1,6 +1,6 @@
-const CACHE_NAME = 'asgard-v14-mobile-first-audit';
+const CACHE_NAME = 'asgard-v15-members-backgrounds';
 const ASSETS = [
-    './', './index.html', './style-v14.css', './app-v14.js', './cloud-v14.js', './firebase-config.js',
+    './', './index.html', './style-v15.css', './app-v15.js', './cloud-v15.js', './firebase-config.js',
     './manifest.json', './icons/icon-192-v17.png', './icons/icon-512-v17.png', './icons/logo-asgard.png',
     './assets/profile-backgrounds/lobo-de-asgard.webp', './assets/profile-backgrounds/cacador-noturno.webp',
     './assets/profile-backgrounds/ceifador.webp', './assets/profile-backgrounds/olho-de-odin.webp',
