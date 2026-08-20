@@ -3379,7 +3379,69 @@ body {
     .arsenal-tools input, .arsenal-tools select { width: 100%; }
     .arsenal-weapon-name { font-size: .8rem; }
 }
-\n\n/* ===== CONFIGURAÇÕES ===== */\n.settings-page-header {\n    display: flex;\n    align-items: center;\n    justify-content: space-between;\n    gap: 24px;\n    padding: 24px;\n    margin-bottom: 22px;\n    border: 1px solid rgba(0, 229, 255, .22);\n    background: linear-gradient(135deg, rgba(0, 229, 255, .08), rgba(0, 0, 0, .18));\n    border-radius: 14px;\n}\n.settings-page-header h2 { margin: 2px 0 6px; }\n.settings-page-header p { margin: 0; opacity: .72; }\n.settings-kicker {\n    font-size: .72rem;\n    letter-spacing: .22em;\n    color: #00e5ff;\n    font-weight: 700;\n}\n.settings-emblem {\n    width: 58px;\n    height: 58px;\n    display: grid;\n    place-items: center;\n    border: 1px solid rgba(0, 229, 255, .35);\n    border-radius: 50%;\n    font-size: 1.55rem;\n    box-shadow: inset 0 0 20px rgba(0, 229, 255, .08), 0 0 18px rgba(0, 229, 255, .08);\n}\n.settings-grid {\n    display: grid;\n    grid-template-columns: repeat(2, minmax(0, 1fr));\n    gap: 16px;\n}\n.settings-card {\n    display: flex;\n    gap: 16px;\n    align-items: flex-start;\n    padding: 20px;\n    border: 1px solid rgba(255,255,255,.08);\n    background: rgba(255,255,255,.025);\n    border-radius: 12px;\n}\n.settings-card-icon {\n    width: 42px;\n    height: 42px;\n    flex: 0 0 42px;\n    display: grid;\n    place-items: center;\n    border-radius: 10px;\n    background: rgba(0,229,255,.08);\n    border: 1px solid rgba(0,229,255,.18);\n}\n.settings-card h3 { margin: 0 0 6px; }\n.settings-card p { margin: 0; opacity: .68; line-height: 1.5; }\n@media (max-width: 700px) {\n    .settings-grid { grid-template-columns: 1fr; }\n    .settings-page-header { padding: 18px; }\n}\n
+
+
+/* ===== CONFIGURAÇÕES ===== */
+.settings-page-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+    padding: 24px;
+    margin-bottom: 22px;
+    border: 1px solid rgba(0, 229, 255, .22);
+    background: linear-gradient(135deg, rgba(0, 229, 255, .08), rgba(0, 0, 0, .18));
+    border-radius: 14px;
+}
+.settings-page-header h2 { margin: 2px 0 6px; }
+.settings-page-header p { margin: 0; opacity: .72; }
+.settings-kicker {
+    font-size: .72rem;
+    letter-spacing: .22em;
+    color: #00e5ff;
+    font-weight: 700;
+}
+.settings-emblem {
+    width: 58px;
+    height: 58px;
+    display: grid;
+    place-items: center;
+    border: 1px solid rgba(0, 229, 255, .35);
+    border-radius: 50%;
+    font-size: 1.55rem;
+    box-shadow: inset 0 0 20px rgba(0, 229, 255, .08), 0 0 18px rgba(0, 229, 255, .08);
+}
+.settings-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+}
+.settings-card {
+    display: flex;
+    gap: 16px;
+    align-items: flex-start;
+    padding: 20px;
+    border: 1px solid rgba(255,255,255,.08);
+    background: rgba(255,255,255,.025);
+    border-radius: 12px;
+}
+.settings-card-icon {
+    width: 42px;
+    height: 42px;
+    flex: 0 0 42px;
+    display: grid;
+    place-items: center;
+    border-radius: 10px;
+    background: rgba(0,229,255,.08);
+    border: 1px solid rgba(0,229,255,.18);
+}
+.settings-card h3 { margin: 0 0 6px; }
+.settings-card p { margin: 0; opacity: .68; line-height: 1.5; }
+@media (max-width: 700px) {
+    .settings-grid { grid-template-columns: 1fr; }
+    .settings-page-header { padding: 18px; }
+}
+
 
 /* ===== INSTALAÇÃO PWA EM CONFIGURAÇÕES ===== */
 .settings-card-content { min-width: 0; flex: 1; }
@@ -3417,7 +3479,9 @@ body {
 /* ===== CONQUISTAS / INSÍGNIAS ===== */
 .achievements-header{display:flex;align-items:flex-start;justify-content:space-between;gap:18px;margin-bottom:18px}.achievements-header h2{margin:0 0 6px}.achievements-subtitle{margin:0;color:var(--text-secondary,#8aa0aa);font-size:.92rem}.achievements-summary{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:0 0 18px;padding:12px 16px;border:1px solid rgba(0,229,255,.14);background:rgba(0,229,255,.035);border-radius:10px;color:#a9bcc4}.achievements-summary strong{color:#00e5ff}.achievements-summary-sep{opacity:.4}.achievements-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:18px}.achievement-card{position:relative;overflow:hidden;border:1px solid rgba(0,229,255,.15);background:linear-gradient(160deg,rgba(15,24,28,.96),rgba(5,10,12,.98));border-radius:14px;box-shadow:0 10px 28px rgba(0,0,0,.24);transition:.2s transform,.2s border-color}.achievement-card:hover{transform:translateY(-2px);border-color:rgba(0,229,255,.36)}.achievement-card.achievement-earned{border-color:rgba(36,214,116,.45);box-shadow:0 0 0 1px rgba(36,214,116,.08),0 12px 30px rgba(0,0,0,.3)}.achievement-badge-wrap{height:210px;background:radial-gradient(circle at 50% 42%,rgba(0,229,255,.12),transparent 55%),#050809;display:flex;align-items:center;justify-content:center;position:relative;cursor:zoom-in;border-bottom:1px solid rgba(255,255,255,.06)}.achievement-badge-image{width:155px;height:155px;object-fit:contain;filter:drop-shadow(0 0 12px rgba(0,229,255,.18))}.achievement-badge-placeholder{width:135px;height:135px;border:1px dashed rgba(0,229,255,.35);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:58px}.achievement-earned-ribbon{position:absolute;right:12px;top:12px;padding:5px 9px;border-radius:999px;background:rgba(36,214,116,.16);border:1px solid rgba(36,214,116,.5);color:#55e596;font:700 10px Orbitron,sans-serif;letter-spacing:.8px}.achievement-card-body{padding:17px}.achievement-card-body h3{margin:0 0 10px;color:#e8fbff;font-family:Orbitron,sans-serif;font-size:1rem;line-height:1.35}.achievement-card-body p{margin:0 0 15px;color:#9eb0b8;line-height:1.55;font-size:.9rem;min-height:42px}.achievement-awarded-count{font-size:.78rem;color:#62dff0;border-top:1px solid rgba(255,255,255,.06);padding-top:12px}.achievement-awarded-names{font-size:.76rem;color:#83949b;margin-top:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.achievement-awarded-names.muted{opacity:.7}.achievement-admin-actions{display:flex;gap:8px;padding:0 17px 17px;flex-wrap:wrap}.achievement-admin-actions button{flex:1;min-width:82px;padding:8px 10px;font-size:.75rem}.achievements-empty{grid-column:1/-1;text-align:center;padding:55px 20px;border:1px dashed rgba(0,229,255,.18);border-radius:14px;color:#8ba0a8}.achievements-empty-icon{font-size:52px;margin-bottom:10px}.achievements-empty h3{color:#d6f8fc;margin:0 0 8px}.achievement-badge-upload{display:flex;align-items:center;gap:14px;flex-wrap:wrap}.achievement-badge-preview{width:116px;height:116px;border:1px dashed rgba(0,229,255,.35);border-radius:14px;background:#060a0c;display:flex;align-items:center;justify-content:center;overflow:hidden;font-size:42px}.achievement-badge-preview img{width:100%;height:100%;object-fit:contain}.achievement-upload-btn{cursor:pointer;display:inline-flex;align-items:center;justify-content:center}.achievement-hint{display:block;color:#71838a;margin-top:7px}.achievement-members-modal-content{max-width:560px}.achievement-members-help{color:#899ca4;margin-top:-4px}.achievement-members-list{display:flex;flex-direction:column;gap:8px;max-height:50vh;overflow:auto;padding:4px 3px}.achievement-member-option{display:flex;align-items:center;gap:11px;padding:10px 12px;border:1px solid rgba(255,255,255,.07);border-radius:10px;background:rgba(255,255,255,.025);cursor:pointer}.achievement-member-option:hover{border-color:rgba(0,229,255,.28)}.achievement-member-option input{accent-color:#00e5ff;width:17px;height:17px}.achievement-member-avatar{width:36px;height:36px;border-radius:50%;border:1px solid rgba(0,229,255,.25);display:flex;align-items:center;justify-content:center;color:#00e5ff;font-weight:700;overflow:hidden;flex:0 0 auto}.achievement-member-avatar img{width:100%;height:100%;object-fit:cover}.achievement-member-label{display:flex;flex-direction:column;min-width:0;flex:1}.achievement-member-label strong{color:#e3f8fb;font-size:.88rem}.achievement-member-label small{color:#74888f;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.achievement-member-check{color:#45e18d;opacity:0;transition:.15s}.achievement-member-option:has(input:checked) .achievement-member-check{opacity:1}.profile-achievements-panel{margin-top:18px;padding-top:16px;border-top:1px solid rgba(0,229,255,.12)}.profile-achievements-title{font-family:Orbitron,sans-serif;font-size:.78rem;color:#9cecf5;margin-bottom:11px;text-transform:uppercase;letter-spacing:.8px}.profile-achievements-list{display:flex;gap:10px;flex-wrap:wrap}.profile-badge{border:1px solid rgba(0,229,255,.16);background:rgba(0,229,255,.03);border-radius:10px;width:84px;padding:8px 6px;cursor:pointer;color:#b9d7dc;display:flex;flex-direction:column;align-items:center;gap:6px}.profile-badge:hover{border-color:rgba(0,229,255,.4);background:rgba(0,229,255,.07)}.profile-badge img{width:54px;height:54px;object-fit:contain}.profile-badge>span{font-size:38px;height:54px;display:flex;align-items:center}.profile-badge small{font-size:.61rem;line-height:1.2;text-align:center;max-width:72px;overflow:hidden;text-overflow:ellipsis}.profile-achievements-empty{font-size:.8rem;color:#71858c}.achievement-modal-content{max-width:520px}
 @media(max-width:700px){.achievements-header{flex-direction:column}.achievements-header .btn-primary{width:100%}.achievements-grid{grid-template-columns:1fr}.achievement-badge-wrap{height:190px}.achievement-admin-actions button{min-width:calc(50% - 6px)}.achievement-admin-actions .achievement-delete-btn{flex-basis:100%}.achievement-members-list{max-height:46vh}}
-\n\n/* Chat: emojis */
+
+
+/* Chat: emojis */
 .chat-tools{display:flex;align-items:center;gap:7px;padding:8px 16px 0;background:var(--bg-secondary);position:relative;z-index:20}
 .chat-tool-btn{width:36px;height:34px;border:1px solid rgba(0,229,255,.18);border-radius:8px;background:rgba(0,229,255,.06);color:var(--text-primary);cursor:pointer;font-size:1rem;font-family:"Segoe UI Emoji","Apple Color Emoji","Noto Color Emoji",sans-serif}
 .chat-tool-btn:hover{border-color:var(--cyan);background:rgba(0,229,255,.14)}
@@ -3547,7 +3611,56 @@ body {
 }
 .announcement-admin-box textarea:focus { border-color: rgba(0,229,255,.6); box-shadow: 0 0 0 2px rgba(0,229,255,.08); }
 .announcement-admin-box .btn-primary { width: 100%; margin-top: 8px; }
-\n\n/* ===== PRESENCE VISUAL INDICATORS ===== */\n.stat-detail {\n    display: block;\n    margin-top: 3px;\n    font-size: .66rem;\n    color: var(--text-dim);\n    white-space: nowrap;\n}\n.member-presence {\n    display: inline-flex;\n    align-items: center;\n    gap: 6px;\n    min-width: 68px;\n    justify-content: flex-end;\n    font-size: .7rem;\n    font-weight: 700;\n    letter-spacing: .35px;\n}\n.member-presence.online { color: var(--success); }\n.member-presence.offline { color: var(--text-dim); }\n.profile-presence {\n    margin: 8px auto 14px;\n    width: fit-content;\n    display: flex;\n    align-items: center;\n    justify-content: center;\n    gap: 7px;\n    padding: 6px 10px;\n    border-radius: 999px;\n    border: 1px solid rgba(255,255,255,.08);\n    background: rgba(255,255,255,.025);\n    font-size: .76rem;\n    font-weight: 700;\n}\n.profile-presence .presence-dot {\n    width: 9px;\n    height: 9px;\n    border-radius: 50%;\n    background: var(--text-dim);\n}\n.profile-presence.online { color: var(--success); border-color: rgba(0,230,118,.22); }\n.profile-presence.online .presence-dot { background: var(--success); box-shadow: 0 0 9px rgba(0,230,118,.55); }\n.profile-presence.offline { color: var(--text-dim); }\n@media (max-width: 600px) {\n    .member-presence { min-width: 58px; font-size: .64rem; gap: 5px; }\n    .member-status { width: 8px; height: 8px; }\n}\n
+
+
+/* ===== PRESENCE VISUAL INDICATORS ===== */
+.stat-detail {
+    display: block;
+    margin-top: 3px;
+    font-size: .66rem;
+    color: var(--text-dim);
+    white-space: nowrap;
+}
+.member-presence {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 68px;
+    justify-content: flex-end;
+    font-size: .7rem;
+    font-weight: 700;
+    letter-spacing: .35px;
+}
+.member-presence.online { color: var(--success); }
+.member-presence.offline { color: var(--text-dim); }
+.profile-presence {
+    margin: 8px auto 14px;
+    width: fit-content;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    padding: 6px 10px;
+    border-radius: 999px;
+    border: 1px solid rgba(255,255,255,.08);
+    background: rgba(255,255,255,.025);
+    font-size: .76rem;
+    font-weight: 700;
+}
+.profile-presence .presence-dot {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: var(--text-dim);
+}
+.profile-presence.online { color: var(--success); border-color: rgba(0,230,118,.22); }
+.profile-presence.online .presence-dot { background: var(--success); box-shadow: 0 0 9px rgba(0,230,118,.55); }
+.profile-presence.offline { color: var(--text-dim); }
+@media (max-width: 600px) {
+    .member-presence { min-width: 58px; font-size: .64rem; gap: 5px; }
+    .member-status { width: 8px; height: 8px; }
+}
+
 
 /* ===== EXPERIENCE V2 ===== */
 .topbar-actions{display:flex;align-items:center;gap:10px;margin-left:auto}.notification-bell{position:relative;width:42px;height:42px;border:1px solid rgba(0,229,255,.25);border-radius:12px;background:rgba(4,14,22,.72);color:#dffcff;font-size:19px;cursor:pointer}.notification-bell:hover{border-color:#00e5ff;box-shadow:0 0 18px rgba(0,229,255,.18)}.notification-count{position:absolute;right:-5px;top:-6px;min-width:19px;height:19px;padding:0 5px;border-radius:10px;background:#ff365d;color:white;font:700 10px/19px Orbitron,sans-serif;text-align:center}.connection-status{display:inline-flex;align-items:center;gap:6px;padding:7px 9px;border:1px solid rgba(255,255,255,.08);border-radius:999px;font-size:10px;text-transform:uppercase;letter-spacing:.08em}.connection-dot{width:7px;height:7px;border-radius:50%;background:#46e681;box-shadow:0 0 9px #46e681}.connection-status.offline .connection-dot{background:#ff4865;box-shadow:0 0 9px #ff4865}.connection-status.warning .connection-dot{background:#ffc857;box-shadow:0 0 9px #ffc857}.connection-status.offline,.connection-status.warning{color:#c7d0d7}
@@ -4357,3 +4470,327 @@ button:disabled,.btn-primary:disabled,.btn-secondary:disabled,.btn-danger:disabl
 .dashboard-operator-hero[data-profile-bg]>*,.member-card[data-profile-bg]>*{position:relative;z-index:1}
 .member-card[data-profile-bg]:hover::before{background:linear-gradient(90deg,rgba(3,10,14,.76),rgba(3,10,14,.56) 50%,rgba(3,10,14,.72))}
 @media(max-width:760px){.dashboard-operator-hero[data-profile-bg]{background-position:center 24%!important}.member-card[data-profile-bg]{background-position:center 26%!important}.dashboard-operator-hero[data-profile-bg]::before,.member-card[data-profile-bg]::before{background:rgba(3,10,14,.72)}}
+
+
+/* =========================================================
+   V10 — AUDITORIA DE LAYOUT DESKTOP / RESPONSIVIDADE
+   ========================================================= */
+
+/* Evita estouro horizontal causado por filhos flex/grid */
+*, *::before, *::after { box-sizing:border-box; }
+html, body { max-width:100%; overflow-x:hidden; }
+img, video, canvas, svg { max-width:100%; }
+button, input, select, textarea { max-width:100%; }
+button { touch-action:manipulation; }
+.page, .view, .content-section, main { min-width:0; }
+
+/* Conteúdo confortável em monitores grandes, sem ficar exageradamente esticado */
+@media (min-width: 1100px) {
+  .content, .main-content, .page-content {
+    width:100%;
+  }
+  .view > .page-inner,
+  .view > .section-inner,
+  .main-content > .view > :not(.modal):not(.toast-container) {
+    max-width:1440px;
+    margin-left:auto;
+    margin-right:auto;
+  }
+}
+
+/* Cabeçalhos e barras de ações nunca devem sobrepor botões */
+.page-header,
+.section-header,
+.games-header,
+.members-header,
+.achievements-header,
+.admin-section-heading,
+.settings-page-header,
+.profile-header,
+.store-header,
+.contribution-header {
+  min-width:0;
+}
+.page-header > *,
+.section-header > *,
+.games-header > *,
+.members-header > *,
+.achievements-header > *,
+.admin-section-heading > * {
+  min-width:0;
+}
+.page-header .actions,
+.section-header .actions,
+.header-actions,
+.game-actions,
+.admin-quick-actions,
+.diagnostic-actions,
+.achievement-admin-actions,
+.modal-actions,
+.form-actions,
+.profile-actions {
+  display:flex;
+  align-items:center;
+  gap:10px;
+  flex-wrap:wrap;
+}
+.page-header button,
+.section-header button,
+.header-actions button,
+.game-actions button,
+.admin-quick-actions button,
+.diagnostic-actions button,
+.achievement-admin-actions button,
+.modal-actions button,
+.form-actions button,
+.profile-actions button {
+  flex:0 0 auto;
+  white-space:nowrap;
+}
+
+/* Membros: estrutura previsível no desktop e sem colisão de Gerenciar/Online */
+.member-card {
+  display:grid !important;
+  grid-template-columns:minmax(0,1fr) auto auto;
+  align-items:center;
+  column-gap:16px;
+  row-gap:8px;
+  min-width:0;
+}
+.member-info,
+.member-details,
+.member-main,
+.member-card > div {
+  min-width:0;
+}
+.member-card .member-actions {
+  display:flex;
+  align-items:center;
+  justify-content:flex-end;
+  gap:8px;
+  flex-wrap:wrap;
+  min-width:0;
+}
+.member-presence {
+  white-space:nowrap;
+  justify-self:end;
+}
+.member-name,
+.member-realname,
+.member-meta,
+.member-v10-meta {
+  min-width:0;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+
+/* Dashboard: impede hero/progresso de disputar o mesmo espaço */
+.dashboard-operator-hero {
+  grid-template-columns:minmax(320px,1.25fr) minmax(260px,.8fr) !important;
+  align-items:center;
+  min-width:0;
+}
+.operator-hero-main,
+.operator-hero-progress {
+  min-width:0;
+}
+.operator-hero-progress-head {
+  gap:12px;
+}
+.operator-hero-progress-head > * {
+  min-width:0;
+}
+
+/* Cards e grids: sempre podem encolher sem criar scroll lateral */
+.dashboard-grid,
+.games-grid,
+.members-list,
+.achievements-grid,
+.admin-overview-grid,
+.diagnostic-grid,
+.settings-grid,
+.arsenal-gallery,
+.store-grid {
+  min-width:0;
+}
+.dashboard-grid > *,
+.games-grid > *,
+.achievements-grid > *,
+.admin-overview-grid > *,
+.diagnostic-grid > *,
+.settings-grid > *,
+.arsenal-gallery > *,
+.store-grid > * {
+  min-width:0;
+}
+
+/* Formulários: labels e inputs longos não quebram modal */
+.form-group,
+.input-group,
+.field-row,
+.settings-card-content {
+  min-width:0;
+}
+input, select, textarea {
+  width:100%;
+}
+textarea {
+  resize:vertical;
+}
+
+/* Modais mais seguros no desktop, notebook e telas baixas */
+.modal {
+  padding:clamp(10px,2vw,28px);
+}
+.modal-content {
+  width:min(100%, 760px);
+  max-height:calc(100dvh - 40px);
+  overflow:auto;
+  overscroll-behavior:contain;
+}
+.modal-content.wide,
+.modal-content.modal-wide {
+  width:min(100%, 1040px);
+}
+.modal-header {
+  position:sticky;
+  top:0;
+  z-index:4;
+}
+.modal-actions {
+  position:sticky;
+  bottom:0;
+  z-index:3;
+  padding-top:12px;
+}
+
+/* Tabelas/painéis administrativos: rolagem própria em vez de estourar a página */
+.table-wrap,
+.admin-table-wrap,
+.sales-table-wrap,
+.contribution-table-wrap,
+.history-table-wrap {
+  width:100%;
+  overflow-x:auto;
+  -webkit-overflow-scrolling:touch;
+}
+table {
+  max-width:100%;
+}
+
+/* Chat: picker e composer não devem cobrir mensagens ou sair da tela */
+.chat-container,
+.chat-main,
+.chat-messages,
+.chat-composer {
+  min-width:0;
+}
+.chat-emoji-picker {
+  max-width:min(268px, calc(100vw - 40px)) !important;
+  max-height:min(330px, 55vh);
+  overflow:auto;
+}
+.chat-tools,
+.chat-composer {
+  isolation:isolate;
+}
+.chat-input-row {
+  min-width:0;
+}
+.chat-input-row textarea,
+.chat-input-row input {
+  min-width:0;
+}
+
+/* Desktop intermediário / notebooks */
+@media (min-width:761px) and (max-width:1199px) {
+  .dashboard-operator-hero {
+    grid-template-columns:minmax(0,1.1fr) minmax(220px,.8fr) !important;
+  }
+  .admin-overview-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .diagnostic-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .diagnostic-counts { grid-template-columns:repeat(3,minmax(0,1fr)); }
+  .achievements-grid { grid-template-columns:repeat(auto-fill,minmax(245px,1fr)); }
+}
+
+/* Tablet/desktop estreito: remove a principal fonte de sobreposição */
+@media (max-width:900px) {
+  .member-card {
+    grid-template-columns:minmax(0,1fr) auto !important;
+  }
+  .member-card .member-actions {
+    grid-column:1 / -1;
+    justify-content:flex-start;
+  }
+  .dashboard-operator-hero {
+    grid-template-columns:1fr !important;
+  }
+}
+
+/* Mobile: mantém hierarquia, alvos de toque e sem overflow */
+@media (max-width:760px) {
+  .member-card {
+    grid-template-columns:minmax(0,1fr) auto !important;
+    column-gap:10px;
+  }
+  .member-card .member-actions {
+    grid-column:1 / -1;
+    width:100%;
+  }
+  .member-card .member-actions button {
+    min-height:42px;
+  }
+  .game-actions {
+    grid-template-columns:repeat(2,minmax(0,1fr)) !important;
+  }
+  .game-actions button {
+    width:100%;
+    white-space:normal;
+  }
+  .modal-actions {
+    display:grid;
+    grid-template-columns:1fr;
+  }
+  .modal-actions button {
+    width:100%;
+    min-height:44px;
+  }
+}
+
+/* Telas muito pequenas */
+@media (max-width:420px) {
+  .game-actions { grid-template-columns:1fr !important; }
+  .member-card { grid-template-columns:1fr auto !important; }
+  .admin-overview-grid,
+  .diagnostic-counts { grid-template-columns:1fr 1fr !important; }
+}
+
+/* Teclado/navegação desktop */
+@media (hover:hover) and (pointer:fine) {
+  button:hover:not(:disabled),
+  .nav-item:hover,
+  .member-card:hover,
+  .game-card:hover {
+    filter:brightness(1.04);
+  }
+}
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+[role="button"]:focus-visible {
+  outline:2px solid rgba(39,229,247,.9);
+  outline-offset:2px;
+}
+
+/* Botões desabilitados não parecem clicáveis */
+button:disabled,
+.btn-primary:disabled,
+.btn-secondary:disabled,
+.btn-danger:disabled {
+  opacity:.48;
+  cursor:not-allowed;
+  filter:none!important;
+  transform:none!important;
+}
