@@ -20,6 +20,24 @@ let sessionRole = null;
 let contributionSettings = { valor:50, pixKey:'5579996427351' };
 let contributionMonths = {};
 
+const ACHIEVEMENT_PROFILE_BACKGROUND_MAP = [
+  ['lobo de asgard', 'reward-lobo-asgard'],
+  ['cacador noturno', 'reward-cacador-noturno'],
+  ['ceifador', 'reward-ceifador'],
+  ['olho de odin', 'reward-olho-odin'],
+  ['100 baixas', 'reward-100-baixas'],
+  ['primeira vitoria', 'reward-primeira-vitoria'],
+  ['veterano de asgard', 'reward-veterano-asgard']
+];
+function normalizeAchievementTitle(value) {
+  return String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-zA-Z0-9]+/g, ' ').trim().toLowerCase();
+}
+function profileBackgroundForAchievementTitle(title) {
+  const key = normalizeAchievementTitle(title);
+  return (ACHIEVEMENT_PROFILE_BACKGROUND_MAP.find(([name]) => name === key) || [])[1] || null;
+}
+
 const ARRAY_COLLECTIONS = {
   asgard_messages: 'messages',
   asgard_games: 'games',
@@ -641,7 +659,14 @@ async function setAchievementRecipients(achievementId, userIds) {
       awardedAt:now, awardedBy:me.uid, readAt:null
     };
     const next = [notification, ...existing.filter(n => n && n.id !== notification.id)].slice(0, 40);
-    batch.set(profileRef, { achievementNotifications: next }, { merge:true });
+    const rewardBackground = profileBackgroundForAchievementTitle(achievement.title);
+    const profilePatch = { achievementNotifications: next };
+    if (rewardBackground) {
+      const unlocked = new Set((Array.isArray(profile.unlockedProfileBackgrounds) ? profile.unlockedProfileBackgrounds : []).map(String));
+      unlocked.add(rewardBackground);
+      profilePatch.unlockedProfileBackgrounds = [...unlocked];
+    }
+    batch.set(profileRef, profilePatch, { merge:true });
   }
 
   await batch.commit();

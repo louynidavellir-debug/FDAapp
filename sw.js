@@ -1,7 +1,11 @@
-const CACHE_NAME = 'asgard-v-profile-backgrounds-v1';
+const CACHE_NAME = 'asgard-v-achievement-backgrounds-v2';
 const ASSETS = [
     './', './index.html', './style.css', './app.js', './cloud.js', './firebase-config.js',
-    './manifest.json', './icons/icon-192-v17.png', './icons/icon-512-v17.png', './icons/logo-asgard.png'
+    './manifest.json', './icons/icon-192-v17.png', './icons/icon-512-v17.png', './icons/logo-asgard.png',
+    './assets/profile-backgrounds/lobo-de-asgard.webp', './assets/profile-backgrounds/cacador-noturno.webp',
+    './assets/profile-backgrounds/ceifador.webp', './assets/profile-backgrounds/olho-de-odin.webp',
+    './assets/profile-backgrounds/100-baixas.webp', './assets/profile-backgrounds/primeira-vitoria.webp',
+    './assets/profile-backgrounds/veterano-de-asgard.webp'
 ];
 
 self.addEventListener('install', event => {

@@ -183,18 +183,70 @@
     const btnCloseProfileBg = $('btn-close-profile-bg');
 
     const PROFILE_BACKGROUNDS = [
-        { id:'asgard', name:'Asgard', subtitle:'Ciano tático', icon:'ᚨ' },
-        { id:'nidavellir', name:'Nidavellir', subtitle:'Forja dos anões', icon:'⚒' },
-        { id:'niflheim', name:'Niflheim', subtitle:'Gelo e névoa', icon:'❄' },
-        { id:'muspelheim', name:'Muspelheim', subtitle:'Fogo e cinzas', icon:'🔥' },
-        { id:'yggdrasil', name:'Yggdrasil', subtitle:'Raízes do mundo', icon:'ᛉ' },
-        { id:'bifrost', name:'Bifrost', subtitle:'Ponte dos reinos', icon:'◈' },
-        { id:'valhalla', name:'Valhalla', subtitle:'Salão dos guerreiros', icon:'⚔' },
-        { id:'raven', name:'Corvos de Odin', subtitle:'Sombras e runas', icon:'ᚱ' }
+        // Temas livres: disponíveis para qualquer operador.
+        { id:'asgard', name:'Asgard', subtitle:'Ciano tático', icon:'ᚨ', category:'free' },
+        { id:'nidavellir', name:'Nidavellir', subtitle:'Forja dos anões', icon:'⚒', category:'free' },
+        { id:'niflheim', name:'Niflheim', subtitle:'Gelo e névoa', icon:'❄', category:'free' },
+        { id:'muspelheim', name:'Muspelheim', subtitle:'Fogo e cinzas', icon:'🔥', category:'free' },
+        { id:'yggdrasil', name:'Yggdrasil', subtitle:'Raízes do mundo', icon:'ᛉ', category:'free' },
+        { id:'bifrost', name:'Bifrost', subtitle:'Ponte dos reinos', icon:'◈', category:'free' },
+        { id:'valhalla', name:'Valhalla', subtitle:'Salão dos guerreiros', icon:'⚔', category:'free' },
+        { id:'raven', name:'Corvos de Odin', subtitle:'Sombras e runas', icon:'ᚱ', category:'free' },
+
+        // Fundos de recompensa: liberados automaticamente quando a conquista vinculada é recebida.
+        { id:'reward-lobo-asgard', name:'Lobo de Asgard', subtitle:'Recompensa de conquista', icon:'🐺', category:'achievement', unlockTitle:'Lobo de Asgard' },
+        { id:'reward-cacador-noturno', name:'Caçador Noturno', subtitle:'Recompensa de conquista', icon:'🌑', category:'achievement', unlockTitle:'Caçador Noturno' },
+        { id:'reward-ceifador', name:'Ceifador', subtitle:'Recompensa de conquista', icon:'☠', category:'achievement', unlockTitle:'Ceifador' },
+        { id:'reward-olho-odin', name:'Olho de Odin', subtitle:'Recompensa de conquista', icon:'◉', category:'achievement', unlockTitle:'Olho de Odin' },
+        { id:'reward-100-baixas', name:'100 Baixas', subtitle:'Recompensa de conquista', icon:'🏅', category:'achievement', unlockTitle:'100 Baixas' },
+        { id:'reward-primeira-vitoria', name:'Primeira Vitória', subtitle:'Recompensa de conquista', icon:'🏆', category:'achievement', unlockTitle:'Primeira Vitoria' },
+        { id:'reward-veterano-asgard', name:'Veterano de Asgard', subtitle:'Recompensa de conquista', icon:'⚔', category:'achievement', unlockTitle:'Veterano de Asgard' }
     ];
     const PROFILE_BACKGROUND_IDS = new Set(PROFILE_BACKGROUNDS.map(bg => bg.id));
     function normalizeProfileBackground(value) {
         return PROFILE_BACKGROUND_IDS.has(String(value || '')) ? String(value) : 'asgard';
+    }
+    function normalizeAchievementUnlockKey(value) {
+        return String(value || '')
+            .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+            .replace(/[^a-zA-Z0-9]+/g, ' ')
+            .trim().toLowerCase();
+    }
+    function getBackgroundUnlockAchievement(bg) {
+        if (!bg?.unlockTitle) return null;
+        const target = normalizeAchievementUnlockKey(bg.unlockTitle);
+        return (getStore(DB_ACHIEVEMENTS) || []).find(a => normalizeAchievementUnlockKey(a?.title) === target) || null;
+    }
+    function isProfileBackgroundUnlocked(bg, user = currentUser) {
+        if (!bg || bg.category !== 'achievement') return true;
+        if (!user?.id) return false;
+
+        // 1) Entitlement persisted directly in the profile (most reliable path).
+        const persisted = new Set((Array.isArray(user.unlockedProfileBackgrounds) ? user.unlockedProfileBackgrounds : []).map(String));
+        if (persisted.has(String(bg.id))) return true;
+
+        const achievement = getBackgroundUnlockAchievement(bg);
+        if (!achievement) return false;
+        const achievementId = String(achievement.id || '');
+
+        // 2) Current award/completedBy collections (normal realtime path).
+        if (getAwardedAchievementIds(user.id).has(achievementId)) return true;
+
+        // 3) Backward-compatible evidence already stored on the profile. This makes
+        // previously awarded achievements unlock immediately even if an old client
+        // did not mirror achievement_awards correctly.
+        const notifications = Array.isArray(user.achievementNotifications) ? user.achievementNotifications : [];
+        if (notifications.some(n => String(n?.achievementId || '') === achievementId)) return true;
+        const targetTitle = normalizeAchievementUnlockKey(bg.unlockTitle);
+        if (notifications.some(n => normalizeAchievementUnlockKey(n?.title) === targetTitle)) return true;
+
+        const featured = new Set((Array.isArray(user.featuredAchievementIds) ? user.featuredAchievementIds : []).map(String));
+        if (featured.has(achievementId)) return true;
+
+        return false;
+    }
+    function getProfileBackgroundMeta(id) {
+        return PROFILE_BACKGROUNDS.find(bg => bg.id === normalizeProfileBackground(id)) || PROFILE_BACKGROUNDS[0];
     }
 
     // Temp storage for photos being edited (base64)
@@ -1316,20 +1368,44 @@
 
     function renderProfileBackgroundGallery() {
         if (!profileBackgroundGallery) return;
-        profileBackgroundGallery.innerHTML = PROFILE_BACKGROUNDS.map(bg => `
-            <button type="button" class="profile-background-option ${galleryProfileBackground === bg.id ? 'selected' : ''}" data-bg-id="${bg.id}" role="radio" aria-checked="${galleryProfileBackground === bg.id}">
-                <span class="profile-background-thumb" data-profile-bg="${bg.id}"><b>${bg.icon}</b></span>
-                <span class="profile-background-option-copy"><strong>${escapeHtml(bg.name)}</strong><small>${escapeHtml(bg.subtitle)}</small></span>
-                <span class="profile-background-check">✓</span>
-            </button>`).join('');
+        const renderGroup = (title, items) => `
+            <div class="profile-background-group-title">${title}</div>
+            ${items.map(bg => {
+                const unlocked = isProfileBackgroundUnlocked(bg, currentUser);
+                const selected = galleryProfileBackground === bg.id;
+                const achievement = bg.unlockTitle ? getBackgroundUnlockAchievement(bg) : null;
+                const unlockText = bg.category === 'achievement'
+                    ? (unlocked ? `Desbloqueado por: ${bg.unlockTitle}` : `🔒 Exige: ${bg.unlockTitle}`)
+                    : bg.subtitle;
+                return `<button type="button" class="profile-background-option ${selected ? 'selected' : ''} ${unlocked ? 'unlocked' : 'locked'}" data-bg-id="${bg.id}" data-unlocked="${unlocked ? '1' : '0'}" role="radio" aria-checked="${selected}" aria-disabled="${unlocked ? 'false' : 'true'}">
+                    <span class="profile-background-thumb" data-profile-bg="${bg.id}"><b>${bg.icon}</b>${bg.category === 'achievement' ? `<em>${unlocked ? 'DESBLOQUEADO' : 'BLOQUEADO'}</em>` : ''}</span>
+                    <span class="profile-background-option-copy"><strong>${escapeHtml(bg.name)}</strong><small>${escapeHtml(unlockText)}</small>${bg.category === 'achievement' && !achievement ? '<small class="profile-bg-missing">Conquista ainda não cadastrada</small>' : ''}</span>
+                    <span class="profile-background-check">${unlocked ? '✓' : '🔒'}</span>
+                </button>`;
+            }).join('')}`;
+        const free = PROFILE_BACKGROUNDS.filter(bg => bg.category !== 'achievement');
+        const rewards = PROFILE_BACKGROUNDS.filter(bg => bg.category === 'achievement');
+        profileBackgroundGallery.innerHTML = renderGroup('TEMAS LIVRES', free) + renderGroup('DESBLOQUEÁVEIS POR CONQUISTAS', rewards);
         profileBackgroundGallery.querySelectorAll('[data-bg-id]').forEach(btn => {
             btn.addEventListener('click', () => {
-                galleryProfileBackground = normalizeProfileBackground(btn.dataset.bgId);
+                const bg = PROFILE_BACKGROUNDS.find(x => x.id === btn.dataset.bgId);
+                if (!bg) return;
+                if (!isProfileBackgroundUnlocked(bg, currentUser)) {
+                    showToast(`Desbloqueie a conquista “${bg.unlockTitle}” para usar este plano de fundo.`, 'error');
+                    return;
+                }
+                galleryProfileBackground = normalizeProfileBackground(bg.id);
                 if (profileBackgroundPreview) profileBackgroundPreview.dataset.profileBg = galleryProfileBackground;
                 renderProfileBackgroundGallery();
             });
         });
         if (profileBackgroundPreview) profileBackgroundPreview.dataset.profileBg = galleryProfileBackground;
+        const selectedBg = getProfileBackgroundMeta(galleryProfileBackground);
+        if (btnApplyProfileBg) {
+            const canApply = isProfileBackgroundUnlocked(selectedBg, currentUser);
+            btnApplyProfileBg.disabled = !canApply;
+            btnApplyProfileBg.textContent = canApply ? 'Aplicar plano de fundo' : 'Plano de fundo bloqueado';
+        }
     }
 
     function openProfileBackgroundGallery() {
@@ -1347,6 +1423,11 @@
     btnCloseProfileBg?.addEventListener('click', closeProfileBackgroundGallery);
     profileBackgroundModal?.addEventListener('click', (e) => { if (e.target === profileBackgroundModal) closeProfileBackgroundGallery(); });
     btnApplyProfileBg?.addEventListener('click', () => {
+        const bg = getProfileBackgroundMeta(galleryProfileBackground);
+        if (!isProfileBackgroundUnlocked(bg, currentUser)) {
+            showToast(`Este plano de fundo exige a conquista “${bg.unlockTitle}”.`, 'error');
+            return;
+        }
         pendingProfileBackground = normalizeProfileBackground(galleryProfileBackground);
         closeProfileBackgroundGallery();
         showToast('Plano de fundo selecionado. Salve o perfil para confirmar.', 'success');
@@ -1379,7 +1460,11 @@
             if (pendingFotoPrimaria !== null) user.fotoPrimaria = pendingFotoPrimaria;
             if (pendingFotoSecundaria !== null) user.fotoSecundaria = pendingFotoSecundaria;
             if (pendingFotoLoadout !== null) user.fotoLoadout = pendingFotoLoadout;
-            if (pendingProfileBackground !== null) user.profileBackground = normalizeProfileBackground(pendingProfileBackground);
+            if (pendingProfileBackground !== null) {
+                const selectedBg = getProfileBackgroundMeta(pendingProfileBackground);
+                if (isProfileBackgroundUnlocked(selectedBg, currentUser)) user.profileBackground = normalizeProfileBackground(pendingProfileBackground);
+                else showToast('O plano de fundo selecionado não está desbloqueado.', 'error');
+            }
             setStore(DB_USERS, users);
             currentUser = user;
             pendingFotoPrimaria = null;

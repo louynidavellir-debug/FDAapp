@@ -4028,6 +4028,31 @@ body::before{
       linear-gradient(160deg,#12101d,#05070c 58%,#0c0914)!important
 }
 
+
+/* ===== ACHIEVEMENT-UNLOCKED PROFILE BACKGROUNDS ===== */
+.profile-background-group-title{grid-column:1/-1;margin:9px 2px 1px;padding-top:7px;border-top:1px solid rgba(255,255,255,.055);font-family:Orbitron,sans-serif;font-size:.64rem;font-weight:800;letter-spacing:1.5px;color:#7f969d}
+.profile-background-group-title:first-child{margin-top:0;padding-top:0;border-top:0}
+.profile-background-option.locked{opacity:.64;filter:saturate(.72);cursor:not-allowed}
+.profile-background-option.locked:hover{transform:none;border-color:rgba(255,91,91,.22);background:rgba(255,65,65,.025)}
+.profile-background-option.locked .profile-background-check{color:#ff7777;border-color:rgba(255,95,95,.20);font-size:.64rem}
+.profile-background-option.unlocked .profile-background-thumb em{color:#8fffae;background:rgba(4,18,10,.74);border-color:rgba(92,255,143,.22)}
+.profile-background-thumb em{position:absolute;left:6px;bottom:6px;padding:3px 5px;border-radius:5px;border:1px solid rgba(255,255,255,.12);background:rgba(0,0,0,.68);font-style:normal;font-family:Orbitron,sans-serif;font-size:.42rem;letter-spacing:.5px;color:#ff8c8c;z-index:2}
+.profile-bg-missing{color:#b88b8b!important;font-size:.61rem!important}
+.profile-background-option.locked .profile-background-thumb::before{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,.08),rgba(0,0,0,.38));z-index:1;pointer-events:none}
+.profile-background-option.locked .profile-background-thumb b{opacity:.55}
+
+/* Reward images supplied for achievement-linked personalization. */
+.profile-card[data-profile-bg="reward-lobo-asgard"],.profile-background-thumb[data-profile-bg="reward-lobo-asgard"],.profile-background-preview[data-profile-bg="reward-lobo-asgard"]{background-image:linear-gradient(180deg,rgba(2,5,6,.08),rgba(2,5,6,.28)),url('./assets/profile-backgrounds/lobo-de-asgard.webp')!important;background-size:cover!important;background-position:center top!important}
+.profile-card[data-profile-bg="reward-cacador-noturno"],.profile-background-thumb[data-profile-bg="reward-cacador-noturno"],.profile-background-preview[data-profile-bg="reward-cacador-noturno"]{background-image:linear-gradient(180deg,rgba(8,0,0,.05),rgba(4,0,0,.28)),url('./assets/profile-backgrounds/cacador-noturno.webp')!important;background-size:cover!important;background-position:center top!important}
+.profile-card[data-profile-bg="reward-ceifador"],.profile-background-thumb[data-profile-bg="reward-ceifador"],.profile-background-preview[data-profile-bg="reward-ceifador"]{background-image:linear-gradient(180deg,rgba(8,0,2,.04),rgba(4,0,1,.30)),url('./assets/profile-backgrounds/ceifador.webp')!important;background-size:cover!important;background-position:center top!important}
+.profile-card[data-profile-bg="reward-olho-odin"],.profile-background-thumb[data-profile-bg="reward-olho-odin"],.profile-background-preview[data-profile-bg="reward-olho-odin"]{background-image:linear-gradient(180deg,rgba(5,4,1,.04),rgba(3,3,2,.30)),url('./assets/profile-backgrounds/olho-de-odin.webp')!important;background-size:cover!important;background-position:center top!important}
+.profile-card[data-profile-bg="reward-100-baixas"],.profile-background-thumb[data-profile-bg="reward-100-baixas"],.profile-background-preview[data-profile-bg="reward-100-baixas"]{background-image:linear-gradient(180deg,rgba(2,0,7,.04),rgba(2,0,5,.29)),url('./assets/profile-backgrounds/100-baixas.webp')!important;background-size:cover!important;background-position:center top!important}
+.profile-card[data-profile-bg="reward-primeira-vitoria"],.profile-background-thumb[data-profile-bg="reward-primeira-vitoria"],.profile-background-preview[data-profile-bg="reward-primeira-vitoria"]{background-image:linear-gradient(180deg,rgba(0,6,8,.04),rgba(0,4,6,.29)),url('./assets/profile-backgrounds/primeira-vitoria.webp')!important;background-size:cover!important;background-position:center top!important}
+.profile-card[data-profile-bg="reward-veterano-asgard"],.profile-background-thumb[data-profile-bg="reward-veterano-asgard"],.profile-background-preview[data-profile-bg="reward-veterano-asgard"]{background-image:linear-gradient(180deg,rgba(4,4,4,.04),rgba(2,2,2,.31)),url('./assets/profile-backgrounds/veterano-de-asgard.webp')!important;background-size:cover!important;background-position:center top!important}
+
+.profile-card[data-profile-bg^="reward-"]::after{background:linear-gradient(180deg,rgba(2,7,10,.16),rgba(2,7,10,.42) 46%,rgba(2,7,10,.76))}
+.profile-card[data-profile-bg^="reward-"] .profile-details,.profile-card[data-profile-bg^="reward-"] .operator-progress-panel,.profile-card[data-profile-bg^="reward-"] .profile-equipment,.profile-card[data-profile-bg^="reward-"] .profile-achievements-panel{background:rgba(3,8,11,.70)!important;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+
 @media(max-width:650px){
     .profile-background-setting{align-items:stretch;flex-direction:column}.profile-background-setting .btn-secondary{width:100%}
     .profile-background-gallery{grid-template-columns:1fr;max-height:49vh}.profile-background-option{grid-template-columns:86px 1fr 24px}
