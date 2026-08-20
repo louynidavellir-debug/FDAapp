@@ -1718,8 +1718,8 @@
         localStorage.setItem(key, '1');
         navigator.serviceWorker?.ready.then(reg => reg.showNotification('🏆 Nova conquista desbloqueada!', {
             body: `${n.title || 'Nova conquista'}${n.description ? ` — ${String(n.description).slice(0, 100)}` : ''}`,
-            icon: './icons/icon-192.png',
-            badge: './icons/icon-192.png',
+            icon: './icons/icon-192-v17.png',
+            badge: './icons/icon-192-v17.png',
             tag: `achievement-${n.id}`,
             data: { page: 'achievements', achievementId: n.achievementId || '' }
         })).catch(() => {});
@@ -2629,8 +2629,8 @@
         if ('Notification' in window && Notification.permission === 'granted') {
             navigator.serviceWorker?.ready.then(reg => reg.showNotification('Filhos de Asgard • menção no Chat', {
                 body: `${msg.callsign || 'Operador'}: ${String(msg.text || '').slice(0, 120)}`,
-                icon: './icons/icon-192.png',
-                badge: './icons/icon-192.png',
+                icon: './icons/icon-192-v17.png',
+                badge: './icons/icon-192-v17.png',
                 tag: `chat-mention-${msg.id}`,
                 data: { page: 'chat' }
             })).catch(() => {});

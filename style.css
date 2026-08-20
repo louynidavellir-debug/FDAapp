@@ -4794,3 +4794,167 @@ button:disabled,
   filter:none!important;
   transform:none!important;
 }
+
+
+/* =========================================================
+   V11 — CORREÇÕES VISUAIS DESKTOP
+   Dashboard + Operações + dimensionamento consistente
+   ========================================================= */
+
+/* DASHBOARD
+   A grade de 12 colunas existia, mas os cards sem span ocupavam só 1 coluna,
+   causando as colunas extremamente estreitas vistas no desktop. */
+@media (min-width:1181px) {
+  #page-dashboard .dashboard-grid {
+    display:grid!important;
+    grid-template-columns:repeat(12,minmax(0,1fr))!important;
+    align-items:start;
+  }
+  #page-dashboard .dashboard-grid > .dash-card:nth-child(1) {
+    grid-column:1 / -1!important; /* Status da Equipe */
+  }
+  #page-dashboard .dashboard-grid > .dash-card:nth-child(2),
+  #page-dashboard .dashboard-grid > .dash-card:nth-child(3) {
+    grid-column:span 6!important; /* Próximo Jogo + Avisos */
+  }
+  #page-dashboard .dashboard-grid > .dash-card:nth-child(4),
+  #page-dashboard .dashboard-grid > .dash-card:nth-child(5),
+  #page-dashboard .dashboard-grid > .dash-card:nth-child(6) {
+    grid-column:span 4!important; /* Visão / Conquistas / Acesso */
+  }
+  #page-dashboard .dashboard-grid > .dash-card:nth-child(7) {
+    grid-column:1 / -1!important; /* Feed */
+  }
+
+  #page-dashboard .dash-card {
+    width:100%;
+    min-width:0;
+    align-self:start;
+  }
+  #page-dashboard .dash-card-body {
+    min-width:0;
+    overflow-wrap:anywhere;
+  }
+  #page-dashboard .dashboard-shortcuts {
+    display:grid;
+    grid-template-columns:repeat(3,minmax(0,1fr));
+    gap:10px;
+  }
+  #page-dashboard .dashboard-shortcuts button {
+    width:100%;
+    min-width:0;
+  }
+}
+
+/* Notebook / desktop compacto: dois cards por linha, sem estreitamento. */
+@media (min-width:769px) and (max-width:1180px) {
+  #page-dashboard .dashboard-grid {
+    grid-template-columns:repeat(2,minmax(0,1fr))!important;
+  }
+  #page-dashboard .dashboard-grid > .dash-card {
+    grid-column:auto!important;
+  }
+  #page-dashboard .dashboard-grid > .dash-card:nth-child(1),
+  #page-dashboard .dashboard-grid > .dash-card:nth-child(7) {
+    grid-column:1 / -1!important;
+  }
+}
+
+/* OPERAÇÕES
+   O título "Operações abertas" estava sendo tratado como uma célula comum
+   do grid de 2 colunas em monitores grandes, esticando até a altura do card ao lado. */
+@media (min-width:1181px) {
+  #page-games .games-list {
+    display:grid;
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:16px;
+    align-items:start;
+  }
+  #page-games .games-section-title {
+    grid-column:1 / -1!important;
+    width:100%;
+    min-height:0!important;
+    height:auto!important;
+    align-self:start!important;
+    margin:12px 0 0!important;
+  }
+  #page-games .game-card {
+    align-self:start;
+    height:auto!important;
+    min-height:0;
+  }
+}
+
+/* Em ultrawide, mantém os cards equilibrados, mas nunca estica títulos/seções. */
+@media (min-width:1500px) {
+  #page-games .games-list {
+    grid-template-columns:repeat(2,minmax(0,1fr))!important;
+  }
+  #page-games .games-section-title {
+    grid-column:1 / -1!important;
+  }
+  #page-games .game-card {
+    height:auto!important;
+  }
+}
+
+/* Header da página Jogos: título/filtros na primeira linha e botão admin utilizável. */
+@media (min-width:900px) {
+  #page-games .games-header {
+    display:grid!important;
+    grid-template-columns:minmax(240px,1fr) auto;
+    align-items:end!important;
+    gap:12px 18px!important;
+  }
+  #page-games .games-filter {
+    justify-self:end;
+    max-width:100%;
+  }
+  #page-games #btn-create-game {
+    grid-column:1 / -1;
+    width:100%;
+    min-height:44px;
+  }
+}
+
+/* Evita que listas de confirmados forcem largura excessiva. */
+#page-games .game-confirmed-list,
+#page-games .confirmed-list,
+#page-games .game-card-content {
+  min-width:0;
+  max-width:100%;
+}
+#page-games .game-confirmed-list > *,
+#page-games .confirmed-list > * {
+  min-width:0;
+}
+
+/* Texto longo e ações: comportamento previsível no desktop. */
+#page-games .game-card h3,
+#page-games .game-description,
+#page-games .game-meta,
+#page-dashboard .dash-card h3 {
+  overflow-wrap:anywhere;
+}
+#page-games .game-actions {
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+  align-items:center;
+}
+#page-games .game-actions button {
+  flex:0 0 auto;
+  max-width:100%;
+}
+
+/* Em telas menores, mantém uma coluna limpa. */
+@media (max-width:768px) {
+  #page-games .games-list {
+    display:flex!important;
+    flex-direction:column!important;
+  }
+  #page-games .games-section-title {
+    width:100%;
+    height:auto!important;
+  }
+}
