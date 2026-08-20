@@ -627,6 +627,7 @@ async function setAchievementRecipients(achievementId, userIds) {
   const completedBy = [...new Set((Array.isArray(userIds) ? userIds : []).map(String).filter(Boolean))];
   const selectedSet = new Set(completedBy);
   const newlyAwarded = completedBy.filter(uid => !previous.has(uid));
+  const revoked = [...previous].filter(uid => !selectedSet.has(uid));
   const now = new Date().toISOString();
 
   const batch = writeBatch(db);
@@ -649,16 +650,29 @@ async function setAchievementRecipients(achievementId, userIds) {
 
   const rewardBackground = profileBackgroundForAchievementTitle(achievement.title);
 
-  // The background reward is an entitlement, not just a notification side effect.
-  // Apply it to EVERY current recipient, including users who already had the badge
-  // before this feature existed. Using arrayUnion makes this idempotent and avoids
-  // profile reads for already-awarded users.
+  // Mantém o espelho de fundos sincronizado com as conquistas ATUAIS.
+  // Ao conceder, adiciona o fundo; ao retirar a conquista, remove o fundo.
+  // A interface não usa este campo como fonte de permissão, mas mantê-lo limpo
+  // evita dados antigos e facilita compatibilidade entre versões.
   if (rewardBackground) {
     for (const uid of completedBy) {
       batch.set(doc(db, 'profiles', uid), {
         unlockedProfileBackgrounds: arrayUnion(rewardBackground),
         updatedAt: now
       }, { merge:true });
+    }
+    for (const uid of revoked) {
+      const profileRef = doc(db, 'profiles', uid);
+      const profileSnap = await getDoc(profileRef);
+      if (!profileSnap.exists()) continue;
+      const profile = profileSnap.data() || {};
+      const patch = {
+        unlockedProfileBackgrounds: arrayRemove(rewardBackground),
+        updatedAt: now
+      };
+      // Se o fundo retirado estava aplicado, volta automaticamente ao tema padrão.
+      if (String(profile.profileBackground || '') === rewardBackground) patch.profileBackground = 'asgard';
+      batch.set(profileRef, patch, { merge:true });
     }
   }
 
@@ -681,7 +695,7 @@ async function setAchievementRecipients(achievementId, userIds) {
   if (!connected) await readCollection('asgard_achievements', 'achievements', role);
   if (!connected) await readCollection('asgard_achievement_awards', 'achievement_awards', role);
   await readUsers();
-  return { completedBy, newlyAwarded };
+  return { completedBy, newlyAwarded, revoked };
 }
 
 async function markAchievementNotificationRead(notificationId) {

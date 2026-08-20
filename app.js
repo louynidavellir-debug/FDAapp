@@ -221,61 +221,17 @@
         if (!bg || bg.category !== 'achievement') return true;
         if (!user?.id) return false;
 
-        // 1) Entitlement persisted directly in the profile (most reliable path).
-        const persisted = new Set((Array.isArray(user.unlockedProfileBackgrounds) ? user.unlockedProfileBackgrounds : []).map(String));
-        if (persisted.has(String(bg.id))) return true;
-
+        // Regra única: o fundo só fica disponível enquanto o operador possuir
+        // atualmente a conquista correspondente. Dados históricos como notificações,
+        // destaques ou desbloqueios antigos não concedem acesso permanente.
         const achievement = getBackgroundUnlockAchievement(bg);
         if (!achievement) return false;
-        const achievementId = String(achievement.id || '');
-
-        // 2) Current award/completedBy collections (normal realtime path).
-        if (getAwardedAchievementIds(user.id).has(achievementId)) return true;
-
-        // 3) Backward-compatible evidence already stored on the profile. This makes
-        // previously awarded achievements unlock immediately even if an old client
-        // did not mirror achievement_awards correctly.
-        const notifications = Array.isArray(user.achievementNotifications) ? user.achievementNotifications : [];
-        if (notifications.some(n => String(n?.achievementId || '') === achievementId)) return true;
-        const targetTitle = normalizeAchievementUnlockKey(bg.unlockTitle);
-        if (notifications.some(n => normalizeAchievementUnlockKey(n?.title) === targetTitle)) return true;
-
-        const featured = new Set((Array.isArray(user.featuredAchievementIds) ? user.featuredAchievementIds : []).map(String));
-        if (featured.has(achievementId)) return true;
-
-        return false;
+        return getAwardedAchievementIds(user.id).has(String(achievement.id || ''));
     }
 
-    function getDerivedUnlockedProfileBackgroundIds(user = currentUser) {
-        if (!user?.id) return [];
-        return PROFILE_BACKGROUNDS
-            .filter(bg => bg.category === 'achievement' && isProfileBackgroundUnlocked(bg, user))
-            .map(bg => bg.id);
-    }
-
-    let backgroundEntitlementRepairBusy = false;
-    async function repairMyBackgroundEntitlements() {
-        if (!currentUser?.id || currentUser?.role === 'guest' || backgroundEntitlementRepairBusy) return;
-        const derived = getDerivedUnlockedProfileBackgroundIds(currentUser);
-        const persisted = new Set((Array.isArray(currentUser.unlockedProfileBackgrounds) ? currentUser.unlockedProfileBackgrounds : []).map(String));
-        const missing = derived.filter(id => !persisted.has(id));
-        if (!missing.length) return;
-
-        backgroundEntitlementRepairBusy = true;
-        try {
-            const users = getStore(DB_USERS) || [];
-            const mine = users.find(u => String(u.id) === String(currentUser.id));
-            if (!mine) return;
-            const nextUnlocked = [...new Set([...(Array.isArray(mine.unlockedProfileBackgrounds) ? mine.unlockedProfileBackgrounds : []), ...missing])];
-            const nextUsers = users.map(u => String(u.id) === String(currentUser.id) ? { ...u, unlockedProfileBackgrounds: nextUnlocked } : u);
-            currentUser = nextUsers.find(u => String(u.id) === String(currentUser.id)) || currentUser;
-            setStore(DB_USERS, nextUsers);
-            if (!profileBackgroundModal?.classList.contains('hidden')) renderProfileBackgroundGallery();
-        } catch (err) {
-            console.warn('Não foi possível reparar automaticamente os fundos de conquista.', err);
-        } finally {
-            setTimeout(() => { backgroundEntitlementRepairBusy = false; }, 800);
-        }
+    function getUsableProfileBackgroundId(user = currentUser, requestedId = user?.profileBackground) {
+        const bg = getProfileBackgroundMeta(requestedId);
+        return isProfileBackgroundUnlocked(bg, user) ? bg.id : 'asgard';
     }
     function getProfileBackgroundMeta(id) {
         return PROFILE_BACKGROUNDS.find(bg => bg.id === normalizeProfileBackground(id)) || PROFILE_BACKGROUNDS[0];
@@ -1313,7 +1269,7 @@
         profileSecundaria.textContent = profileUser.secundaria || '—';
         profileLoadout.textContent = profileUser.loadout || '—';
         profileSince.textContent = formatDate(profileUser.createdAt);
-        if (profileCard) profileCard.dataset.profileBg = normalizeProfileBackground(profileUser.profileBackground);
+        if (profileCard) profileCard.dataset.profileBg = getUsableProfileBackgroundId(profileUser, profileUser.profileBackground);
         renderProfileAchievements(profileUser.id);
 
         // Editing/upload controls are only available on the signed-in user's own profile.
@@ -1374,7 +1330,7 @@
         pendingFotoPrimaria = null;
         pendingFotoSecundaria = null;
         pendingFotoLoadout = null;
-        pendingProfileBackground = normalizeProfileBackground(currentUser.profileBackground);
+        pendingProfileBackground = getUsableProfileBackgroundId(currentUser, currentUser.profileBackground);
         galleryProfileBackground = pendingProfileBackground;
         // Show existing equipment photo previews
         if (currentUser.fotoPrimaria) {
@@ -1441,7 +1397,7 @@
     }
 
     function openProfileBackgroundGallery() {
-        galleryProfileBackground = normalizeProfileBackground(pendingProfileBackground || currentUser?.profileBackground);
+        galleryProfileBackground = getUsableProfileBackgroundId(currentUser, pendingProfileBackground || currentUser?.profileBackground);
         renderProfileBackgroundGallery();
         profileBackgroundModal?.classList.remove('hidden');
     }
@@ -4730,9 +4686,9 @@
         }
         if (key === DB_ACHIEVEMENTS || key === DB_ACHIEVEMENT_AWARDS) {
             updateAchievementNotificationBadge();
-            // Self-heal legacy awards: if the badge is present but the explicit
-            // profile entitlement is missing, persist the corresponding background.
-            setTimeout(repairMyBackgroundEntitlements, 120);
+            // A galeria é recalculada em tempo real: fundos acompanham somente as conquistas atuais.
+            if (!profileBackgroundModal?.classList.contains('hidden')) renderProfileBackgroundGallery();
+            refreshProfile();
         }
         if (currentUser?.role === 'admin' && [DB_GAMES,DB_ORDERS,DB_CONTRIBUTIONS,'asgard_guest_confirmations'].includes(key)) updateAdminAlertBadge();
         scheduleSyncedViewRefresh(key);
