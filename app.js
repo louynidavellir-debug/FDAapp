@@ -1492,7 +1492,7 @@
         membersList.innerHTML = filtered.length === 0
             ? '<p class="empty-state">Nenhum membro encontrado</p>'
             : filtered.map(u => `
-                <div class="member-card ${selectedMemberId === u.id ? 'selected' : ''}" data-id="${u.id}" role="button" tabindex="0" aria-label="Abrir perfil de ${escapeHtml(u.callsign)}">
+                <div class="member-card ${selectedMemberId === u.id ? 'selected' : ''}" data-id="${u.id}" data-profile-bg="${escapeHtml(getUsableProfileBackgroundId(u, u.profileBackground))}" role="button" tabindex="0" aria-label="Abrir perfil de ${escapeHtml(u.callsign)}">
                     <div class="member-avatar" data-avatar-fallback="${escapeHtml((u.callsign || '?').charAt(0))}">${u.avatar ? `<img src="${escapeHtml(u.avatar)}" alt="Foto de perfil de ${escapeHtml(u.callsign || 'operador')}" loading="lazy">` : escapeHtml((u.callsign || '?').charAt(0))}</div>
                     <div class="member-info">
                         <div class="member-callsign">${escapeHtml(u.callsign || 'SEM CALLSIGN')}</div>
@@ -4531,6 +4531,11 @@
         if (xp) xp.textContent = `${stats.xp} / ${stats.level * 250} XP`;
         if (bar) bar.style.width = `${Math.min(100, (stats.inLevel / 250) * 100)}%`;
         if (avatar) avatar.innerHTML = currentUser.avatar ? `<img src="${escapeHtml(currentUser.avatar)}" alt="">` : escapeHtml((currentUser.callsign || '?').charAt(0));
+        const hero = $('dashboard-operator-hero');
+        if (hero) {
+            const liveUser = (getStore(DB_USERS) || []).find(u => String(u.id) === String(currentUser.id)) || currentUser;
+            hero.dataset.profileBg = getUsableProfileBackgroundId(liveUser, liveUser.profileBackground);
+        }
     }
 
     const refreshDashboardV2BaseV10 = refreshDashboardV2;

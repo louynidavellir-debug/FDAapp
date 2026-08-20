@@ -1,0 +1,1 @@
+V9: o fundo aplicado por cada operador agora aparece no card da Dashboard e no respectivo card em Membros, com overlay responsivo para legibilidade. A regra de desbloqueio por conquista foi preservada.
