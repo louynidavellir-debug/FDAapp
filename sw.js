@@ -1,6 +1,6 @@
-const CACHE_NAME = 'asgard-v11-clean-desktop-layout';
+const CACHE_NAME = 'asgard-v12-layout-structural-fix';
 const ASSETS = [
-    './', './index.html', './style.css', './app.js', './cloud.js', './firebase-config.js',
+    './', './index.html', './style-v12.css', './app-v12.js', './cloud-v12.js', './firebase-config.js',
     './manifest.json', './icons/icon-192-v17.png', './icons/icon-512-v17.png', './icons/logo-asgard.png',
     './assets/profile-backgrounds/lobo-de-asgard.webp', './assets/profile-backgrounds/cacador-noturno.webp',
     './assets/profile-backgrounds/ceifador.webp', './assets/profile-backgrounds/olho-de-odin.webp',
@@ -15,9 +15,7 @@ const ASSETS = [
 
 self.addEventListener('install', event => {
     event.waitUntil(caches.open(CACHE_NAME).then(cache => cache.addAll(ASSETS)));
-    // Do not skipWaiting automatically. When an older worker controls the app, the new
-    // version remains waiting so the ADMIN can see "nova versão disponível" and choose
-    // when to apply it from the diagnostic panel.
+    self.skipWaiting();
 });
 
 self.addEventListener('activate', event => {

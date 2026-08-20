@@ -13,7 +13,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Orbitron:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="style-v12.css">
     <title>Filhos de Asgard Airsoft Team</title>
 </head>
 <body>
@@ -216,7 +216,7 @@
                     </div>
                 </div>
                 <div class="dashboard-grid">
-                    <div class="dash-card card-wide">
+                    <div class="dash-card card-wide dash-status">
                         <div class="dash-card-header">
                             <span class="dash-icon">⚡</span>
                             <h3>Status da Equipe</h3>
@@ -241,7 +241,7 @@
                     </div>
 
                     <div class="dash-card">
-                        <div class="dash-card-header">
+                        <div class="dash-card-header dash-next">
                             <span class="dash-icon">🎯</span>
                             <h3>Próximo Jogo</h3>
                         </div>
@@ -251,7 +251,7 @@
                     </div>
 
                     <div class="dash-card">
-                        <div class="dash-card-header">
+                        <div class="dash-card-header dash-notices">
                             <span class="dash-icon">📢</span>
                             <h3>Avisos</h3>
                         </div>
@@ -265,15 +265,15 @@
                     </div>
 
                     <div class="dash-card dash-card-accent">
-                        <div class="dash-card-header"><span class="dash-icon">🧭</span><h3>Visão Rápida</h3></div>
+                        <div class="dash-card-header dash-quick"><span class="dash-icon">🧭</span><h3>Visão Rápida</h3></div>
                         <div class="dash-card-body" id="dashboard-quick-overview"><p class="empty-state">Carregando...</p></div>
                     </div>
                     <div class="dash-card">
-                        <div class="dash-card-header"><span class="dash-icon">🏆</span><h3>Conquistas Recentes</h3></div>
+                        <div class="dash-card-header dash-achievements"><span class="dash-icon">🏆</span><h3>Conquistas Recentes</h3></div>
                         <div class="dash-card-body" id="dashboard-recent-achievements"><p class="empty-state">Sem conquistas recentes</p></div>
                     </div>
                     <div class="dash-card">
-                        <div class="dash-card-header"><span class="dash-icon">⚡</span><h3>Acesso Rápido</h3></div>
+                        <div class="dash-card-header dash-shortcuts-card"><span class="dash-icon">⚡</span><h3>Acesso Rápido</h3></div>
                         <div class="dash-card-body dashboard-shortcuts">
                             <button class="btn-secondary" data-quick-page="chat">💬 Chat</button>
                             <button class="btn-secondary" data-quick-page="games">🎯 Jogos</button>
@@ -282,7 +282,7 @@
                     </div>
 
                     <div class="dash-card">
-                        <div class="dash-card-header">
+                        <div class="dash-card-header dash-feed">
                             <span class="dash-icon">📊</span>
                             <h3>Feed da Equipe</h3>
                         </div>
@@ -1107,7 +1107,7 @@
 
     <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
     <script src="firebase-config.js"></script>
-    <script type="module" src="cloud.js"></script>
-    <script type="module" src="app.js"></script>
+    <script type="module" src="cloud-v12.js"></script>
+    <script type="module" src="app-v12.js"></script>
 </body>
 </html>
