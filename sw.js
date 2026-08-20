@@ -1,6 +1,6 @@
-const CACHE_NAME = 'asgard-v15-members-backgrounds';
+const CACHE_NAME = 'asgard-v18-refinement';
 const ASSETS = [
-    './', './index.html', './style-v15.css', './app-v15.js', './cloud-v15.js', './firebase-config.js',
+    './', './index.html', './style-v18.css', './app-v18.js', './cloud-v18.js', './firebase-config.js',
     './manifest.json', './icons/icon-192-v17.png', './icons/icon-512-v17.png', './icons/logo-asgard.png',
     './assets/profile-backgrounds/lobo-de-asgard.webp', './assets/profile-backgrounds/cacador-noturno.webp',
     './assets/profile-backgrounds/ceifador.webp', './assets/profile-backgrounds/olho-de-odin.webp',
@@ -11,6 +11,15 @@ const ASSETS = [
     './assets/profile-backgrounds/50-operacoes.webp',
     './assets/profile-backgrounds/25-operacoes.webp',
     './assets/profile-backgrounds/voz-de-asgard.webp'
+,
+    './assets/sfx/achievement.wav',
+    './assets/sfx/confirm.wav',
+    './assets/sfx/error.wav',
+    './assets/sfx/login.wav',
+    './assets/sfx/message.wav',
+    './assets/sfx/ready.wav',
+    './assets/sfx/ui-click.wav',
+    './assets/sfx/unlock.wav'
 ];
 
 self.addEventListener('install', event => {

@@ -13,7 +13,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Orbitron:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style-v15.css">
+    <link rel="stylesheet" href="style-v18.css">
     <title>Filhos de Asgard Airsoft Team</title>
 </head>
 <body>
@@ -28,8 +28,22 @@
             </div>
             <h1 class="splash-title">FILHOS DE ASGARD</h1>
             <p class="splash-subtitle">AIRSOFT TEAM</p>
-            <div class="splash-loader">
-                <div class="loader-bar"></div>
+            <div class="splash-system" role="status" aria-live="polite">
+                <div class="splash-status-row">
+                    <span id="splash-status">INICIANDO SISTEMA</span>
+                    <span id="splash-percent">08%</span>
+                </div>
+                <div class="splash-loader" aria-hidden="true">
+                    <div class="loader-bar" id="splash-loader-bar"></div>
+                </div>
+                <div class="splash-terminal">
+                    <span class="splash-terminal-dot"></span>
+                    <span id="splash-detail">Preparando Central de Comando</span>
+                </div>
+            </div>
+            <div class="splash-ready" id="splash-ready" aria-hidden="true">
+                <strong>FILHOS DE ASGARD</strong>
+                <span>CENTRAL DE COMANDO // ONLINE</span>
             </div>
         </div>
     </div>
@@ -208,6 +222,10 @@
                             <span class="command-kicker">CENTRAL DE COMANDO</span>
                             <h2 id="dashboard-hero-callsign">OPERADOR</h2>
                             <div class="operator-hero-meta"><span id="dashboard-hero-function">Operador</span><span>•</span><span id="dashboard-hero-level">Nível 1</span></div>
+                            <div class="command-live-strip">
+                                <span class="command-live-dot"></span>
+                                <span id="dashboard-command-greeting">CENTRAL DE COMANDO // ONLINE</span>
+                            </div>
                         </div>
                     </div>
                     <div class="operator-hero-progress">
@@ -834,6 +852,25 @@
                             <p>Área preparada para controles de segurança da conta.</p>
                         </div>
                     </article>
+                    <article class="settings-card haptic-settings-card">
+                        <div class="settings-card-icon">📳</div>
+                        <div class="settings-card-content">
+                            <h3>Feedback tátil</h3>
+                            <p>Vibração curta em confirmações, erros e conquistas.</p>
+                            <label class="sound-toggle-row"><span>Ativado</span><input id="haptic-enabled" type="checkbox" checked></label>
+                            <button type="button" class="btn-secondary btn-test-haptic" id="btn-test-haptic">Testar vibração</button>
+                        </div>
+                    </article>
+                    <article class="settings-card sound-settings-card">
+                        <div class="settings-card-icon">🔊</div>
+                        <div class="settings-card-content">
+                            <h3>Efeitos sonoros</h3>
+                            <p>Feedback sonoro da Central de Comando.</p>
+                            <label class="sound-toggle-row"><span>Ativado</span><input id="sfx-enabled" type="checkbox" checked></label>
+                            <label class="sound-volume-row"><span>Volume <small id="sfx-volume-label">55%</small></span><input id="sfx-volume" type="range" min="0" max="100" value="55"></label>
+                            <button type="button" class="btn-secondary btn-test-sfx" id="btn-test-sfx">Testar som</button>
+                        </div>
+                    </article>
                     <article class="settings-card settings-install-card">
                         <div class="settings-card-icon">📲</div>
                         <div class="settings-card-content">
@@ -1107,7 +1144,7 @@
 
     <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
     <script src="firebase-config.js"></script>
-    <script type="module" src="cloud-v15.js"></script>
-    <script type="module" src="app-v15.js"></script>
+    <script type="module" src="cloud-v18.js"></script>
+    <script type="module" src="app-v18.js"></script>
 </body>
 </html>
