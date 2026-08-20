@@ -245,6 +245,38 @@
 
         return false;
     }
+
+    function getDerivedUnlockedProfileBackgroundIds(user = currentUser) {
+        if (!user?.id) return [];
+        return PROFILE_BACKGROUNDS
+            .filter(bg => bg.category === 'achievement' && isProfileBackgroundUnlocked(bg, user))
+            .map(bg => bg.id);
+    }
+
+    let backgroundEntitlementRepairBusy = false;
+    async function repairMyBackgroundEntitlements() {
+        if (!currentUser?.id || currentUser?.role === 'guest' || backgroundEntitlementRepairBusy) return;
+        const derived = getDerivedUnlockedProfileBackgroundIds(currentUser);
+        const persisted = new Set((Array.isArray(currentUser.unlockedProfileBackgrounds) ? currentUser.unlockedProfileBackgrounds : []).map(String));
+        const missing = derived.filter(id => !persisted.has(id));
+        if (!missing.length) return;
+
+        backgroundEntitlementRepairBusy = true;
+        try {
+            const users = getStore(DB_USERS) || [];
+            const mine = users.find(u => String(u.id) === String(currentUser.id));
+            if (!mine) return;
+            const nextUnlocked = [...new Set([...(Array.isArray(mine.unlockedProfileBackgrounds) ? mine.unlockedProfileBackgrounds : []), ...missing])];
+            const nextUsers = users.map(u => String(u.id) === String(currentUser.id) ? { ...u, unlockedProfileBackgrounds: nextUnlocked } : u);
+            currentUser = nextUsers.find(u => String(u.id) === String(currentUser.id)) || currentUser;
+            setStore(DB_USERS, nextUsers);
+            if (!profileBackgroundModal?.classList.contains('hidden')) renderProfileBackgroundGallery();
+        } catch (err) {
+            console.warn('Não foi possível reparar automaticamente os fundos de conquista.', err);
+        } finally {
+            setTimeout(() => { backgroundEntitlementRepairBusy = false; }, 800);
+        }
+    }
     function getProfileBackgroundMeta(id) {
         return PROFILE_BACKGROUNDS.find(bg => bg.id === normalizeProfileBackground(id)) || PROFILE_BACKGROUNDS[0];
     }
@@ -4696,7 +4728,12 @@
             updateAchievementNotificationBadge();
             setTimeout(maybeShowAchievementNotification, 120);
         }
-        if (key === DB_ACHIEVEMENTS || key === DB_ACHIEVEMENT_AWARDS) updateAchievementNotificationBadge();
+        if (key === DB_ACHIEVEMENTS || key === DB_ACHIEVEMENT_AWARDS) {
+            updateAchievementNotificationBadge();
+            // Self-heal legacy awards: if the badge is present but the explicit
+            // profile entitlement is missing, persist the corresponding background.
+            setTimeout(repairMyBackgroundEntitlements, 120);
+        }
         if (currentUser?.role === 'admin' && [DB_GAMES,DB_ORDERS,DB_CONTRIBUTIONS,'asgard_guest_confirmations'].includes(key)) updateAdminAlertBadge();
         scheduleSyncedViewRefresh(key);
     });

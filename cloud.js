@@ -647,6 +647,21 @@ async function setAchievementRecipients(achievementId, userIds) {
     }, { merge:true });
   }
 
+  const rewardBackground = profileBackgroundForAchievementTitle(achievement.title);
+
+  // The background reward is an entitlement, not just a notification side effect.
+  // Apply it to EVERY current recipient, including users who already had the badge
+  // before this feature existed. Using arrayUnion makes this idempotent and avoids
+  // profile reads for already-awarded users.
+  if (rewardBackground) {
+    for (const uid of completedBy) {
+      batch.set(doc(db, 'profiles', uid), {
+        unlockedProfileBackgrounds: arrayUnion(rewardBackground),
+        updatedAt: now
+      }, { merge:true });
+    }
+  }
+
   for (const uid of newlyAwarded) {
     const profileRef = doc(db, 'profiles', uid);
     const profileSnap = await getDoc(profileRef);
@@ -659,14 +674,7 @@ async function setAchievementRecipients(achievementId, userIds) {
       awardedAt:now, awardedBy:me.uid, readAt:null
     };
     const next = [notification, ...existing.filter(n => n && n.id !== notification.id)].slice(0, 40);
-    const rewardBackground = profileBackgroundForAchievementTitle(achievement.title);
-    const profilePatch = { achievementNotifications: next };
-    if (rewardBackground) {
-      const unlocked = new Set((Array.isArray(profile.unlockedProfileBackgrounds) ? profile.unlockedProfileBackgrounds : []).map(String));
-      unlocked.add(rewardBackground);
-      profilePatch.unlockedProfileBackgrounds = [...unlocked];
-    }
-    batch.set(profileRef, profilePatch, { merge:true });
+    batch.set(profileRef, { achievementNotifications: next, updatedAt: now }, { merge:true });
   }
 
   await batch.commit();
