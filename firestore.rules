@@ -83,6 +83,7 @@ service cloud.firestore {
 
     match /achievements/{id} { allow read: if isOperatorAuth(); allow write: if isAdmin(); }
     match /achievement_awards/{id} { allow read: if isOperatorAuth(); allow write: if isAdmin(); }
+    match /achievement_progress/{id} { allow read: if isOperatorAuth(); allow write: if isAdmin(); }
     match /announcements/{id} { allow read: if isOperatorAuth(); allow write: if isAdmin(); }
     match /products/{id} { allow read: if isOperatorAuth(); allow write: if isAdmin(); }
 
