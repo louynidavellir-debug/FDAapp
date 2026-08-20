@@ -221,14 +221,17 @@
         if (!bg || bg.category !== 'achievement') return true;
         if (!user?.id) return false;
 
-        // Para planos de fundo de recompensa, a ÚNICA fonte de verdade é o campo
-        // completedBy da conquista atualmente cadastrada. Não usamos achievement_awards,
-        // notificações, destaques nem desbloqueios antigos do perfil, porque esses dados
-        // podem permanecer como histórico e liberar fundos indevidamente.
+        // Fundos de recompensa usam SOMENTE o registro ativo de concessão.
+        // O documento achievement_awards é criado quando o ADMIN marca o operador como
+        // concluinte e é excluído quando ele é desmarcado. Campos legados do perfil,
+        // notificações, destaques e completedBy não concedem acesso à galeria.
         const achievement = getBackgroundUnlockAchievement(bg);
         if (!achievement) return false;
-        const completedBy = Array.isArray(achievement.completedBy) ? achievement.completedBy.map(String) : [];
-        return completedBy.includes(String(user.id));
+        const awards = getStore(DB_ACHIEVEMENT_AWARDS) || [];
+        return awards.some(award =>
+            String(award?.achievementId || '') === String(achievement.id || '') &&
+            String(award?.userId || '') === String(user.id)
+        );
     }
 
     function getUsableProfileBackgroundId(user = currentUser, requestedId = user?.profileBackground) {
