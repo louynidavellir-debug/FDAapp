@@ -1,6 +1,6 @@
-const CACHE_NAME = 'asgard-v12-layout-structural-fix';
+const CACHE_NAME = 'asgard-v14-mobile-first-audit';
 const ASSETS = [
-    './', './index.html', './style-v12.css', './app-v12.js', './cloud-v12.js', './firebase-config.js',
+    './', './index.html', './style-v14.css', './app-v14.js', './cloud-v14.js', './firebase-config.js',
     './manifest.json', './icons/icon-192-v17.png', './icons/icon-512-v17.png', './icons/logo-asgard.png',
     './assets/profile-backgrounds/lobo-de-asgard.webp', './assets/profile-backgrounds/cacador-noturno.webp',
     './assets/profile-backgrounds/ceifador.webp', './assets/profile-backgrounds/olho-de-odin.webp',
