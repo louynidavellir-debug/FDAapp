@@ -221,12 +221,14 @@
         if (!bg || bg.category !== 'achievement') return true;
         if (!user?.id) return false;
 
-        // Regra única: o fundo só fica disponível enquanto o operador possuir
-        // atualmente a conquista correspondente. Dados históricos como notificações,
-        // destaques ou desbloqueios antigos não concedem acesso permanente.
+        // Para planos de fundo de recompensa, a ÚNICA fonte de verdade é o campo
+        // completedBy da conquista atualmente cadastrada. Não usamos achievement_awards,
+        // notificações, destaques nem desbloqueios antigos do perfil, porque esses dados
+        // podem permanecer como histórico e liberar fundos indevidamente.
         const achievement = getBackgroundUnlockAchievement(bg);
         if (!achievement) return false;
-        return getAwardedAchievementIds(user.id).has(String(achievement.id || ''));
+        const completedBy = Array.isArray(achievement.completedBy) ? achievement.completedBy.map(String) : [];
+        return completedBy.includes(String(user.id));
     }
 
     function getUsableProfileBackgroundId(user = currentUser, requestedId = user?.profileBackground) {
@@ -2115,6 +2117,12 @@
         try {
             if (window.AsgardCloud?.setAchievementRecipients) {
                 await window.AsgardCloud.setAchievementRecipients(managingAchievementId, selected);
+                // Reflete a seleção imediatamente no estado local. O listener realtime
+                // confirmará o mesmo valor em seguida, mas a galeria de fundos já fica
+                // consistente sem depender de alguns milissegundos de sincronização.
+                a.completedBy = selected;
+                a.updatedAt = new Date().toISOString();
+                setStore(DB_ACHIEVEMENTS, achievements);
             } else {
                 a.completedBy = selected;
                 a.updatedAt = new Date().toISOString();
