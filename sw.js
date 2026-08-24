@@ -1,6 +1,6 @@
-const CACHE_NAME = 'asgard-v27-store-grid';
+const CACHE_NAME = 'asgard-v28-store-image-43';
 const ASSETS = [
-    './', './index.html', './style-v27.css', './app-v27.js', './cloud-v27.js', './firebase-config.js',
+    './', './index.html', './style-v28.css', './app-v28.js', './cloud-v28.js', './firebase-config.js',
     './manifest.json', './icons/icon-192-v17.png', './icons/icon-512-v17.png', './icons/logo-asgard.png',
     './assets/profile-backgrounds/lobo-de-asgard.webp', './assets/profile-backgrounds/cacador-noturno.webp',
     './assets/profile-backgrounds/ceifador.webp', './assets/profile-backgrounds/olho-de-odin.webp',
