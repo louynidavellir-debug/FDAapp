@@ -13,7 +13,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Orbitron:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style-v32.css">
+    <link rel="stylesheet" href="style-v33.css">
     <title>Filhos de Asgard Airsoft Team</title>
 </head>
 <body>
@@ -930,8 +930,24 @@
                     <button class="btn-primary admin-only" id="btn-create-product">+ Novo Produto</button>
                     <button class="btn-cart-open" id="btn-open-cart" title="Abrir Carrinho">🛒 <span class="nav-badge hidden" id="cart-badge-loja">0</span></button>
                 </div>
+                <div class="store-highlight-v33">
+                    <div>
+                        <small>ARSENAL DA EQUIPE</small>
+                        <strong>Equipamentos selecionados para operadores</strong>
+                        <span>Confira os itens disponíveis e adicione ao carrinho.</span>
+                    </div>
+                    <button type="button" class="store-highlight-action-v33" id="btn-store-highlight">Ver produtos</button>
+                </div>
+                <div class="store-results-bar-v33"><span id="store-results-count">0 produtos</span><span>Toque em um produto para ver detalhes</span></div>
                 <div id="products-list" class="product-grid"></div>
                 <p id="products-empty" class="empty-state hidden">Nenhum produto encontrado</p>
+
+                <div id="product-detail-modal-v33" class="modal hidden">
+                    <div class="modal-content product-detail-content-v33">
+                        <button type="button" class="product-detail-close-v33" id="product-detail-close-v33" aria-label="Fechar">×</button>
+                        <div id="product-detail-body-v33"></div>
+                    </div>
+                </div>
 
                 <!-- CREATE PRODUCT MODAL -->
                 <div id="create-product-modal" class="modal hidden">
@@ -1183,7 +1199,7 @@
 
     <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
     <script src="firebase-config.js"></script>
-    <script type="module" src="cloud-v32.js"></script>
-    <script type="module" src="app-v32.js"></script>
+    <script type="module" src="cloud-v33.js"></script>
+    <script type="module" src="app-v33.js"></script>
 </body>
 </html>
