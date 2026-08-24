@@ -1,6 +1,6 @@
-const CACHE_NAME = 'asgard-v22-team-tenure';
+const CACHE_NAME = 'asgard-v24-member-role-manager';
 const ASSETS = [
-    './', './index.html', './style-v22.css', './app-v22.js', './cloud-v22.js', './firebase-config.js',
+    './', './index.html', './style-v24.css', './app-v24.js', './cloud-v24.js', './firebase-config.js',
     './manifest.json', './icons/icon-192-v17.png', './icons/icon-512-v17.png', './icons/logo-asgard.png',
     './assets/profile-backgrounds/lobo-de-asgard.webp', './assets/profile-backgrounds/cacador-noturno.webp',
     './assets/profile-backgrounds/ceifador.webp', './assets/profile-backgrounds/olho-de-odin.webp',

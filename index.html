@@ -13,7 +13,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Orbitron:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style-v22.css">
+    <link rel="stylesheet" href="style-v24.css">
     <title>Filhos de Asgard Airsoft Team</title>
 </head>
 <body>
@@ -521,8 +521,31 @@
 
                 <!-- Admin: manage members -->
                 <div id="admin-members-actions" class="admin-actions hidden">
-                    <button class="btn-primary" id="btn-promote-member">Promover a Admin</button>
+                    <button class="btn-primary" id="btn-promote-member">Alterar função</button>
                     <button class="btn-danger" id="btn-remove-member">Remover Membro</button>
+                </div>
+
+                <div id="member-role-modal" class="modal hidden">
+                    <div class="modal-content member-role-modal-content" role="dialog" aria-modal="true" aria-labelledby="member-role-modal-title">
+                        <h2 id="member-role-modal-title">Gerenciar membro</h2>
+                        <p class="member-role-help">Defina o nível de acesso deste membro. A alteração entra em vigor para todos os usuários assim que o Firebase sincronizar.</p>
+                        <div class="member-role-person" id="member-role-person"></div>
+                        <div class="member-role-options" role="radiogroup" aria-label="Nível de acesso">
+                            <label class="member-role-option">
+                                <input type="radio" name="member-role-choice" value="operador">
+                                <span class="member-role-option-copy"><strong>OPERADOR</strong><small>Acesso normal às áreas do aplicativo.</small></span>
+                            </label>
+                            <label class="member-role-option">
+                                <input type="radio" name="member-role-choice" value="admin">
+                                <span class="member-role-option-copy"><strong>ADMIN</strong><small>Acesso ao Painel Admin e às funções administrativas.</small></span>
+                            </label>
+                        </div>
+                        <div class="member-role-warning">Conceda ADMIN somente a pessoas autorizadas, pois este nível permite alterações administrativas no sistema.</div>
+                        <div class="modal-actions">
+                            <button type="button" class="btn-primary" id="btn-save-member-role">Salvar função</button>
+                            <button type="button" class="btn-secondary" id="btn-cancel-member-role">Cancelar</button>
+                        </div>
+                    </div>
                 </div>
             </section>
 
@@ -1159,7 +1182,7 @@
 
     <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
     <script src="firebase-config.js"></script>
-    <script type="module" src="cloud-v22.js"></script>
-    <script type="module" src="app-v22.js"></script>
+    <script type="module" src="cloud-v24.js"></script>
+    <script type="module" src="app-v24.js"></script>
 </body>
 </html>
