@@ -4,8 +4,22 @@ service cloud.firestore {
     function signedIn() { return request.auth != null; }
     function isGuestAuth() { return signedIn() && request.auth.token.firebase.sign_in_provider == 'anonymous'; }
     function isOperatorAuth() { return signedIn() && !isGuestAuth(); }
-    function profile() { return get(/databases/$(database)/documents/profiles/$(request.auth.uid)); }
-    function isAdmin() { return isOperatorAuth() && profile().data.role == 'admin'; }
+    function profilePath() { return /databases/$(database)/documents/profiles/$(request.auth.uid); }
+    function bootstrapPath() { return /databases/$(database)/documents/system/bootstrap; }
+    function profile() { return get(profilePath()); }
+    function isBootstrapOwner() {
+      return isOperatorAuth()
+             && exists(bootstrapPath())
+             && get(bootstrapPath()).data.ownerUid == request.auth.uid;
+    }
+    function hasAdminRole() {
+      return isOperatorAuth()
+             && exists(profilePath())
+             && profile().data.role in ['admin', 'ADMIN'];
+    }
+    // O proprietário inicial continua ADMIN mesmo se um perfil antigo estiver
+    // com o campo role inconsistente. Demais admins dependem de profiles/{uid}.role.
+    function isAdmin() { return hasAdminRole() || isBootstrapOwner(); }
     function isOwner(uid) { return isOperatorAuth() && request.auth.uid == uid; }
 
     match /system/bootstrap {

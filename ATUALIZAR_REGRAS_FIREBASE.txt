@@ -1,0 +1,18 @@
+FILHOS DE ASGARD — V34
+
+O erro "Operação bloqueada pelas regras de segurança do Firebase" vem do Firestore no servidor.
+Subir apenas os arquivos do site no GitHub/Netlify NÃO atualiza as regras do Firebase.
+
+FORMA 1 — Console Firebase:
+1. Firebase Console > Firestore Database > Regras.
+2. Substitua o conteúdo pelas regras do arquivo firestore.rules desta versão.
+3. Clique em PUBLICAR.
+
+Se usa mídia do chat:
+Firebase Console > Storage > Regras > publique storage.rules.
+
+FORMA 2 — Firebase CLI:
+firebase deploy --only firestore:rules,storage
+
+A V34 também aceita o proprietário original registrado em system/bootstrap como ADMIN,
+mesmo se um perfil antigo tiver o campo role inconsistente.
