@@ -83,6 +83,8 @@ service cloud.firestore {
 
     match /achievements/{id} { allow read: if isOperatorAuth(); allow write: if isAdmin(); }
     match /achievement_awards/{id} { allow read: if isOperatorAuth(); allow write: if isAdmin(); }
+    // Mantido para histórico/compatibilidade. A partir da V31, o estágio manual
+    // do operador é salvo em achievements/{id}.progressByUser.
     match /achievement_progress/{id} { allow read: if isOperatorAuth(); allow write: if isAdmin(); }
     match /announcements/{id} { allow read: if isOperatorAuth(); allow write: if isAdmin(); }
     match /products/{id} { allow read: if isOperatorAuth(); allow write: if isAdmin(); }
