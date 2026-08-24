@@ -1,6 +1,6 @@
-const CACHE_NAME = 'asgard-v25-collapsible-history';
+const CACHE_NAME = 'asgard-v26-store-grid';
 const ASSETS = [
-    './', './index.html', './style-v25.css', './app-v25.js', './cloud-v25.js', './firebase-config.js',
+    './', './index.html', './style-v26.css', './app-v26.js', './cloud-v26.js', './firebase-config.js',
     './manifest.json', './icons/icon-192-v17.png', './icons/icon-512-v17.png', './icons/logo-asgard.png',
     './assets/profile-backgrounds/lobo-de-asgard.webp', './assets/profile-backgrounds/cacador-noturno.webp',
     './assets/profile-backgrounds/ceifador.webp', './assets/profile-backgrounds/olho-de-odin.webp',
