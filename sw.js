@@ -1,6 +1,6 @@
-const CACHE_NAME = 'asgard-v26-store-grid';
+const CACHE_NAME = 'asgard-v27-store-grid';
 const ASSETS = [
-    './', './index.html', './style-v26.css', './app-v26.js', './cloud-v26.js', './firebase-config.js',
+    './', './index.html', './style-v27.css', './app-v27.js', './cloud-v27.js', './firebase-config.js',
     './manifest.json', './icons/icon-192-v17.png', './icons/icon-512-v17.png', './icons/logo-asgard.png',
     './assets/profile-backgrounds/lobo-de-asgard.webp', './assets/profile-backgrounds/cacador-noturno.webp',
     './assets/profile-backgrounds/ceifador.webp', './assets/profile-backgrounds/olho-de-odin.webp',
@@ -11,6 +11,13 @@ const ASSETS = [
     './assets/profile-backgrounds/50-operacoes.webp',
     './assets/profile-backgrounds/25-operacoes.webp',
     './assets/profile-backgrounds/voz-de-asgard.webp'
+,
+    './assets/product-images/pilha-duracell-2032.webp',
+    './assets/product-images/ak-midcap-200-tan.webp',
+    './assets/product-images/ak-midcap-200-preto.webp',
+    './assets/product-images/bbs-berserker-028-2500.webp',
+    './assets/product-images/bbs-berserker-028-5000.webp',
+    './assets/product-images/produto-restante.webp'
 ,
     './assets/sfx/achievement.wav',
     './assets/sfx/confirm.wav',
