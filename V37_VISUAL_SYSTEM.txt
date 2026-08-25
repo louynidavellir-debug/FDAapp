@@ -1,0 +1,16 @@
+V37 — ASGARD VISUAL SYSTEM
+
+Atualização focada somente em UI/UX.
+- tokens globais de cor, superfície, borda, raio, sombra e espaçamento
+- sidebar e topbar padronizadas
+- contexto visual da aba atual no topbar
+- dashboard com perfil do operador mais valorizado
+- cards e estados padronizados
+- modais unificados
+- busca/inputs e botões com feedback visual
+- melhorias específicas em Jogos, Membros, Arsenal, Conquistas, Loja, Chat e Admin
+- mobile-first mantido
+- desktop com melhor aproveitamento de largura
+- acessibilidade: focus, reduced motion, disabled states
+
+Nenhuma regra do Firebase, coleção ou fluxo de persistência foi alterado nesta versão.
