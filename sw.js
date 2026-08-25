@@ -1,6 +1,6 @@
-const CACHE_NAME = 'asgard-v35-achievements-two-columns';
+const CACHE_NAME = 'asgard-v36-achievements-by-class';
 const ASSETS = [
-    './', './index.html', './style-v35.css', './app-v35.js', './cloud-v35.js', './firebase-config.js',
+    './', './index.html', './style-v36.css', './app-v36.js', './cloud-v36.js', './firebase-config.js',
     './manifest.json', './icons/icon-192-v17.png', './icons/icon-512-v17.png', './icons/logo-asgard.png',
     './assets/profile-backgrounds/lobo-de-asgard.webp', './assets/profile-backgrounds/cacador-noturno.webp',
     './assets/profile-backgrounds/ceifador.webp', './assets/profile-backgrounds/olho-de-odin.webp',
