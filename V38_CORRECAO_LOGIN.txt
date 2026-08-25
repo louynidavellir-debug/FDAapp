@@ -1,0 +1,17 @@
+V38 — CORREÇÃO DE LOGIN
+
+Causa identificada:
+A função finishSplash mantinha a Promise da primeira transição (splash -> login).
+Depois que o usuário autenticava, enterApp tentava usar finishSplash novamente
+(login -> app), mas recebia a Promise já concluída e não executava showScreen('app-screen').
+
+Sintoma:
+- Firebase autentica corretamente
+- aparece "Bem-vindo, USUÁRIO"
+- a tela continua no login
+
+Correção:
+- após a splash terminar, transições posteriores abrem a tela solicitada imediatamente
+- splashExitPromise é liberada depois da transição inicial
+- cache do Service Worker atualizado para V38
+- Visual System V37 preservado

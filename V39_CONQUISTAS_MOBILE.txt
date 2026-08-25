@@ -1,0 +1,10 @@
+V39 — Grade de conquistas mobile corrigida
+
+- exatamente 2 conquistas por linha
+- próxima dupla sempre começa na linha seguinte
+- maior largura útil dentro de cada quadrante de classe
+- cards sem min-width conflitante
+- progresso empilhado para caber melhor
+- nomes de concluintes ocultos apenas no mobile
+- botões ADMIN em coluna para preservar usabilidade
+- desktop permanece inalterado
