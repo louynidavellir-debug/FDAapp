@@ -1,0 +1,9 @@
+V44 — REMOVER CONVIDADOS DOS JOGOS
+
+- ADMIN vê o botão Remover somente ao lado de convidados.
+- Operadores normais não podem remover convidados.
+- A remoção retira o UID do convidado de confirmed e checkedIn.
+- O documento correspondente em guest_confirmations também é excluído.
+- A operação é feita em transação para não deixar dados órfãos.
+- Há confirmação antes da exclusão.
+- As regras atuais já autorizam ADMIN a atualizar Jogos e excluir guest_confirmations.

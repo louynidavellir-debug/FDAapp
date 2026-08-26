@@ -1,6 +1,6 @@
-const CACHE_NAME = 'asgard-v43-firebase-stability';
+const CACHE_NAME = 'asgard-v44-remover-convidados';
 const ASSETS = [
-    './', './index.html', './style-v43.css', './app-v43.js', './cloud-v43.js', './firebase-config.js',
+    './', './index.html', './style-v44.css', './app-v44.js', './cloud-v44.js', './firebase-config.js',
     './manifest.json', './icons/icon-192-v17.png', './icons/icon-512-v17.png', './icons/logo-asgard.png',
     './assets/profile-backgrounds/lobo-de-asgard.webp', './assets/profile-backgrounds/cacador-noturno.webp',
     './assets/profile-backgrounds/ceifador.webp', './assets/profile-backgrounds/olho-de-odin.webp',
