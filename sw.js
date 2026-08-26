@@ -1,6 +1,6 @@
-const CACHE_NAME = 'asgard-v42-auditoria-geral';
+const CACHE_NAME = 'asgard-v43-firebase-stability';
 const ASSETS = [
-    './', './index.html', './style-v42.css', './app-v42.js', './cloud-v42.js', './firebase-config.js',
+    './', './index.html', './style-v43.css', './app-v43.js', './cloud-v43.js', './firebase-config.js',
     './manifest.json', './icons/icon-192-v17.png', './icons/icon-512-v17.png', './icons/logo-asgard.png',
     './assets/profile-backgrounds/lobo-de-asgard.webp', './assets/profile-backgrounds/cacador-noturno.webp',
     './assets/profile-backgrounds/ceifador.webp', './assets/profile-backgrounds/olho-de-odin.webp',

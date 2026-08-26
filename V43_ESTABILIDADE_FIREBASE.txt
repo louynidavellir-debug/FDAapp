@@ -1,0 +1,16 @@
+V43 — ESTABILIDADE DE CONEXÃO FIREBASE
+
+Problema observado:
+- status mostrava "Reconectando" também para erros de permissão;
+- erros opcionais de listeners/leitura/gravação de compatibilidade geravam o alerta
+  "Firebase recusou a gravação do ADMIN" mesmo sem uma ação administrativa direta;
+- isso fazia parecer que o app estava desconectando quando a sessão continuava válida.
+
+Correções:
+- erros Firebase agora carregam contexto: read, listener ou background-write;
+- somente erros reais de rede/servidor colocam o indicador em "Reconectando";
+- permission-denied de sincronizações auxiliares não gera toast repetitivo na entrada;
+- mensagens de rede recebem throttle para evitar spam;
+- retorno online limpa imediatamente o estado de reconexão;
+- ações administrativas diretas continuam exibindo seus próprios erros normalmente;
+- nenhuma regra Firestore foi afrouxada nesta versão.
