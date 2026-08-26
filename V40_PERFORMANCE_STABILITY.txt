@@ -1,0 +1,36 @@
+V40 — PERFORMANCE & STABILITY
+
+Otimizações aplicadas com foco em segurança incremental:
+
+1. Cache local:
+- cache em memória continua imediato
+- gravações no localStorage agora são agrupadas
+- Chat: até 900 ms de coalescência
+- Atividades: até 600 ms
+- demais stores: 180 ms
+- snapshots idênticos não disparam novos renders
+
+2. Firestore:
+- chamadas legadas setStore() sucessivas no mesmo módulo são agrupadas em uma gravação
+- reduz batches duplicados causados por cliques/alterações muito rápidas
+- APIs dedicadas do Firebase permanecem intactas
+- listeners em tempo real existentes foram preservados para não quebrar badges/chat/admin
+
+3. Background:
+- timers de atualização visual de presença são interrompidos quando o PWA fica em segundo plano
+- retomada e atualização imediata ao voltar
+
+4. Render:
+- eventos de sincronização próximos são agrupados em uma única atualização visual
+- imagens das páginas usam loading=lazy e decoding=async
+- logos/tela de login continuam carregamento imediato
+
+5. Proteção:
+- ações de salvar/criar/excluir/confirmar recebem proteção contra duplo clique acidental
+- navegação e controles de quantidade não são bloqueados
+- erros visuais são isolados e registrados no console
+
+6. Service Worker:
+- cache atualizado para V40 para impedir uso persistente de JS antigo
+
+Não houve alteração de regras do Firestore nem migração de banco.

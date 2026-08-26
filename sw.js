@@ -1,6 +1,6 @@
-const CACHE_NAME = 'asgard-v39-achievements-mobile-grid';
+const CACHE_NAME = 'asgard-v41-achievement-images-stable';
 const ASSETS = [
-    './', './index.html', './style-v39.css', './app-v39.js', './cloud-v39.js', './firebase-config.js',
+    './', './index.html', './style-v41.css', './app-v41.js', './cloud-v41.js', './firebase-config.js',
     './manifest.json', './icons/icon-192-v17.png', './icons/icon-512-v17.png', './icons/logo-asgard.png',
     './assets/profile-backgrounds/lobo-de-asgard.webp', './assets/profile-backgrounds/cacador-noturno.webp',
     './assets/profile-backgrounds/ceifador.webp', './assets/profile-backgrounds/olho-de-odin.webp',

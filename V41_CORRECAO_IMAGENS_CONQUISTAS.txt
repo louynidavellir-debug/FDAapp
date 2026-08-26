@@ -1,0 +1,19 @@
+V41 — CORREÇÃO DE IMAGENS DAS CONQUISTAS
+
+Causa encontrada:
+Alguns fluxos antigos ainda gravavam a coleção inteira de conquistas usando um
+snapshot local. Se esse snapshot estivesse atrasado, uma gravação merge:false
+podia substituir o documento no Firestore e remover o campo `badge`.
+Isso explica o comportamento intermitente: a imagem era salva corretamente,
+mas podia desaparecer depois de outra alteração de progresso/concluintes.
+
+Correções:
+- gravações legadas em achievements agora usam merge:true
+- se uma cópia local vier sem badge e o servidor tiver badge, a imagem é preservada
+- progresso/concluintes não regravam mais a lista inteira quando há API dedicada
+- conclusão automática/admin usa setAchievementRecipients
+- updateAchievement atualiza cache de forma pontual
+- setAchievementStage e setAchievementRecipients atualizam apenas os campos necessários
+- cache do Service Worker atualizado
+
+Não exige alteração nas regras do Firebase.
