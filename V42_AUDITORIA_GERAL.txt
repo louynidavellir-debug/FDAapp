@@ -1,0 +1,35 @@
+FILHOS DE ASGARD — V42 AUDITORIA GERAL
+
+Validações automatizadas: 12/12 aprovadas.
+
+CORREÇÕES APLICADAS
+- Corrigida a declaração duplicada `async async function removeSession()` no adaptador Firebase.
+- Logout agora aguarda por curto período gravações pendentes antes de encerrar a sessão.
+- Funções legadas de gravação não geram rejeição de Promise não tratada.
+- Função `escapeHtml` duplicada removida; agora existe uma única rotina de sanitização.
+- Funções ADMIN passam a trabalhar com função normalizada (`admin`) inclusive em cache antigo.
+- Perfis carregados do Firestore/localStorage normalizam `role` para evitar inconsistência ADMIN/ADMIN.
+- Pull-to-refresh voltou a funcionar: o seletor apontava para `.main-content`, mas o elemento real é `#main-content`.
+- Elementos visuais de pull-to-refresh foram restaurados no HTML.
+- Badge de novos Jogos foi restaurado na navegação.
+- Banner de nova versão do PWA foi restaurado; a lógica já existia mas o HTML estava ausente.
+- Instalação do Service Worker ficou resiliente: um asset opcional ausente não bloqueia toda a atualização.
+- Cache do PWA atualizado para V42.
+
+VALIDAÇÕES
+[OK] Sintaxe app-v42.js
+[OK] Sintaxe cloud-v42.js
+[OK] Sintaxe sw.js
+[OK] JSON manifest.json
+[OK] JSON firebase.json
+[OK] IDs HTML únicos
+[OK] IDs referenciados pelo JS
+[OK] Arquivos locais do HTML
+[OK] Assets do Service Worker
+[OK] Estrutura CSS — 2449 abre / 2449 fecha
+[OK] Navegação para páginas existentes
+[OK] Hooks de UI restaurados
+
+ESCOPO
+A auditoria foi estática/estrutural sobre HTML, JavaScript, Firebase adapter, Service Worker, manifest e CSS.
+Não altera regras do Firestore nem migra dados existentes.

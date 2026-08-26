@@ -1,6 +1,6 @@
-const CACHE_NAME = 'asgard-v41-achievement-images-stable';
+const CACHE_NAME = 'asgard-v42-auditoria-geral';
 const ASSETS = [
-    './', './index.html', './style-v41.css', './app-v41.js', './cloud-v41.js', './firebase-config.js',
+    './', './index.html', './style-v42.css', './app-v42.js', './cloud-v42.js', './firebase-config.js',
     './manifest.json', './icons/icon-192-v17.png', './icons/icon-512-v17.png', './icons/logo-asgard.png',
     './assets/profile-backgrounds/lobo-de-asgard.webp', './assets/profile-backgrounds/cacador-noturno.webp',
     './assets/profile-backgrounds/ceifador.webp', './assets/profile-backgrounds/olho-de-odin.webp',
@@ -30,7 +30,11 @@ const ASSETS = [
 ];
 
 self.addEventListener('install', event => {
-    event.waitUntil(caches.open(CACHE_NAME).then(cache => cache.addAll(ASSETS)));
+    // One optional/missing asset must not invalidate the entire service worker update.
+    event.waitUntil((async () => {
+        const cache = await caches.open(CACHE_NAME);
+        await Promise.allSettled(ASSETS.map(asset => cache.add(asset)));
+    })());
     self.skipWaiting();
 });
 
