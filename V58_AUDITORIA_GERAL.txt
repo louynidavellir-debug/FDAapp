@@ -1,0 +1,42 @@
+V58 — CORREÇÃO DE JOGOS + AUDITORIA GERAL
+
+CORREÇÃO PRINCIPAL
+- Jogos recém-criados são inseridos no cache imediatamente após a confirmação do Firestore; não dependem mais do atraso do listener para aparecer.
+- Edição, exclusão, confirmação, check-in, conclusão e permissão financeira também atualizam o cache local imediatamente.
+- A renderização de Jogos foi endurecida: um registro incompleto/malformado não derruba a lista inteira.
+- Corrigida a sincronização legada do status financeiro: agora é disparada depois que o ADMIN realmente entra no app.
+
+VERIFICAÇÕES AUTOMATIZADAS
+- OK — JavaScript: app-v58.js: Sintaxe válida
+- OK — JavaScript: cloud-v58.js: Sintaxe válida
+- OK — JavaScript: sw.js: Sintaxe válida
+- OK — JSON: manifest.json: JSON válido
+- OK — JSON: firebase.json: JSON válido
+- OK — CSS: Chaves balanceadas
+- OK — HTML IDs: Sem IDs duplicados
+- OK — Referências DOM: Todos os IDs estáticos encontrados
+- OK — Navegação: Todas as abas possuem página correspondente
+- OK — Arquivos locais: Todas as referências locais existem
+- OK — Service Worker: index.html: Referenciado
+- OK — Service Worker: style-v58.css: Referenciado
+- OK — Service Worker: app-v58.js: Referenciado
+- OK — Service Worker: cloud-v58.js: Referenciado
+- OK — Service Worker: manifest.json: Referenciado
+- OK — Service Worker: firebase-config.js: Referenciado
+- OK — createGame grava Firestore: Validado
+- OK — createGame atualiza cache imediato: Validado
+- OK — listener games ativo: Validado
+- OK — render de jogos defensivo: Validado
+- OK — filtro aceita tipos normalizados: Validado
+- OK — bloqueio financeiro mantido: Validado
+- OK — autorização ADMIN mantida: Validado
+- OK — auditoria mantida: Validado
+- OK — modo conexão ruim mantido: Validado
+- OK — Rules: games leitura autenticada: Validado
+- OK — Rules: ADMIN cria jogos: Validado
+- OK — Rules: financeiro impede confirmação: Validado
+- OK — Rules: auditoria imutável: Validado
+
+RESULTADO: 29/29 verificações aprovadas.
+IMPORTANTE: manter/publicar firestore.rules da V57/V58, pois o bloqueio financeiro depende das regras atuais.
+Observação: testes automáticos locais validam estrutura, sintaxe e fluxos do código; a comunicação real com o projeto Firebase depende da configuração/quota/rede do ambiente publicado.
