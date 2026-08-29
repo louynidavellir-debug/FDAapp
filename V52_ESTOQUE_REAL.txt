@@ -1,0 +1,7 @@
+V52 — ESTOQUE REAL DA LOJA
+- ADMIN define estoque ao criar/editar produto.
+- Loja mostra estoque, últimas unidades e esgotado.
+- Carrinho respeita o limite disponível.
+- Checkout valida e desconta estoque em transação Firestore, evitando venda acima do disponível.
+- Pedido só é aberto no WhatsApp depois que a transação é concluída.
+IMPORTANTE: publique firestore.rules da V52.

@@ -1,0 +1,2 @@
+V50 — Relatório Pós-Operação
+ADMIN registra resultado, resumo, pontos positivos, pontos a melhorar e observações após concluir uma operação. O relatório fica visível no card e pode ser editado. Usa games.postOperationReport; não requer regra Firestore nova.

@@ -1,0 +1,10 @@
+V45 — BRIEFING DA OPERAÇÃO
+
+- ADMIN pode cadastrar e editar briefing em cada jogo.
+- Campos: objetivo, regras específicas, ponto de encontro, horário de apresentação,
+  equipamentos obrigatórios, observações e imagem/mapa.
+- O briefing aparece recolhido no card e pode ser expandido por quem tem acesso a Jogos.
+- Imagem/mapa pode ser ampliada ao tocar.
+- Imagens são redimensionadas/comprimidas e limitadas para preservar o tamanho do documento Firestore.
+- Jogos antigos continuam compatíveis sem qualquer migração.
+- Nenhuma regra Firebase nova é necessária: os dados permanecem no documento de games.

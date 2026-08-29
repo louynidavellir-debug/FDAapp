@@ -1,0 +1,9 @@
+V53 — PAINEL DO COMANDO APRIMORADO
+A Visão Geral do Comando agora funciona como dashboard operacional:
+- Próxima missão: data/local, confirmados, check-ins, loadouts e índice de prontidão.
+- Situação da equipe: presença recente, contribuições em atraso, operadores online e confirmações de avisos pendentes.
+- Loja: pedidos pendentes, receita entregue, estoque baixo e itens esgotados.
+- Prioridades: consolida os principais pontos que exigem atenção do ADMIN.
+- Atalhos diretos para Jogos, Vendas e Centro de Alertas.
+- Layout responsivo, com foco em mobile.
+Não exige novas coleções nem alteração de regras Firestore.

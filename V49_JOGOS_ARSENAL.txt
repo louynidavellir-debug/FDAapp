@@ -1,0 +1,4 @@
+V49 — Jogos + Arsenal
+Operador confirmado escolhe primária/secundária do próprio Arsenal para cada operação.
+Convidados não usam o recurso.
+IMPORTANTE: publique firestore.rules da V49 no Firebase.

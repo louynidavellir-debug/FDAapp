@@ -1,0 +1,5 @@
+V47 — Histórico Individual
+- Linha do tempo no perfil com jogos e conquistas.
+- Status Presente, Confirmado ou Ausente.
+- Filtros Tudo, Jogos e Conquistas.
+- Reutiliza dados existentes; sem nova coleção ou regra Firestore.

@@ -1,0 +1,2 @@
+V54 — Backup Administrativo
+Comando > Diagnóstico: ADMIN exporta JSON versionado com dados carregados do sistema. Não inclui senhas do Firebase Auth nem binários externos do Storage. Não requer novas regras Firestore.

@@ -1,0 +1,14 @@
+V56 — MODO DE OPERAÇÃO COM INTERNET RUIM
+
+Implementado:
+- Cache persistente do Firestore no dispositivo, com suporte a múltiplas abas.
+- Dados já sincronizados podem continuar sendo consultados sem conexão.
+- Service Worker passa a armazenar também os módulos versionados do Firebase SDK, permitindo reabrir o PWA offline com maior confiabilidade.
+- Detecção de rede lenta/3G/2G/economia de dados.
+- Banner de contingência informa claramente Offline, Rede lenta ou conexão limitada.
+- Em rede limitada, efeitos visuais não essenciais são reduzidos.
+- Ações que dependem de transação/validação imediata do servidor são bloqueadas quando totalmente offline, evitando falso sucesso.
+- Quando a rede retorna, os listeners do Firestore retomam a sincronização normalmente.
+
+Não exige nova coleção nem alteração das regras Firestore.
+Observação: o primeiro carregamento ainda precisa ocorrer online para preencher caches locais.

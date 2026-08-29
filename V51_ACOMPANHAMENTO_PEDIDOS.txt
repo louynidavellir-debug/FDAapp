@@ -1,0 +1,8 @@
+V51 — ACOMPANHAMENTO DOS PEDIDOS DA LOJA
+- Meus Pedidos ganhou acompanhamento visual: Pendente → Confirmado → Enviado → Entregue.
+- Pedidos cancelados recebem estado próprio.
+- Cada alteração feita pelo ADMIN gera entrada no histórico com data/hora e responsável.
+- ADMIN continua alterando status pelo Painel de Vendas.
+- Histórico fica salvo no próprio documento orders.statusHistory.
+- Pedidos antigos continuam compatíveis mesmo sem histórico anterior.
+- Não exige nova regra Firestore: somente ADMIN já possui permissão de update em orders.

@@ -1,0 +1,16 @@
+V57 — BLOQUEIO FINANCEIRO PARA LISTA DE PRESENÇA
+
+REGRA:
+- Operador com status financeiro "Em Atraso" não pode confirmar presença em nenhum jogo/operação.
+- Convidados não são afetados.
+- ADMIN não é afetado.
+- O ADMIN pode conceder uma autorização excepcional por operador e por jogo.
+- A autorização vale somente para aquele jogo.
+- Se o ADMIN revogar a autorização enquanto o operador continuar Em Atraso, ele é removido da lista de confirmados, do check-in e do loadout daquele jogo.
+- O bloqueio é validado no cliente, no Cloud layer e também nas regras Firestore.
+- O status financeiro atual é espelhado no perfil pelo ADMIN; operadores não podem alterar esse campo por conta própria.
+- Ao abrir a versão como ADMIN, os status do mês atual são sincronizados uma vez para cobrir operadores que já estavam Em Atraso antes da V57.
+- Concessões/revogações de autorização geram registro de auditoria.
+
+IMPORTANTE:
+Publique o firestore.rules da V57 no Firebase para que a proteção também seja aplicada no servidor.

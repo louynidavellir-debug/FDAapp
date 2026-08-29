@@ -1,0 +1,12 @@
+V46 — ESTATÍSTICAS DO OPERADOR
+
+Nova ficha de estatísticas no perfil:
+- Operações concluídas com check-in.
+- Treinamentos concluídos com check-in.
+- Taxa de presença calculada somente sobre jogos já concluídos em que o operador confirmou presença.
+- Conquistas no formato recebidas/total disponível.
+- Tempo de equipe calculado pela data de entrada do perfil (teamJoinedAt/memberSince/createdAt).
+- Dados calculados a partir dos registros existentes; não cria uma coleção nova no Firestore.
+- Estatísticas funcionam tanto no próprio perfil quanto ao abrir o perfil de outro membro.
+- O sistema evita contagem duplicada de conquistas presentes simultaneamente em achievement_awards e completedBy.
+- Histórico existente foi mantido sem expansão; a evolução formal do histórico fica para a próxima versão.

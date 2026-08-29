@@ -1,6 +1,6 @@
-const CACHE_NAME = 'asgard-v44-remover-convidados';
+const CACHE_NAME = 'asgard-v57-bloqueio-financeiro';
 const ASSETS = [
-    './', './index.html', './style-v44.css', './app-v44.js', './cloud-v44.js', './firebase-config.js',
+    './', './index.html', './style-v57.css', './app-v57.js', './cloud-v57.js', './firebase-config.js',
     './manifest.json', './icons/icon-192-v17.png', './icons/icon-512-v17.png', './icons/logo-asgard.png',
     './assets/profile-backgrounds/lobo-de-asgard.webp', './assets/profile-backgrounds/cacador-noturno.webp',
     './assets/profile-backgrounds/ceifador.webp', './assets/profile-backgrounds/olho-de-odin.webp',
@@ -50,7 +50,22 @@ self.addEventListener('fetch', event => {
     if (req.method !== 'GET') return;
     const url = new URL(req.url);
 
-    // Firebase/CDN/API traffic is network-only. Never cache authenticated cloud responses.
+    // V56: Firebase SDK modules are immutable/versioned and may be cached so the PWA can
+    // reopen without internet. Authenticated Firestore/Storage/API traffic remains network-only.
+    const firebaseSdk = url.hostname === 'www.gstatic.com' && url.pathname.includes('/firebasejs/12.17.1/');
+    if (firebaseSdk) {
+        event.respondWith((async () => {
+            const sdkCache = await caches.open(CACHE_NAME);
+            const cached = await sdkCache.match(req);
+            const network = fetch(req).then(res => {
+                if (res.ok) sdkCache.put(req, res.clone());
+                return res;
+            }).catch(() => null);
+            if (cached) { event.waitUntil(network); return cached; }
+            return await network || new Response('Offline', {status:503,statusText:'Offline'});
+        })());
+        return;
+    }
     if (url.hostname.includes('firebase') || url.hostname.includes('googleapis.com') ||
         url.hostname.includes('gstatic.com') || url.hostname.includes('google.com') ||
         url.hostname.includes('jsdelivr.net')) return;

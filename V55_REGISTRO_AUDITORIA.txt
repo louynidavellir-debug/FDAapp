@@ -1,0 +1,8 @@
+V55 — REGISTRO DE AUDITORIA
+- Nova coleção audit_logs, somente ADMIN pode ler/criar.
+- Registros são imutáveis pelo cliente: update/delete bloqueados.
+- Cada registro guarda ação, categoria, operador responsável, data/hora e contexto resumido.
+- Painel de Auditoria ganhou busca, filtro e atualização em tempo real.
+- Alterações de status de pedidos passam a gerar auditoria automaticamente.
+- Exportação de backup também gera evento de auditoria.
+IMPORTANTE: publique firestore.rules da V55 no Firebase.

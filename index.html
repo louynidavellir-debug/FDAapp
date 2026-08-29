@@ -13,7 +13,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Orbitron:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style-v44.css">
+    <link rel="stylesheet" href="style-v57.css">
     <title>Filhos de Asgard Airsoft Team</title>
 </head>
 <body>
@@ -223,6 +223,14 @@
                     </div>
                 </div>
             </header>
+            <div id="network-mode-v56" class="network-mode-v56 hidden" role="status" aria-live="polite">
+                <div class="network-mode-icon-v56">◉</div>
+                <div>
+                    <strong id="network-mode-title-v56">Modo contingência</strong>
+                    <span id="network-mode-text-v56">Usando dados armazenados no dispositivo.</span>
+                </div>
+                <span id="network-mode-quality-v56" class="network-mode-quality-v56">OFFLINE</span>
+            </div>
 
             <!-- PAGES -->
             <!-- DASHBOARD -->
@@ -364,13 +372,53 @@
                         <div class="operator-progress-panel">
                             <div class="operator-level-row"><div><span class="operator-level-label">NÍVEL</span><strong id="profile-level">1</strong></div><div class="operator-xp"><strong id="profile-xp">0 XP</strong><span id="profile-xp-next">250 XP para o próximo nível</span></div></div>
                             <div class="operator-xp-track"><span id="profile-xp-bar"></span></div>
-                            <div class="operator-stat-grid">
-                                <div><strong id="profile-ops-count">0</strong><span>Operações</span></div>
-                                <div><strong id="profile-attendance-rate">0%</strong><span>Presença</span></div>
-                                <div><strong id="profile-badges-count">0</strong><span>Insígnias</span></div>
-                                <div><strong id="profile-confirmed-count">0</strong><span>Confirmações</span></div>
+                            <div class="operator-stats-v46" aria-label="Estatísticas do operador">
+                                <div class="operator-stats-v46-head">
+                                    <div>
+                                        <span class="operator-stats-v46-kicker">FICHA OPERACIONAL</span>
+                                        <h3>Estatísticas do operador</h3>
+                                    </div>
+                                    <span id="profile-stats-updated" class="operator-stats-v46-status">Atualizado</span>
+                                </div>
+                                <div class="operator-stat-grid operator-stat-grid-v46">
+                                    <div class="operator-stat-v46">
+                                        <span class="operator-stat-v46-icon">◈</span>
+                                        <strong id="profile-ops-count">0</strong>
+                                        <span>Operações</span>
+                                        <small id="profile-ops-detail">0 concluídas</small>
+                                    </div>
+                                    <div class="operator-stat-v46">
+                                        <span class="operator-stat-v46-icon">⌁</span>
+                                        <strong id="profile-training-count">0</strong>
+                                        <span>Treinamentos</span>
+                                        <small id="profile-training-detail">0 concluídos</small>
+                                    </div>
+                                    <div class="operator-stat-v46">
+                                        <span class="operator-stat-v46-icon">✓</span>
+                                        <strong id="profile-attendance-rate">0%</strong>
+                                        <span>Presença</span>
+                                        <small id="profile-attendance-detail">0 de 0 confirmados</small>
+                                    </div>
+                                    <div class="operator-stat-v46">
+                                        <span class="operator-stat-v46-icon">✦</span>
+                                        <strong id="profile-badges-count">0/0</strong>
+                                        <span>Conquistas</span>
+                                        <small id="profile-badges-detail">0 desbloqueadas</small>
+                                    </div>
+                                    <div class="operator-stat-v46 operator-stat-v46-wide">
+                                        <span class="operator-stat-v46-icon">⌛</span>
+                                        <div class="operator-stat-v46-copy">
+                                            <strong id="profile-team-tenure">—</strong>
+                                            <span>Tempo de equipe</span>
+                                            <small id="profile-team-since-detail">Data de entrada indisponível</small>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
-                            <div class="operator-history"><h3>Histórico de Operações</h3><div id="profile-operation-history"><p class="empty-state">Nenhuma operação concluída.</p></div></div>
+                            <div class="operator-history profile-history-v47">
+<div class="profile-history-v47-head"><div><span class="profile-history-v47-kicker">REGISTRO INDIVIDUAL</span><h3>Histórico do Operador</h3></div><span id="profile-history-total" class="profile-history-v47-total">0 registros</span></div>
+<div class="profile-history-v47-filters"><button type="button" class="profile-history-filter active" data-history-filter="all">Tudo</button><button type="button" class="profile-history-filter" data-history-filter="games">Jogos</button><button type="button" class="profile-history-filter" data-history-filter="achievements">Conquistas</button></div>
+<div id="profile-operation-history" class="operation-history-list-v47"><p class="empty-state">Nenhum registro.</p></div></div>
                         </div>
                         <div class="profile-equipment">
                             <h3 class="equipment-title">Equipamentos</h3>
@@ -750,8 +798,59 @@
                         </div>
                         <div class="input-group">
                             <label>Descrição</label>
-                            <textarea id="game-description" rows="3" placeholder="Detalhes do jogo..."></textarea>
+                            <textarea id="game-description" rows="3" placeholder="Resumo público do jogo..."></textarea>
                         </div>
+
+                        <div class="game-briefing-editor">
+                            <div class="game-briefing-editor-head">
+                                <div>
+                                    <span class="game-briefing-kicker">PLANEJAMENTO</span>
+                                    <h3>Briefing da operação</h3>
+                                </div>
+                                <span class="game-briefing-admin-badge">ADMIN</span>
+                            </div>
+                            <p class="game-briefing-editor-help">Estas informações ficam disponíveis aos participantes diretamente no card da operação.</p>
+
+                            <div class="input-group">
+                                <label>Objetivo</label>
+                                <textarea id="game-briefing-objective" rows="3" maxlength="1200" placeholder="Objetivo principal, missão e condições de sucesso..."></textarea>
+                            </div>
+                            <div class="input-group">
+                                <label>Regras específicas</label>
+                                <textarea id="game-briefing-rules" rows="3" maxlength="1800" placeholder="Regras, limitações, procedimentos e orientações da operação..."></textarea>
+                            </div>
+                            <div class="game-briefing-form-grid">
+                                <div class="input-group">
+                                    <label>Ponto de encontro</label>
+                                    <input type="text" id="game-briefing-meeting-point" maxlength="180" placeholder="Ex: Portão principal / estacionamento">
+                                </div>
+                                <div class="input-group">
+                                    <label>Horário de apresentação</label>
+                                    <input type="time" id="game-briefing-meeting-time">
+                                </div>
+                            </div>
+                            <div class="input-group">
+                                <label>Equipamentos obrigatórios</label>
+                                <textarea id="game-briefing-equipment" rows="3" maxlength="1200" placeholder="Ex: óculos, rádio, pano vermelho, água..."></textarea>
+                            </div>
+                            <div class="input-group">
+                                <label>Observações</label>
+                                <textarea id="game-briefing-notes" rows="3" maxlength="1200" placeholder="Informações complementares para os participantes..."></textarea>
+                            </div>
+                            <div class="input-group">
+                                <label>Imagem / mapa da operação</label>
+                                <div class="game-briefing-image-picker">
+                                    <input type="file" id="game-briefing-image-input" accept="image/*" class="hidden">
+                                    <button type="button" class="btn-secondary" id="btn-select-game-briefing-image">Selecionar imagem</button>
+                                    <button type="button" class="btn-secondary hidden" id="btn-remove-game-briefing-image">Remover imagem</button>
+                                    <span class="game-briefing-image-hint">A imagem é otimizada automaticamente.</span>
+                                </div>
+                                <div id="game-briefing-image-preview-wrap" class="game-briefing-image-preview-wrap hidden">
+                                    <img id="game-briefing-image-preview" alt="Prévia do mapa ou imagem do briefing">
+                                </div>
+                            </div>
+                        </div>
+
                         <div class="modal-actions">
                             <button class="btn-primary" id="btn-save-game">Criar</button>
                             <button class="btn-secondary" id="btn-cancel-game">Cancelar</button>
@@ -976,6 +1075,8 @@
                         <div class="input-group">
                             <label>Preço (R$)</label>
                             <input type="number" id="create-product-preco" step="0.01" min="0" placeholder="0.00">
+                            <label>Estoque disponível</label>
+                            <input type="number" id="create-product-stock" min="0" step="1" value="0" placeholder="0">
                         </div>
                         <div class="input-group">
                             <label>Categoria</label>
@@ -1014,6 +1115,8 @@
                         <div class="input-group">
                             <label>Preço (R$)</label>
                             <input type="number" id="edit-product-preco" step="0.01" min="0" placeholder="0.00">
+                            <label>Estoque disponível</label>
+                            <input type="number" id="edit-product-stock" min="0" step="1" value="0" placeholder="0">
                         </div>
                         <div class="input-group">
                             <label>Categoria</label>
@@ -1069,6 +1172,46 @@
                         <article class="admin-overview-card"><span>🏁</span><strong id="admin-completed-games">0</strong><small>Operações concluídas</small></article>
                         <article class="admin-overview-card"><span>📦</span><strong id="admin-pending-orders">0</strong><small>Pedidos pendentes</small></article>
                     </div>
+
+                    <div class="command-dashboard-v53">
+                        <section class="command-card-v53 command-next-v53">
+                            <div class="command-card-head-v53"><div><span>PRÓXIMA MISSÃO</span><h3 id="admin-next-game-title">Nenhuma operação agendada</h3></div><button type="button" id="admin-next-game-action">Abrir Jogos</button></div>
+                            <div id="admin-next-game-details" class="command-next-details-v53">Crie uma nova operação para iniciar o planejamento.</div>
+                            <div class="command-readiness-v53">
+                                <div><strong id="admin-next-confirmed">0</strong><span>Confirmados</span></div>
+                                <div><strong id="admin-next-checked">0</strong><span>Check-ins</span></div>
+                                <div><strong id="admin-next-loadouts">0</strong><span>Loadouts</span></div>
+                                <div><strong id="admin-next-readiness">0%</strong><span>Prontidão</span></div>
+                            </div>
+                        </section>
+
+                        <section class="command-card-v53">
+                            <div class="command-card-head-v53"><div><span>SITUAÇÃO DA EQUIPE</span><h3>Visão operacional</h3></div></div>
+                            <div class="command-metrics-v53">
+                                <div><small>Presença recente</small><strong id="admin-attendance-rate">0%</strong></div>
+                                <div><small>Contribuições em atraso</small><strong id="admin-overdue-count">0</strong></div>
+                                <div><small>Operadores online</small><strong id="admin-online-count">0</strong></div>
+                                <div><small>Avisos pendentes</small><strong id="admin-unread-notices">0</strong></div>
+                            </div>
+                        </section>
+
+                        <section class="command-card-v53">
+                            <div class="command-card-head-v53"><div><span>LOJA</span><h3>Resumo logístico</h3></div><button type="button" id="admin-store-action">Ver vendas</button></div>
+                            <div class="command-metrics-v53">
+                                <div><small>Pedidos pendentes</small><strong id="admin-store-pending">0</strong></div>
+                                <div><small>Receita entregue</small><strong id="admin-store-revenue">R$ 0</strong></div>
+                                <div><small>Estoque baixo</small><strong id="admin-low-stock">0</strong></div>
+                                <div><small>Produtos esgotados</small><strong id="admin-out-stock">0</strong></div>
+                            </div>
+                            <div id="admin-low-stock-list" class="command-low-stock-v53"></div>
+                        </section>
+
+                        <section class="command-card-v53 command-priority-v53">
+                            <div class="command-card-head-v53"><div><span>PRIORIDADES</span><h3>O que precisa de atenção</h3></div><button type="button" id="admin-priority-action">Centro de Alertas</button></div>
+                            <div id="admin-priority-list" class="command-priority-list-v53"><p class="empty-state">Nenhuma prioridade no momento.</p></div>
+                        </section>
+                    </div>
+
                     <div class="admin-quick-actions">
                         <button class="btn-primary" id="admin-go-games">Gerenciar Jogos</button>
                         <button class="btn-secondary" id="admin-go-achievements">Gerenciar Conquistas</button>
@@ -1111,11 +1254,13 @@
                 </div>
 
                 <div class="admin-tab-panel hidden" data-admin-panel="audit">
+<div class="audit-toolbar-v55"><div><span>REGISTRO DE AUDITORIA</span><h3>Histórico administrativo</h3><p>Ações críticas realizadas pelo Comando ficam registradas com operador, data e contexto.</p></div><button type="button" class="btn-secondary" id="audit-refresh-v55">Atualizar</button></div><div class="audit-filters-v55"><select id="audit-filter-v55"><option value="all">Todas as ações</option><option value="games">Jogos</option><option value="store">Loja</option><option value="members">Membros</option><option value="achievements">Conquistas</option><option value="system">Sistema</option></select><input id="audit-search-v55" type="search" placeholder="Buscar operador ou ação..."></div>
                     <div class="admin-section-heading"><div><h2>Histórico Administrativo</h2><p>Registro das ações importantes realizadas no sistema.</p></div><button class="btn-secondary" id="admin-refresh-audit">Atualizar</button></div>
                     <div id="admin-audit-list" class="admin-audit-list"><p class="empty-state">Nenhuma atividade registrada.</p></div>
                 </div>
 
                 <div class="admin-tab-panel hidden" data-admin-panel="diagnostics">
+<section class="admin-backup-v54"><div class="admin-backup-head-v54"><div><span>BACKUP ADMINISTRATIVO</span><h3>Exportar dados do sistema</h3></div><span id="backup-status-v54" class="backup-status-v54">Pronto</span></div><p>Gera um arquivo JSON com os dados administrativos carregados nesta sessão.</p><div class="admin-backup-grid-v54"><div><strong id="backup-users-v54">0</strong><small>Perfis</small></div><div><strong id="backup-games-v54">0</strong><small>Jogos</small></div><div><strong id="backup-orders-v54">0</strong><small>Pedidos</small></div><div><strong id="backup-achievements-v54">0</strong><small>Conquistas</small></div></div><button type="button" class="btn-primary" id="admin-create-backup-v54">Gerar backup agora</button><small class="admin-backup-note-v54">Não inclui senhas do Firebase Authentication nem arquivos binários externos do Storage.</small></section>
                     <div class="admin-section-heading"><div><h2>Diagnóstico do Sistema</h2><p>Status do PWA, Firebase, cache e dados locais.</p></div><button class="btn-secondary" id="admin-refresh-diagnostics">Atualizar diagnóstico</button></div>
                     <div class="diagnostic-grid">
                         <article class="diagnostic-card"><span>🔥 Firebase</span><strong id="diag-firebase">Verificando...</strong></article>
@@ -1211,7 +1356,7 @@
 
     <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
     <script src="firebase-config.js"></script>
-    <script type="module" src="cloud-v44.js"></script>
-    <script type="module" src="app-v44.js"></script>
+    <script type="module" src="cloud-v57.js"></script>
+    <script type="module" src="app-v57.js"></script>
 </body>
 </html>
