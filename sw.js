@@ -1,4 +1,4 @@
-const CACHE_NAME = 'asgard-v44-remover-convidados';
+const CACHE_NAME = 'asgard-v45-contribuicao-19-membros';
 const ASSETS = [
     './', './index.html', './style-v44.css', './app-v44.js', './cloud-v44.js', './firebase-config.js',
     './manifest.json', './icons/icon-192-v17.png', './icons/icon-512-v17.png', './icons/logo-asgard.png',

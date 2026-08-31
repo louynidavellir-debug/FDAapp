@@ -1,0 +1,13 @@
+FILHOS DE ASGARD - V45
+CORREÇÃO DA ABA CONTRIBUIÇÃO
+
+Problema corrigido:
+- A aba Contribuição excluía usuários com função de administrador da lista de mensalidades.
+- Como administradores também são membros da equipe, isso fazia a contagem/listagem ficar menor que o total real de membros.
+
+Correção aplicada:
+- A Contribuição agora inclui todos os membros da equipe, inclusive administradores.
+- Apenas contas com papel "guest" (convidado) são desconsideradas.
+- A criação das entradas mensais também passou a contemplar administradores.
+- Contadores de Operadores/Pagos/Pendentes/Em Atraso usam a mesma lista corrigida.
+- Cache da PWA atualizado para forçar a distribuição da correção.

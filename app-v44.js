@@ -4485,11 +4485,11 @@
             data.months[monthKey] = {};
             changed = true;
         }
-        // Ensure every operador has an entry. Do not persist on every render:
+        // Ensure every team member has an entry, including administrators. Do not persist on every render:
         // AsgardCloud.set() emits a sync event immediately, so an unconditional
         // save here caused refreshContribuicao -> sync -> refreshContribuicao recursion.
         users.forEach(u => {
-            if (u.role !== 'admin' && !data.months[monthKey][u.id]) {
+            if (String(u.role || '').toLowerCase() !== 'guest' && !data.months[monthKey][u.id]) {
                 data.months[monthKey][u.id] = { status: 'Pendente', confirmedAt: null, comprovante: null };
                 changed = true;
             }
@@ -4497,7 +4497,7 @@
         // Only ADMIN persists the full month template. Operators keep their
         // not-yet-persisted placeholders local until they submit their own payment.
         if (currentUser && String(currentUser.role||'').toLowerCase() === 'admin') {
-            const userIds = new Set(users.map(u => u.id));
+            const userIds = new Set(users.filter(u => String(u.role || '').toLowerCase() !== 'guest').map(u => u.id));
             Object.keys(data.months[monthKey]).forEach(uid => {
                 if (!userIds.has(uid)) {
                     delete data.months[monthKey][uid];
@@ -4590,7 +4590,7 @@
 
     function refreshContribuicao() {
         const users = getStore(DB_USERS) || [];
-        const operadores = users.filter(u => u.role !== 'admin');
+        const operadores = users.filter(u => String(u.role || '').toLowerCase() !== 'guest');
         const data = getContribData();
         const monthKey = getContribMonthKey();
         const contribs = ensureMonthContribs(monthKey, users);
@@ -4651,7 +4651,7 @@
             if (contribAtrasados) contribAtrasados.textContent = atrasados;
         }
 
-        // Member cards: ADMIN sees everyone; each operator sees only their own
+        // Member cards: ADMIN sees every team member; each operator sees only their own
         // contribution status and receipt controls.
         if (contribuicaoMembers) {
             let html = '';
